@@ -35,14 +35,13 @@ service firebase.storage {
       allow update: if false;
     }
 
-    // chat photos: chats/{conversationId}/{uid}/{fileName}, only the two people in that conversation
+    // chat photos: chats/{conversationId}/{uid}/{fileName}. Each person uploads only into their own
+    // folder. The message that shows a photo is checked by firestore.rules (the sender must be in that
+    // conversation and the link must point into their own folder there), and both people open the photo
+    // through its download link, so these rules don't look anything up in Firestore.
     match /chats/{cid}/{uid}/{fileName} {
-      function participant() {
-        return request.auth != null
-          && request.auth.uid in firestore.get(/databases/(default)/documents/conversations/$(cid)).data.participants;
-      }
-      allow read: if participant();
-      allow create: if isNU() && mine(uid) && participant()
+      allow read: if mine(uid);
+      allow create: if isNU() && mine(uid)
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/(jpeg|png|webp)');
       allow update, delete: if false;

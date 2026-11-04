@@ -1,0 +1,22 @@
+{
+  "name": "rentlet-functions",
+  "private": true,
+  "description": "Rentlet Cloud Functions: HERE address lookup, walking times and nearby places, called from the site.",
+  "type": "module",
+  "main": "lib/index.js",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "gcp-build": ""
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0",
+    "firebase-functions": "^7.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^7.0.2"
+  }
+}

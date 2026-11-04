@@ -32,10 +32,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .logo{display:flex;align-items:center;min-height:44px}
 .logo img{height:26px}
 .nav{display:flex;gap:2px}
-.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:40px;display:flex;align-items:center;border-radius:999px;text-decoration:none}
+.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:44px;display:flex;align-items:center;border-radius:999px;text-decoration:none}
 .nav a:hover{background:var(--soft);color:var(--ink)}
 .hdr-r{margin-left:auto;display:flex;gap:10px;align-items:center}
-.me{text-decoration:none;width:40px!important;height:40px;min-width:0;margin:0;padding:0;border:0;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center;flex:none}
+.me{text-decoration:none;width:44px!important;height:44px;overflow:hidden;min-width:0;margin:0;padding:0;border:0;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center;flex:none}
 
 /* ---------- controls (post.html) ---------- */
 .btn{height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-weight:650;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap;width:auto!important;flex:0 0 auto;margin:0}
@@ -213,6 +213,18 @@ button.in.ws{text-align:left;font-size:16px}
 .toast:not(.u) button{display:none}
 .toast:not(.u){padding-right:16px}
 
+/* ---------- Rentlet: real profile data ---------- */
+.av{overflow:hidden}
+.av img,.me img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.lk:disabled{opacity:.4;cursor:default}
+.lk[hidden]{display:none}
+.csave{font-size:13px;color:var(--muted);line-height:1.4;padding-top:4px;max-width:100%;overflow-wrap:anywhere}
+.csave.err{color:var(--red)}
+.csave:empty{display:none}
+.rq .note{margin-top:10px}
+.who .since .vb{white-space:normal;align-items:flex-start}
+.who .since .vb .ic{margin-top:1px}
+
 /* ---------- responsive (the preview frame is the viewport) ---------- */
 @container (max-width:980px){
   .pa{grid-template-columns:176px minmax(0,1fr);gap:28px}
@@ -279,139 +291,116 @@ const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelecto
 const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const money=v=>'$'+Math.round(v).toLocaleString('en-US');
 const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const fday=s=>{const [y,m,d]=s.split('-').map(Number);return `${MN[m-1]} ${d}, ${y}`};
-const wl=(s,e)=>WhenPicker.label(s,e);
+const fms=ms=>{const d=new Date(ms);return `${MN[d.getMonth()]} ${d.getDate()}${d.getFullYear()!==new Date().getFullYear()?', '+d.getFullYear():''}`};
+const wl=(s,e)=>s&&e?WhenPicker.label(s,e):'';
 const ls={get(k){try{return localStorage.getItem(k)}catch(_){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(_){}},del(k){try{localStorage.removeItem(k)}catch(_){}}};
-const ss={get(k){try{return sessionStorage.getItem(k)}catch(_){return null}},set(k,v){try{sessionStorage.setItem(k,v)}catch(_){}},del(k){try{sessionStorage.removeItem(k)}catch(_){}}};
-const jget=(st,k)=>{try{return JSON.parse(st.get(k)||'null')}catch(_){return null}};
+ls.del('cs-profile');ls.del('cs-notify'); /* the old sample profile kept on this device */
 
 const ICONS={check:'<path d="M5 12.5l4.2 4.2L19 7"/>',shield:'<path d="M12 3.5l7 2.6v5.4c0 4.4-3 7.7-7 9-4-1.3-7-4.6-7-9V6.1z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.4"/>',
   heart:'<path d="M12 20s-7.5-4.4-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.6 12 20 12 20z"/>',user:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/>',
-  x:'<path d="M6 6l12 12M18 6L6 18"/>',lock:'<rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>'};
+  x:'<path d="M6 6l12 12M18 6L6 18"/>'};
 const ic=(k,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`;
-const CHEV=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>`;
 const GOOGLE=`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"/></svg>`;
 
-/* example rooms (index.html L / room.html ROOMS keys) */
-const ROOMS={l1:{title:'Private room in a 3-bed',area:'Downtown Evanston',walk:9,price:1390,start:'2027-01-02',end:'2027-04-30',img:'bedroom'},
-  l3:{title:'Private room, shared kitchen',area:'Southeast Evanston',walk:15,price:1250,start:'2027-02-01',end:'2027-06-30',img:'living',flip:1},
-  l6:{title:'Private room by the lake',area:'Northeast Evanston',walk:6,price:1620,start:'2027-01-03',end:'2027-04-30',img:'kitchen',flip:1}};
-const ROLES=['Student','Intern','New hire','Visiting researcher','Other'];
-const SEED=()=>({name:'Sam',role:'Student',campusId:'nu-evn',lang:'en',reqPaused:false,saved:['l1','l3','l6'],
-  ver:{school:{email:'sam@u.northwestern.edu',state:'ok',date:'2026-10-12'},work:{email:'',state:'none',date:''}},
-  listings:[
-    {id:'a',key:'l4',title:'Studio with a desk nook',area:'Downtown Evanston',start:'2026-12-20',end:'2027-03-15',price:1480,img:'bedroom',flip:1,status:'live',views:12,msgs:3,proof:'ok',proofDate:'2026-10-14'},
-    {id:'b',title:'Private room in a 2-bed',area:'North Evanston',start:'2027-01-05',end:'2027-05-31',price:1180,img:'kitchen',status:'taken',proof:'ok',proofDate:'2026-09-02'}],
-  f:{wechat:'sam_evanston',cemail:'sam@u.northwestern.edu',org:''}});
-const NOTIFY_SEED={fit:true,msgs:true,digest:false};
-
-/* ---------- state ---------- */
-const S={sheet:null,editName:false,active:'you',tmp:{},
-  ...SEED(),...(jget(ls,'cs-profile')||{})};
-S.notify={...NOTIFY_SEED,...(jget(ls,'cs-notify')||{})};
-const save=()=>{const {name,role,campusId,lang,reqPaused,saved,ver,listings,f}=S;ls.set('cs-profile',JSON.stringify({name,role,campusId,lang,reqPaused,saved,ver,listings,f}))};
-const authed=()=>ls.get('cs-web-auth')==='in';
-const draft=()=>jget(ss,'cs-post-draft');
-const myReq=()=>jget(ss,'cs-my-request')||jget(ls,'cs-my-request');
-const slot=()=>S.role==='Student'||S.role==='Visiting researcher'?'school':'work';
-const V=()=>S.ver[slot()];
+/* ---------- state ----------
+   Everything below comes from Firebase through src/profile.ts (window.RLP.update):
+   null = still loading, 'error' = could not load. */
+const me0=RL.authed&&RL.user?RL.user:null;
+const S={sheet:null,editName:false,active:'you',tmp:{},busy:{},
+  authed:!!me0,me:me0,profile:null,listings:null,requests:null,saved:null,contact:null,
+  f:{instagram:'',cemail:''},csave:'',csaveErr:false};
+const ready=v=>v&&v!=='error';
 const campusName=id=>(WhereSearch.SCHOOLS.find(x=>x[0]===id)||[])[1]||'';
-const orgLine=()=>slot()==='school'?campusName(S.campusId):(S.f.org||'').trim();
-const initial=()=>(S.name||'?').trim().charAt(0).toUpperCase()||'?';
+const nm=()=>(ready(S.profile)&&S.profile.name)||(S.me&&S.me.name)||'You';
+const photo=()=>(ready(S.profile)&&S.profile.photo)||(S.me&&S.me.photo)||'';
+const initial=()=>nm().trim().charAt(0).toUpperCase()||'?';
+const avatar=()=>photo()?`<img src="${esc(photo())}" alt="" referrerpolicy="no-referrer">`:esc(initial());
+const nuEmail=()=>(S.me&&S.me.email)||'';
+const role=()=>(S.me&&S.me.role)||'';
 
 /* ---------- small builders ---------- */
 const pill=(cls,t)=>`<span class="pill ${cls}"><i></i>${t}</span>`;
 const panel=(id,title,sub,body,extra='')=>`<section class="panel" id="sec-${id}" data-sec="${id}" aria-labelledby="h-${id}"><div class="ph2"><div><h2 id="h-${id}">${title}</h2>${sub?`<p>${sub}</p>`:''}</div>${extra}</div><div class="pb">${body}</div></section>`;
-const verPill=v=>v.state==='ok'?pill('ok',`Verified · ${fday(v.date)}`):v.state==='pending'?pill('warn','Pending'):pill('none','Not added');
-const STATUS={draft:['none','Draft'],review:['warn','In review'],live:['ok','Live'],paused:['','Paused'],taken:['','Taken']};
-
-/* the listing a visitor saved and left in post.html, shown as a draft */
-function allListings(){const d=draft(),out=[];
-  if(d){const town=(d.campus||'Northwestern · Evanston').split(' · ')[1]||d.campus||'Evanston';
-    out.push({id:'draft',title:`${d.unit==='whole'?'Whole place':'Private room'} · ${d.layout==='Other'?'Other':d.layout||'3B2B'}`,area:town,start:d.start||'2026-12-20',end:d.end||'2027-03-15',price:d.rent||1480,img:'bedroom',status:'draft',proof:'none'})}
-  return out.concat(S.listings)}
-const activeCount=()=>S.listings.filter(l=>['review','live','paused'].includes(l.status)).length;
+const loading=t=>`<p class="note" style="margin-top:0" role="status">${t}</p>`;
+const failed=t=>`<div class="empty"><h3>${t}</h3><p>Check your connection and try again.</p><button type="button" class="btn sec" data-act="retry">Try again</button></div>`;
+const STATUS={active:['ok','Live'],hidden:['','Hidden'],taken:['','Taken']};
 
 /* ---------- sections ---------- */
 function secYou(){
-  const v=V(),org=orgLine();
   const nameBlock=S.editName
-    ?`<div class="nmedit"><label class="in"><input data-f="name" value="${esc(S.tmp.name!=null?S.tmp.name:S.name)}" maxlength="24" aria-label="First name" autocomplete="given-name"></label><button type="button" class="btn" data-act="saveName">Save</button><button type="button" class="btn sec" data-act="cancelName">Cancel</button></div>`
-    :`<div class="nmrow"><h1 class="h1">${esc(S.name)}</h1><button type="button" class="lk" data-act="editName">Edit name</button></div>`;
-  const orgField=slot()==='school'
-    ?`<button type="button" class="in ws" data-act="school" aria-haspopup="dialog" aria-label="School: ${esc(campusName(S.campusId))}"><span>${esc(campusName(S.campusId))}</span>${CHEV}</button>`
-    :`<label class="in"><input data-f="org" value="${esc(S.f.org)}" placeholder="${S.role==='Intern'?'e.g. Google, Chicago office':'Company or organization'}" aria-label="Company"></label>`;
-  return `<div class="who"><span class="av ink" aria-hidden="true">${esc(initial())}</span><div class="nm">${nameBlock}<p class="since">First name only.</p></div></div>
-  <div class="grp"><span class="lbl">Role</span><div class="chips" role="radiogroup" aria-label="Role">${ROLES.map(r=>`<button type="button" class="chip ${S.role===r?'on':''}" role="radio" aria-checked="${S.role===r}" data-one="role:${r}">${r}</button>`).join('')}</div></div>
-  <div class="grp"><span class="lbl">${slot()==='school'?'School':'Company'}</span>${orgField}</div>
-  <div class="seen"><span class="lbl">What others see</span><div class="sc"><span class="av">${esc(initial())}</span><div><b>${esc(S.name)} · ${S.role}</b><span>${org?esc(org):'No school or company yet'}${v.state==='ok'?`<span class="vb">${ic('shield')}Verified</span>`:''}</span></div></div>
-  <p class="note">Your email and Instagram stay private.</p></div>`}
+    ?`<div class="nmedit"><label class="in"><input data-f="name" value="${esc(S.tmp.name!=null?S.tmp.name:nm())}" maxlength="24" aria-label="First name" autocomplete="given-name"></label><button type="button" class="btn" data-act="saveName" ${S.busy.name?'disabled':''}>Save</button><button type="button" class="btn sec" data-act="cancelName">Cancel</button></div>`
+    :`<div class="nmrow"><h1 class="h1">${esc(nm())}</h1><button type="button" class="lk" data-act="editName">Edit name</button></div>`;
+  return `<div class="who"><span class="av ink" aria-hidden="true">${avatar()}</span><div class="nm">${nameBlock}<p class="since"><span class="vb">${ic('shield')}Verified with your Northwestern account</span></p></div></div>
+  <div class="seen"><span class="lbl">What others see</span><div class="sc"><span class="av">${avatar()}</span><div><b>${esc(nm())}${role()?` · ${esc(role())}`:''}</b><span><span class="vb">${ic('shield')}Verified</span></span></div></div>
+  <p class="note">First name only, with your Google photo. Your email and Instagram stay private.</p></div>`}
 
-function secVerify(){
-  const v=V(),k=slot(),label=k==='school'?(S.role==='Visiting researcher'?'School or lab email':'School email'):'Work email';
-  const acts=v.state==='ok'?`<button type="button" class="btn sec" data-act="vchange">Change</button>`:v.state==='pending'?`<button type="button" class="btn sec" data-act="vresend">Resend</button><button type="button" class="lk" data-act="vchange">Change</button>`:`<button type="button" class="btn" data-act="vchange">Verify</button>`;
-  const proofs=allListings().filter(l=>l.status!=='taken');
-  return `<div class="rows"><div class="row"><div class="rl"><b>${label}</b><span>${v.email?esc(v.email):(k==='school'?'Use an address that ends in .edu':'Use your company address')}</span></div>${verPill(v)}<div class="ra">${acts}</div></div></div>
-  <p class="sub2">Lease proof <small style="font-weight:500;color:var(--muted);font-size:13px">per listing</small></p>
-  ${proofs.length?`<div class="rows">${proofs.map(l=>`<div class="row"><div class="rl"><b>${esc(l.title)}</b><span>${l.status==='draft'?'Draft':esc(l.area)}</span></div>${verPill({state:l.proof,date:l.proofDate})}<div class="ra">${l.proof==='ok'?`<a class="lk" href="post.html?step=12" data-act="addproof" data-id="${l.id}">Replace</a>`:`<a class="btn sec" href="post.html?step=12" data-act="addproof" data-id="${l.id}">Add proof</a>`}</div></div>`).join('')}</div>`:`<p class="note" style="margin-top:0">Each listing needs its own proof.</p>`}
-  <p class="note">Checked by a person within 24 hours. A badge, not a guarantee.</p>`}
-
-function listingCard(l){const [c,t]=STATUS[l.status],link=l.status==='live'&&l.key?`room.html?room=${l.key}`:'';
-  const img=`<img src="img/${l.img}.jpg" alt="" class="${l.flip?'flip':''}">`;
+function listingCard(l){const [c,t]=STATUS[l.status]||['',esc(l.status)],live=l.status==='active',link=live?`room.html?room=${l.code}`:'',dis=S.busy[l.code]?'disabled':'',id=`data-id="${l.code}" ${dis}`;
+  const img=l.img?`<img src="${esc(l.img)}" alt="" loading="lazy">`:'';
   let acts='';
-  if(l.status==='draft')acts=`<a class="btn" href="post.html">Continue</a>`;
-  else if(l.status==='live')acts=`<a class="btn sec" href="post.html">Edit</a><button type="button" class="btn sec" data-act="pause" data-id="${l.id}">Pause</button><button type="button" class="lk" data-act="taken" data-id="${l.id}">Mark as taken</button>`;
-  else if(l.status==='paused')acts=`<a class="btn sec" href="post.html">Edit</a><button type="button" class="btn sec" data-act="resume" data-id="${l.id}">Resume</button><button type="button" class="lk" data-act="taken" data-id="${l.id}">Mark as taken</button>`;
-  else if(l.status==='review')acts=`<a class="btn sec" href="post.html">Edit</a><button type="button" class="btn sec" data-act="pause" data-id="${l.id}">Pause</button>`;
-  else acts=`<button type="button" class="btn sec" data-act="repost" data-id="${l.id}">Repost</button>`;
-  const meta=l.status==='live'?`<small>${l.views} views · <a href="messages.html">${l.msgs} messages</a></small>`:l.status==='review'?'<small>Checked by a person within 24 hours</small>':l.status==='paused'?'<small>Hidden from search</small>':'';
-  return `<article class="lc" data-listing="${l.id}">${link?`<a class="lph" href="${link}" aria-label="Open ${esc(l.title)}">${img}</a>`:`<div class="lph">${img}</div>`}
-    <div class="lb"><div class="lt">${pill(c,t)}${meta}</div><h3>${link?`<a href="${link}">${esc(l.title)}</a>`:esc(l.title)}</h3><div class="lm">${esc(l.area)} · ${wl(l.start,l.end)}</div><div class="lp">${money(l.price)} <small>/ mo</small></div></div>
+  if(live)acts=`<a class="btn sec" href="${link}">See listing</a><button type="button" class="btn sec" data-act="hide" ${id}>Hide</button><button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
+  else if(l.status==='hidden')acts=`<button type="button" class="btn sec" data-act="show" ${id}>Show again</button><button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
+  else acts=`<button type="button" class="btn sec" data-act="show" ${id}>Repost</button>`;
+  acts+=`<button type="button" class="lk" data-act="ldel" ${id}>Delete</button>`;
+  const meta=live?(l.createdAtMs?`<small>Posted ${fms(l.createdAtMs)}</small>`:''):l.status==='hidden'?'<small>Hidden from search</small>':'<small>Off search</small>';
+  return `<article class="lc" data-listing="${l.code}">${link?`<a class="lph" href="${link}" aria-label="Open ${esc(l.title)}">${img}</a>`:`<div class="lph">${img}</div>`}
+    <div class="lb"><div class="lt">${pill(c,t)}${meta}</div><h3>${esc(l.title)}</h3><div class="lm">${[esc(l.area),wl(l.start,l.end)].filter(Boolean).join(' · ')}</div><div class="lp">${money(l.price)} <small>/ mo</small></div></div>
     <div class="acts">${acts}</div></article>`}
-function secListings(){const n=activeCount();
-  return `<div class="lst">${allListings().map(listingCard).join('')}</div>
-  <div class="cap"><span>Up to 3 listings at a time · ${n} of 3 in use</span>${n<3?`<a class="btn sec" href="post.html">Post a listing</a>`:''}</div>`}
+function secListings(){const L=S.listings;
+  if(L===null)return loading('Loading your listings…');
+  if(L==='error')return failed('Couldn’t load your listings.');
+  if(!L.length)return `<div class="empty"><h3>You haven’t posted a listing.</h3><a class="btn" href="post.html">Post a listing</a></div>`;
+  const n=L.filter(l=>l.status==='active').length;
+  return `<div class="lst">${L.map(listingCard).join('')}</div>
+  <div class="cap"><span>Up to 3 live listings at a time · ${n} of 3 live</span>${n<3?`<a class="btn sec" href="post.html">Post a listing</a>`:''}</div>`}
 
-const art=k=>{k=k.toLowerCase();return /^any\b/.test(k)?k:(/^[aeiou]/.test(k)?'an ':'a ')+k};
-function secRequest(){const q=myReq();
-  if(!q)return `<div class="empty"><h3>You haven’t posted a request.</h3><a class="btn" href="request.html">Post a request</a></div>`;
-  const kind=String(q.kind||'a place'),bud=+q.budget,school=campusName(q.school);
-  return `<div class="rq" data-request><div class="rq-top"><span class="av">${esc((q.who||S.name||'?').charAt(0))}</span><div><b>${esc(q.who||S.name)} · ${esc(q.role||S.role)}</b><span>Needs ${esc(art(kind))}${q.start&&q.end?` · ${wl(q.start,q.end)}`:''}</span></div>${S.reqPaused?pill('','Paused'):pill('ok','Live')}</div>
-    <div class="rq-meta">${isFinite(bud)&&bud>0?`<span>Up to <span class="serif">${money(bud)}</span> / mo</span>`:'<span>Any budget</span>'}${school?`<span>${esc(school)}</span>`:''}${q.verified?`<span class="vb">${ic('shield')}Verified</span>`:''}</div>
+function reqCard(q){const dis=S.busy['r:'+q.id]?'disabled':'',id=`data-id="${esc(q.id)}" ${dis}`;
+  return `<div class="rq" data-request="${esc(q.id)}"><div class="rq-top"><span class="av">${avatar()}</span><div><b>${esc(q.name||nm())}${q.role?` · ${esc(q.role)}`:''}</b><span>Needs ${esc(q.need)}${q.start&&q.end?` · ${wl(q.start,q.end)}`:''}</span></div>${q.open?pill('ok','Live'):pill('','Paused')}</div>
+    <div class="rq-meta">${q.budget?`<span>Up to <span class="serif">${money(q.budget)}</span> / mo</span>`:'<span>Any budget</span>'}${q.campus?`<span>${esc(q.campus)}</span>`:''}<span class="vb">${ic('shield')}Verified</span></div>
     ${q.note?`<p class="rq-q">“${esc(q.note)}”</p>`:''}
-    <div class="acts"><a class="btn sec" href="request.html">Edit</a><button type="button" class="btn sec" data-act="${S.reqPaused?'reqResume':'reqPause'}">${S.reqPaused?'Resume':'Pause'}</button><button type="button" class="lk" data-act="reqDelete">Delete</button></div></div>
-  ${S.reqPaused?'<p class="note">Hidden while paused.</p>':''}`}
+    <div class="acts">${q.open?'<a class="btn sec" href="request.html?edit=1">Edit</a>':''}<button type="button" class="btn sec" data-act="${q.open?'reqPause':'reqResume'}" ${id}>${q.open?'Pause':'Resume'}</button><button type="button" class="lk" data-act="reqDelete" ${id}>Delete</button></div>
+    ${q.open?'':'<p class="note">Hidden from the Requests page while paused.</p>'}</div>`}
+function secRequest(){const R=S.requests;
+  if(R===null)return loading('Loading your request…');
+  if(R==='error')return failed('Couldn’t load your request.');
+  if(!R.length)return `<div class="empty"><h3>You haven’t posted a request.</h3><a class="btn" href="request.html">Post a request</a></div>`;
+  return `<div class="lst">${R.map(reqCard).join('')}</div>`}
 
-function secSaved(){const keys=S.saved.filter(k=>ROOMS[k]);
-  if(!keys.length)return `<div class="empty"><h3>Rooms you save show up here.</h3><a class="btn sec" href="index.html">Find a place</a></div>`;
-  const heart=k=>`<button type="button" class="csv" data-act="unsave" data-key="${k}" aria-label="Remove ${esc(ROOMS[k].title)} from saved" aria-pressed="true">${ic('heart')}</button>`;
-  return `<div class="svg">${keys.map(k=>{const r=ROOMS[k];return `<div class="cx-card" data-saved="${k}"><a href="room.html?room=${k}" style="display:block;text-decoration:none;color:inherit"><div class="cph"><img src="img/${r.img}.jpg" alt="" class="${r.flip?'flip':''}"><span class="ctg">${wl(r.start,r.end)}</span></div><div class="cbd"><div class="ct"><span>${r.title}</span><b>${money(r.price)}<small> / mo</small></b></div><div class="cm">${r.area}</div><div class="cm">${r.walk} min walk to campus</div></div></a>${heart(k)}</div>`}).join('')}</div>`}
+function savedCard(r){
+  return `<div class="cx-card" data-saved="${r.code}"><a href="room.html?room=${r.code}" style="display:block;text-decoration:none;color:inherit"><div class="cph">${r.img?`<img src="${esc(r.img)}" alt="" loading="lazy">`:''}${r.start&&r.end?`<span class="ctg">${wl(r.start,r.end)}</span>`:''}</div><div class="cbd"><div class="ct"><span>${esc(r.title)}</span><b>${money(r.price)}<small> / mo</small></b></div><div class="cm">${esc(r.area)}</div><div class="cm">${r.walk!=null?`${r.walk} min walk to campus`:esc(campusName(r.campusId))}</div></div></a><button type="button" class="csv" data-act="unsave" data-key="${r.code}" aria-label="Remove ${esc(r.title)} from saved" aria-pressed="true">${ic('heart')}</button></div>`}
+function secSaved(){const V=S.saved;
+  if(V===null)return loading('Loading saved rooms…');
+  if(V==='error')return failed('Couldn’t load your saved rooms.');
+  const g=V.gone.length,gone=g?`<p class="note">${g===1?'1 saved room is':`${g} saved rooms are`} no longer listed. <button type="button" class="lk" data-act="forgetGone">Remove ${g===1?'it':'them'}</button></p>`:'';
+  if(!V.items.length)return `<div class="empty"><h3>Rooms you save show up here.</h3><a class="btn sec" href="index.html">Find a place</a></div>${gone}`;
+  return `<div class="svg">${V.items.map(savedCard).join('')}</div>${gone}`}
 
-function cemailState(){const e=(S.f.cemail||'').trim().toLowerCase(),ok=Object.values(S.ver).some(v=>v.state==='ok'&&v.email.toLowerCase()===e);
-  return !e?'<span class="u">Optional</span>':ok?`<span class="u ok">${ic('check','sm')}Verified</span>`:'<span class="u">Not verified</span>'}
-function secContact(){
-  return `<div class="grp" style="margin-top:0"><span class="lbl">Instagram</span><label class="in"><input data-f="wechat" value="${esc(S.f.wechat)}" placeholder="Your Instagram handle" autocomplete="off" aria-label="Instagram handle"></label></div>
-  <div class="grp"><span class="lbl">Email</span><label class="in"><input data-f="cemail" type="email" value="${esc(S.f.cemail)}" placeholder="you@example.com" aria-label="Contact email"><span data-cestate>${cemailState()}</span></label></div>
-  <p class="note">Never public. Shared only inside a conversation, after 3 replies each and once you’re both verified.</p>`}
+const showUseNu=()=>!!nuEmail()&&(S.f.cemail||'').trim().toLowerCase()!==nuEmail().toLowerCase();
+function cemailState(){const e=(S.f.cemail||'').trim().toLowerCase();
+  return !e?'<span class="u">Optional</span>':e===nuEmail().toLowerCase()?`<span class="u ok">${ic('check','sm')}Verified</span>`:'<span class="u">Not verified</span>'}
+function secContact(){const C=S.contact;
+  if(C===null)return loading('Loading contact details…');
+  if(C==='error')return failed('Couldn’t load your contact details.');
+  return `<div class="grp" style="margin-top:0"><span class="lbl">Instagram</span><label class="in"><input data-f="instagram" value="${esc(S.f.instagram)}" placeholder="Your Instagram handle" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="60" aria-label="Instagram handle"></label></div>
+  <div class="grp"><span class="lbl">Email</span><label class="in"><input data-f="cemail" type="email" value="${esc(S.f.cemail)}" placeholder="you@example.com" autocomplete="email" maxlength="254" aria-label="Contact email"><span data-cestate>${cemailState()}</span></label><button type="button" class="lk" data-act="useNu" ${showUseNu()?'':'hidden'}>Use my Northwestern email</button></div>
+  <p class="note">Never public. Shared only when you choose to share it in a conversation.</p>`}
 
-function secNotify(){const to=(S.f.cemail||V().email||'your email').trim();
-  const row=(k,b,s)=>`<div class="tog"><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div><button type="button" class="sw ${S.notify[k]?'':'off'}" data-sw="${k}" role="switch" aria-checked="${!!S.notify[k]}" aria-label="${b}"></button></div>`;
-  return row('fit','Email me when a room fits my request',myReq()?'':'Starts once you post a request.')+row('msgs','Email me about new messages','')+row('digest','Weekly digest','New rooms near your school, once a week.')+`<p class="note">Sent to ${esc(to)}.</p>`}
+function secNotify(){
+  return `<p class="note" style="margin-top:0">Rentlet doesn’t send email or push notifications yet. Replies show up in Messages.</p><div class="acts"><a class="btn sec" href="messages.html">Open Messages</a></div>`}
 
-function secAccount(){const v=V();
-  return `<div class="rows"><div class="row"><div class="rl"><b>Language</b></div><div class="chips langc">${[['en','English']].map(([k,t])=>`<button type="button" class="chip ${S.lang===k?'on':''}" data-one="lang:${k}" aria-pressed="${S.lang===k}">${t}</button>`).join('')}</div></div>
-    <div class="row"><div class="rl"><b>Sign out</b><span>${v.email?`Signed in as ${esc(v.email)}`:'On this device'}</span></div><span></span><div class="ra"><button type="button" class="btn sec" data-act="signout">Sign out</button></div></div>
-    <div class="row"><div class="rl"><b>Delete account</b><span>Removes your listings, request, saved rooms and messages.</span></div><span></span><div class="ra"><button type="button" class="btn red-t" data-act="del1">Delete</button></div></div></div>`}
+function secAccount(){
+  return `<div class="rows"><div class="row"><div class="rl"><b>Sign out</b><span>${nuEmail()?`Signed in as ${esc(nuEmail())}`:'On this device'}</span></div><span></span><div class="ra"><button type="button" class="btn sec" data-act="signout">Sign out</button></div></div>
+    <div class="row"><div class="rl"><b>Delete account</b><span>Removes your profile, listings, request, saved rooms and contact details.</span></div><span></span><div class="ra"><button type="button" class="btn red-t" data-act="del1">Delete</button></div></div></div>`}
 
-const SECS=[['you','You'],['verify','Verification'],['listings','Your listings'],['request','Your request'],['saved','Saved rooms'],['contact','Contact details'],['notify','Notifications'],['account','Account']];
-const SUBS={you:'',verify:'',listings:'',request:'One at a time. Shown to people with rooms near your school.',saved:'',contact:'Instagram and email only.',notify:'',account:''};
-const BODY={you:secYou,verify:secVerify,listings:secListings,request:secRequest,saved:secSaved,contact:secContact,notify:secNotify,account:secAccount};
-const sec=(k,body)=>panel(k,SECS.find(s=>s[0]===k)[1],SUBS[k],body||BODY[k]());
+const SECS=[['you','You'],['listings','Your listings'],['request','Your request'],['saved','Saved rooms'],['contact','Contact details'],['notify','Notifications'],['account','Account']];
+const SUBS={you:'',listings:'',request:'Live requests show on the Requests page.',saved:'',contact:'Instagram and email only.',notify:'',account:''};
+const BODY={you:secYou,listings:secListings,request:secRequest,saved:secSaved,contact:secContact,notify:secNotify,account:secAccount};
+const csaveEl=()=>`<span class="csave ${S.csaveErr?'err':''}" data-csave role="status">${esc(S.csave)}</span>`;
+const sec=k=>panel(k,SECS.find(s=>s[0]===k)[1],SUBS[k],S.authed?BODY[k]():'<p class="note" style="margin-top:0">Sign in to see this.</p>',k==='contact'&&S.authed?csaveEl():'');
 
 /* ---------- page chrome ---------- */
 const header=()=>`<header class="hdr"><div class="wrap"><a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
   <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a></nav>
-  <div class="hdr-r"><a class="btn sec hide-s" href="post.html">Post a listing</a>${authed()?`<a class="me" href="profile.html" data-act="top" aria-current="page" aria-label="Your page">${RL.me()}</a>`:`<button type="button" class="btn sec" data-act="gatefocus">Sign in</button>`}</div></div></header>`;
+  <div class="hdr-r"><a class="btn sec hide-s" href="post.html">Post a listing</a>${S.authed?`<a class="me" href="profile.html" data-act="top" aria-current="page" aria-label="Your page">${avatar()}</a>`:`<button type="button" class="btn sec" data-act="gatefocus">Sign in</button>`}</div></div></header>`;
 const footer=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
   <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a></div>
@@ -424,16 +413,19 @@ const page=()=>`<div class="pa main"><nav class="side" aria-label="Sections">${S
    <div><nav class="chiprow" aria-label="Sections">${SECS.map(([k,t])=>`<a href="#sec-${k}" class="chip ${S.active===k?'on':''}" data-jump="${k}">${t}</a>`).join('')}</nav>${SECS.map(([k])=>sec(k)).join('')}</div></div>`;
 
 /* ---------- sheets ---------- */
+const listing=id=>(ready(S.listings)&&S.listings.find(l=>l.code===id))||{code:id,title:'this listing'};
 function sheetHtml(){const s=S.sheet;if(!s)return '';
   const wrap=(inner,lab='Dialog')=>`<div class="ov" data-scrim><div class="sheet" role="dialog" aria-modal="true" aria-label="${lab}">${inner}</div></div>`;
-  const two=(a,b)=>`<div class="sa"><button type="button" class="btn sec" data-act="close">Cancel</button>${b}</div>`;
-  if(s.kind==='school')return wrap(`<h3>Your school</h3><button type="button" class="sx" data-act="close" aria-label="Close">${ic('x')}</button><div class="grp"><form data-wform><div class="in ws" data-wseg aria-label="School"><span data-wval>${esc(campusName(S.campusId))}</span>${CHEV}</div></form></div><div class="wsroom" aria-hidden="true"></div>`,'Your school');
-  if(s.kind==='taken'){const l=S.listings.find(x=>x.id===s.id);return wrap(`<h3>Mark “${esc(l.title)}” as taken?</h3><p>It comes off search. You can repost it later.</p>${two('',`<button type="button" class="btn" data-act="confirmTaken" data-id="${l.id}">Mark as taken</button>`)}`,'Mark as taken')}
-  if(s.kind==='delreq')return wrap(`<h3>Delete your request?</h3><p>Messages you already have stay.</p>${two('',`<button type="button" class="btn red" data-act="confirmDelReq">Delete</button>`)}`,'Delete request');
-  if(s.kind==='signout')return wrap(`<h3>Sign out?</h3>${two('',`<button type="button" class="btn" data-act="confirmSignout">Sign out</button>`)}`,'Sign out');
-  if(s.kind==='del1')return wrap(`<p class="stp">Step 1 of 2</p><h3>Delete your account?</h3><p>Listings, request, saved rooms and messages are removed. This can’t be undone.</p>${two('',`<button type="button" class="btn red" data-act="del2">Continue</button>`)}`,'Delete account');
-  if(s.kind==='del2'){const ok=(S.tmp.delconf||'').trim().toUpperCase()==='DELETE';return wrap(`<p class="stp">Step 2 of 2</p><h3>Type DELETE to confirm</h3><div class="grp"><label class="in"><input data-f="delconf" value="${esc(S.tmp.delconf||'')}" autocomplete="off" aria-label="Type DELETE"></label></div>${two('',`<button type="button" class="btn red" data-act="confirmDel" ${ok?'':'disabled'}>Delete account</button>`)}`,'Confirm delete')}
-  if(s.kind==='email'){const k=slot(),school=k==='school';return wrap(`<h3>${school?'Verify your school email':'Verify your work email'}</h3>${school?'':'<p>Personal addresses like Gmail can’t verify a job.</p>'}<div class="grp"><span class="lbl">${school?'School email':'Work email'}</span><label class="in"><input data-f="vmail" type="email" value="${esc(S.tmp.vmail!=null?S.tmp.vmail:V().email)}" placeholder="${school?'you@school.edu':'you@company.com'}" aria-label="${school?'School email':'Work email'}"></label>${s.err?`<p class="err">${s.err}</p>`:''}</div>${two('',`<button type="button" class="btn" data-act="sendLink">Send link</button>`)}`,'Verify email')}
+  const two=b=>`<div class="sa"><button type="button" class="btn sec" data-act="close">Cancel</button>${b}</div>`;
+  if(s.kind==='taken'){const l=listing(s.id);return wrap(`<h3>Mark “${esc(l.title)}” as taken?</h3><p>It comes off search. You can repost it later.</p>${two(`<button type="button" class="btn" data-act="confirmTaken" data-id="${esc(s.id)}">Mark as taken</button>`)}`,'Mark as taken')}
+  if(s.kind==='ldel'){const l=listing(s.id);return wrap(`<h3>Delete “${esc(l.title)}”?</h3><p>The listing, its photos and its video are removed. This can’t be undone.</p>${two(`<button type="button" class="btn red" data-act="confirmLdel" data-id="${esc(s.id)}">Delete</button>`)}`,'Delete listing')}
+  if(s.kind==='delreq')return wrap(`<h3>Delete your request?</h3><p>Messages you already have stay.</p>${two(`<button type="button" class="btn red" data-act="confirmDelReq" data-id="${esc(s.id)}">Delete</button>`)}`,'Delete request');
+  if(s.kind==='signout')return wrap(`<h3>Sign out?</h3>${two(`<button type="button" class="btn" data-act="confirmSignout">Sign out</button>`)}`,'Sign out');
+  if(s.kind==='del1')return wrap(`<p class="stp">Step 1 of 2</p><h3>Delete your account?</h3><p>Your profile, listings with their photos, request, saved rooms and contact details are removed. Messages you sent stay with the people you sent them to. This can’t be undone.</p>${two(`<button type="button" class="btn red" data-act="del2">Continue</button>`)}`,'Delete account');
+  if(s.kind==='del2'){const ok=(S.tmp.delconf||'').trim().toUpperCase()==='DELETE';return wrap(`<p class="stp">Step 2 of 2</p><h3>Type DELETE to confirm</h3><p>If you signed in a while ago, Google asks you to sign in once more first.</p><div class="grp"><label class="in"><input data-f="delconf" value="${esc(S.tmp.delconf||'')}" autocomplete="off" aria-label="Type DELETE"></label></div>${two(`<button type="button" class="btn red" data-act="confirmDel" ${ok?'':'disabled'}>Delete account</button>`)}`,'Confirm delete')}
+  if(s.kind==='deleting')return `<div class="ov"><div class="sheet" role="alertdialog" aria-modal="true" aria-label="Deleting your account"><h3>Deleting your account…</h3><p>Keep this page open. It takes a few seconds.</p></div></div>`;
+  if(s.kind==='reauth')return `<div class="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="raT"><h3 id="raT">One more step</h3><p>Your listings, request, saved rooms and contact details are deleted. Sign in with Google once more to delete the account itself.</p>
+    <button type="button" class="lg-g" data-act="reauth">${GOOGLE}Continue with Google</button><div class="lg-back"><button type="button" class="lk" data-act="cancelDelete">Not now</button></div></div></div>`;
   return ''}
 const gateHtml=()=>`<div class="ov gate"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gT"><div class="lg-top"><span class="lg-ic">${ic('user')}</span><div><h3 id="gT">Sign in to see your page</h3><p>Sign in with your Northwestern Google account.</p></div></div>
   <button type="button" class="lg-g" data-act="signin">${GOOGLE}Continue with Google</button>
@@ -442,18 +434,18 @@ const gateHtml=()=>`<div class="ov gate"><div class="sheet" role="dialog" aria-m
 
 /* ---------- render ---------- */
 let toastT=null,undoFn=null;
-function toast(msg,undo){const t=$('#toast');if(!t)return;t.querySelector('span').textContent=msg;undoFn=undo||null;t.classList.toggle('u',!!undo);t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>{t.classList.remove('on');undoFn=null},undo?5000:2600)}
+function toast(msg,undo){const t=$('#toast');if(!t||!msg)return;t.querySelector('span').textContent=msg;undoFn=undo||null;t.classList.toggle('u',!!undo);t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>{const x=$('#toast');if(x)x.classList.remove('on');undoFn=null},undo?5000:2600)}
 function render(keepScroll=true){
-  const st=$('#stage'),old=$('.site',st),top=keepScroll&&old?old.scrollTop:0,cr=old&&$('.chiprow',old),left=keepScroll&&cr?cr.scrollLeft:0,a=authed();
-  document.querySelectorAll('.ws-pop').forEach(p=>p.remove());
-  st.innerHTML=`<div class="site ${a?'':'locked'}" id="site">${header()}${page()}${footer()}</div>${a?sheetHtml():gateHtml()}<div class="toast" id="toast" role="status"><span></span><button type="button" data-act="undo">Undo</button></div>`;
+  const st=$('#stage'),old=$('.site',st),top=keepScroll&&old?old.scrollTop:0,cr=old&&$('.chiprow',old),left=keepScroll&&cr?cr.scrollLeft:0,a=S.authed;
+  /* live updates redraw the page; whoever is typing keeps their field and caret */
+  const ae=document.activeElement,fk=ae&&ae.dataset&&ae.dataset.f;let sel=null;try{if(fk&&ae.selectionStart!=null)sel=[ae.selectionStart,ae.selectionEnd]}catch(_){}
+  const tWas=$('#toast'),tOn=tWas&&tWas.classList.contains('on'),tMsg=tOn?tWas.querySelector('span').textContent:'';
+  st.innerHTML=`<div class="site ${a?'':'locked'}" id="site">${header()}${page()}${footer()}</div>${a?sheetHtml():gateHtml()}<div class="toast ${tOn?'on':''} ${tOn&&undoFn?'u':''}" id="toast" role="status"><span>${esc(tMsg)}</span><button type="button" data-act="undo">Undo</button></div>`;
   const site=$('#site');site.scrollTop=a?top:0;const ncr=$('.chiprow',site);if(ncr)ncr.scrollLeft=left;
   site.addEventListener('scroll',spy,{passive:true});
-  $$('[data-wform]',st).forEach(f=>{f.addEventListener('submit',e=>e.preventDefault());
-    const api=WhereSearch.attach({form:f,seg:$('[data-wseg]',f),valueEl:$('[data-wval]',f),current:campusName(S.campusId),onCampus:(v)=>{S.campusId=v;S.sheet=null;save();render()}});
-    if(api&&S.sheet&&S.sheet.kind==='school')setTimeout(()=>{if(S.sheet&&S.sheet.kind==='school')api.openAt()},360)}); /* the city → campus list opens inside the sheet, under its field */
-  if(S.sheet&&S.sheet.kind!=='school'){const i=$('.sheet input',st);if(i)setTimeout(()=>i.focus({preventScroll:true}),50)}
-  if(S.editName){const i=$('[data-f=name]',st);if(i)setTimeout(()=>{i.focus({preventScroll:true});i.select()},30)}
+  if(S.editName&&S.tmp.focusName){S.tmp.focusName=false;const i=$('[data-f=name]',st);if(i)setTimeout(()=>{i.focus({preventScroll:true});i.select()},30)}
+  else if(S.sheet&&S.sheet.kind==='del2'){const i=$('.sheet input',st);if(i&&fk!=='delconf')setTimeout(()=>i.focus({preventScroll:true}),50)}
+  if(fk){const i=$(`[data-f="${fk}"]`,st);if(i){i.focus({preventScroll:true});if(sel)try{i.setSelectionRange(sel[0],sel[1])}catch(_){}}}
   spy()}
 
 /* section links follow the scroll (A) */
@@ -469,60 +461,93 @@ function jump(k){const site=$('#site'),el=$(`#sec-${k}`,site);if(!el)return;cons
   const y=el.getBoundingClientRect().top-site.getBoundingClientRect().top+site.scrollTop-hd-extra-16;
   setActive(k);jumpLock=Date.now()+900;site.scrollTo({top:Math.max(0,y),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
 
+/* ---------- Firebase hooks (src/profile.ts) ---------- */
+window.RLP={update(p){
+  if('authed' in p&&!p.authed){S.sheet=null;S.editName=false;S.busy={}}
+  if('contact' in p){if(p.contact===null){S.f={instagram:'',cemail:''};S.csave='';S.csaveErr=false}
+    else if(ready(p.contact)&&!ready(S.contact))S.f={instagram:p.contact.instagram,cemail:p.contact.email}}
+  Object.assign(S,p);render()}};
+/* src/rentlet.ts calls this instead of reloading when sign-in changes; src/profile.ts does the rest */
+window.RL_onAuth=u=>{if(window.RentletProfile)return;S.authed=!!u;S.me=u;render()};
+const msg=e=>e&&e.name==='ProfileError'?e.message:'That didn’t go through. Check your connection and try again.';
+function api(){const P=window.RentletProfile;if(!P)toast('Still loading. Try again in a moment.');return P}
+function run(key,fn,ok){if(!api())return;S.busy[key]=true;render();
+  fn().then(()=>toast(ok),e=>toast(msg(e))).finally(()=>{delete S.busy[key];render()})}
+
+/* contact details save themselves: shortly after typing stops, and right away on leaving a field */
+let cT=null;
+function setCsave(t,err){S.csave=t;S.csaveErr=!!err;const el=$('[data-csave]');if(el){el.textContent=t;el.classList.toggle('err',!!err)}}
+function queueContact(now){clearTimeout(cT);cT=setTimeout(()=>saveContact(now),now?0:1000)}
+async function saveContact(final){const P=window.RentletProfile;if(!P||!ready(S.contact))return;
+  const bad=P.checkContact(S.f.instagram,S.f.cemail);
+  if(bad){setCsave(final?bad:'',final);return}
+  const before=S.csaveErr?'':S.csave;setCsave('Saving…');
+  try{const r=await P.saveContact(S.f.instagram,S.f.cemail);S.contact={instagram:r.instagram,email:r.email};setCsave(r.changed?'Saved':before);
+    const i=$('[data-f=instagram]');if(S.f.instagram!==r.instagram&&i&&document.activeElement!==i){S.f.instagram=r.instagram;i.value=r.instagram}}
+  catch(e){setCsave(msg(e),true)}}
+
 /* ---------- events ---------- */
-const L=id=>S.listings.find(l=>l.id===id);
+const LOCKED=['deleting','reauth'];
 document.addEventListener('click',e=>{const t=e.target;
-  if(e.target.matches('[data-scrim]')){S.sheet=null;render();return}
+  if(t.matches('[data-scrim]')){S.sheet=null;render();return}
   const j=t.closest('[data-jump]');if(j){e.preventDefault();jump(j.dataset.jump);return}
-  const one=t.closest('[data-one]');if(one){const [k,v]=one.dataset.one.split(':');S[k]=v;save();render();return}
-  const w=t.closest('[data-sw]')||(t.closest('.tog')&&!t.closest('a,button,input,label')&&t.closest('.tog').querySelector('[data-sw]'));if(w){const k=w.dataset.sw;S.notify[k]=!S.notify[k];ls.set('cs-notify',JSON.stringify(S.notify));w.classList.toggle('off',!S.notify[k]);w.setAttribute('aria-checked',S.notify[k]);return}
   const b=t.closest('[data-act]');if(!b)return;const act=b.dataset.act,id=b.dataset.id;
   switch(act){
     case 'top':e.preventDefault();jump('you');return;
     case 'gatefocus':{const g=$('.gate .lg-g');if(g)g.focus();return}
     case 'signin':RL.signIn();return;
-    case 'editName':S.editName=true;S.tmp.name=S.name;render();return;
+    case 'retry':{const P=api();if(P)P.retry();return}
+    case 'editName':S.editName=true;S.tmp.name=nm();S.tmp.focusName=true;render();return;
     case 'cancelName':S.editName=false;S.tmp.name=null;render();return;
-    case 'saveName':{const n=(S.tmp.name||'').trim();if(!n){toast('First name can’t be empty.');return}S.name=n.split(/\s+/)[0].slice(0,24);S.editName=false;S.tmp.name=null;save();render();toast('Name saved.');return}
-    case 'school':S.sheet={kind:'school'};render();return;
-    case 'vchange':S.tmp.vmail=null;S.sheet={kind:'email'};render();return;
-    case 'vresend':toast(`Sent again to ${V().email}.`);return;
-    case 'sendLink':{const m=(S.tmp.vmail!=null?S.tmp.vmail:V().email||'').trim(),school=slot()==='school';
-      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)){S.sheet={kind:'email',err:'Enter a full email address.'};render();return}
-      if(school&&!/\.edu$/i.test(m)){S.sheet={kind:'email',err:'Use your school address. It ends in .edu.'};render();return}
-      if(!school&&/@(gmail|outlook|hotmail|yahoo|icloud|qq|163)\./i.test(m)){S.sheet={kind:'email',err:'Use your company address, not a personal one.'};render();return}
-      S.ver[slot()]={email:m,state:'pending',date:''};S.sheet=null;S.tmp.vmail=null;save();render();toast(`Link sent to ${m}.`);return}
-    case 'addproof':if(id==='draft'){const dd=draft();if(dd){dd.step=11;ss.set('cs-post-draft',JSON.stringify(dd))}}return; /* the link itself opens post.html */
-    case 'pause':L(id).status='paused';save();render();toast('Paused.');return;
-    case 'resume':L(id).status='live';save();render();toast('Live.');return;
+    case 'saveName':{const P=api();if(!P||S.busy.name)return;const n=(S.tmp.name||'').trim();if(!n){toast('First name can’t be empty.');return}
+      S.busy.name=true;render();
+      P.saveName(n).then(()=>{S.editName=false;S.tmp.name=null;toast('Name saved.')},e2=>toast(msg(e2))).finally(()=>{S.busy.name=false;render()});return}
+    case 'hide':run(id,()=>window.RentletProfile.setListingStatus(id,'hidden'),'Hidden from search.');return;
+    case 'show':run(id,()=>window.RentletProfile.setListingStatus(id,'active'),'Your listing is live.');return;
     case 'taken':S.sheet={kind:'taken',id};render();return;
-    case 'confirmTaken':L(id).status='taken';S.sheet=null;save();render();toast('Marked as taken.');return;
-    case 'repost':if(activeCount()>=3){toast('Up to 3 listings at a time.');return}
-      Object.assign(L(id),{status:'review',proof:L(id).proof==='ok'?'ok':'none'});save();render();toast('Sent for review.');return;
-    case 'reqPause':S.reqPaused=true;save();render();toast('Request paused.');return;
-    case 'reqResume':S.reqPaused=false;save();render();toast('Request is live.');return;
-    case 'reqDelete':S.sheet={kind:'delreq'};render();return;
-    case 'confirmDelReq':ss.del('cs-my-request');ls.del('cs-my-request');S.reqPaused=false;S.sheet=null;save();render();toast('Request deleted.');return;
-    case 'unsave':{const k=b.dataset.key,i=S.saved.indexOf(k);if(i<0)return;S.saved.splice(i,1);save();render();
-      toast('Removed from saved.',()=>{S.saved.splice(Math.min(i,S.saved.length),0,k);save();render()});return}
+    case 'confirmTaken':S.sheet=null;run(id,()=>window.RentletProfile.setListingStatus(id,'taken'),'Marked as taken.');return;
+    case 'ldel':S.sheet={kind:'ldel',id};render();return;
+    case 'confirmLdel':S.sheet=null;run(id,()=>window.RentletProfile.deleteListing(id),'Listing deleted.');return;
+    case 'reqPause':run('r:'+id,()=>window.RentletProfile.setRequestStatus(id,'closed'),'Request paused.');return;
+    case 'reqResume':run('r:'+id,()=>window.RentletProfile.setRequestStatus(id,'open'),'Your request is live.');return;
+    case 'reqDelete':S.sheet={kind:'delreq',id};render();return;
+    case 'confirmDelReq':S.sheet=null;run('r:'+id,()=>window.RentletProfile.deleteRequest(id),'Request deleted.');return;
+    case 'unsave':{const P=api(),V=S.saved;if(!P||!ready(V))return;const k=b.dataset.key,i=V.items.findIndex(r=>r.code===k);if(i<0)return;
+      const item=V.items[i],back=()=>{if(!V.items.some(r=>r.code===k))V.items.splice(Math.min(i,V.items.length),0,item);render()};
+      V.items.splice(i,1);render();
+      P.unsave(k).then(()=>toast('Removed from saved.',()=>P.resave(k,item.savedAtMs).then(back,()=>toast('Couldn’t save it again. Try again.'))),
+        ()=>{back();toast('Couldn’t remove it. Try again.')});return}
+    case 'forgetGone':{const P=api(),V=S.saved;if(!P||!ready(V)||!V.gone.length)return;
+      P.forgetSaves(V.gone.slice()).then(()=>{V.gone=[];render();toast('Removed from saved.')},()=>toast('Couldn’t remove them. Try again.'));return}
+    case 'useNu':S.f.cemail=nuEmail();render();queueContact(true);return;
     case 'undo':{const f=undoFn;undoFn=null;$('#toast').classList.remove('on');if(f)f();return}
     case 'signout':S.sheet={kind:'signout'};render();return;
-    case 'confirmSignout':S.sheet=null;RL.signOut();return;
+    case 'confirmSignout':S.sheet=null;render();RL.signOut();return;
     case 'del1':S.sheet={kind:'del1'};render();return;
     case 'del2':S.tmp.delconf='';S.sheet={kind:'del2'};render();return;
-    case 'confirmDel':S.sheet=null;S.tmp.delconf='';render();toast('Preview only. Nothing was deleted.');return;
+    case 'confirmDel':{const P=api();if(!P)return;S.sheet={kind:'deleting'};S.tmp.delconf='';render();
+      /* straight from the tap, so Google's window may open if a fresh sign-in is needed */
+      P.deleteAccount().then(r=>{if(r==='reauth'){S.sheet={kind:'reauth'};render()}},e2=>{S.sheet=null;render();toast(msg(e2)||'Your account wasn’t deleted.')});return}
+    case 'reauth':{const P=api();if(!P)return;S.sheet={kind:'deleting'};render();
+      P.finishDelete().catch(e2=>{S.sheet={kind:'reauth'};render();toast(msg(e2))});return}
+    case 'cancelDelete':{S.sheet=null;render();const P=window.RentletProfile;if(P)P.cancelDelete();return}
     case 'close':S.sheet=null;render();return}});
 /* typed text survives every redraw */
 document.addEventListener('input',e=>{const k=e.target.dataset.f;if(!k)return;const v=e.target.value;
-  if(['name','vmail','delconf'].includes(k)){S.tmp[k]=v;if(k==='delconf'){const c=$('[data-act=confirmDel]');if(c)c.disabled=v.trim().toUpperCase()!=='DELETE'}return}
-  S.f[k]=v;save();
-  if(k==='cemail'){const s=$('[data-cestate]');if(s)s.innerHTML=cemailState()}});
-document.addEventListener('change',e=>{if(e.target.dataset.f==='org')render()});
+  if(k==='name'||k==='delconf'){S.tmp[k]=v;if(k==='delconf'){const c=$('[data-act=confirmDel]');if(c)c.disabled=v.trim().toUpperCase()!=='DELETE'}return}
+  if(k==='instagram'||k==='cemail'){S.f[k]=v;
+    if(k==='cemail'){const s=$('[data-cestate]');if(s)s.innerHTML=cemailState();const u=$('[data-act=useNu]');if(u)u.hidden=!showUseNu()}
+    queueContact(false)}});
+document.addEventListener('change',e=>{const k=e.target.dataset.f;if(k==='instagram'||k==='cemail')queueContact(true)});
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&S.sheet){S.sheet=null;render();return}
-  if(e.key==='Enter'){const k=e.target.dataset&&e.target.dataset.f;if(k==='name'){e.preventDefault();$('[data-act=saveName]').click()}else if(k==='vmail'){e.preventDefault();$('[data-act=sendLink]').click()}else if(k==='delconf'){e.preventDefault();const c=$('[data-act=confirmDel]');if(c&&!c.disabled)c.click()}}});
+  if(e.key==='Escape'&&S.sheet){if(LOCKED.includes(S.sheet.kind))return;S.sheet=null;render();return}
+  if(e.key==='Enter'){const k=e.target.dataset&&e.target.dataset.f;
+    if(k==='name'){e.preventDefault();$('[data-act=saveName]').click()}
+    else if(k==='instagram'||k==='cemail'){e.preventDefault();queueContact(true)}
+    else if(k==='delconf'){e.preventDefault();const c=$('[data-act=confirmDel]');if(c&&!c.disabled)c.click()}}});
 render(false);
 </script>
 <script type="module" src="/src/rentlet.ts"></script>
+<script type="module" src="/src/profile.ts"></script>
 </body>
 </html>

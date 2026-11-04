@@ -1096,7 +1096,16 @@ document.addEventListener('click',e=>{const t=e.target;
   const mo=t.closest('[data-more]');if(mo){const p=$('[data-clamp]'),o=p.classList.toggle('open');mo.textContent=o?'Show less':'Read more';return}
   const vm=t.closest('.vm');if(vm){vm.classList.add('show');clearTimeout(vm._t);vm._t=setTimeout(()=>vm.classList.remove('show'),1800);return}
   if(t.closest('[data-close]')||t.classList.contains('ov'))$$('.ov').forEach(o=>o.classList.remove('on'))});
-$('#send').onclick=()=>{$('#msg').classList.remove('on');try{sessionStorage.setItem('cs-first-msg',$('#msgBox').value)}catch(_){}location.href=`messages.html?with=${KEY}`};
+/* Send: src/chat.ts starts the conversation (or adds to the one that exists) with this first message, then the thread opens */
+const SEND_FAIL={own:'This is your own listing.',gone:'This listing is no longer available.',blocked:'This conversation is closed.',failed:'Couldn’t send. Check your connection and try again.'};
+$('#send').onclick=()=>{const b=$('#send'),v=$('#msgBox').value;if(b.disabled)return;if(!v.trim()){$('#msgBox').focus();return}
+  if(!window.RentletChat)return toast('Still loading. Try again in a moment.');
+  b.disabled=true;b.textContent='Sending…';
+  RentletChat.start(KEY,v).then(r=>{
+    if(r.ok){location.href=`messages.html?c=${encodeURIComponent(r.id)}`;return}
+    b.disabled=false;b.textContent='Send message';
+    if(r.reason==='signin'){$('#msg').classList.remove('on');AUTH=false;gate('message',()=>$('#msg').classList.add('on'));return}
+    toast(SEND_FAIL[r.reason]||SEND_FAIL.failed)},()=>{b.disabled=false;b.textContent='Send message';toast(SEND_FAIL.failed)})};
 addEventListener('keydown',e=>{if(e.key==='Escape'){closeAi(true);closeSearch();$$('.ov').forEach(o=>o.classList.remove('on'));$$('.lgc.open').forEach(c=>c.classList.remove('open'))}});
 document.addEventListener('change',e=>{if(e.target.name==='rr')$('#repGo').disabled=false});
 let look='flat';try{look=localStorage.getItem('cs-room-look')||'flat'}catch(_){}
@@ -1112,5 +1121,6 @@ addEventListener('resize',setVh);
 boot();
 </script>
 <script type="module" src="/src/rentlet.ts"></script>
+<script type="module" src="/src/chat.ts"></script>
 </body>
 </html>

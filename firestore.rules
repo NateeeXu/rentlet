@@ -37,9 +37,13 @@ service cloud.firestore {
         && request.resource.data.name is string && request.resource.data.name.size() <= 60;
       allow delete: if signedIn() && me() == uid;
 
-      // contact details, saved rooms, notification settings: only the owner
+      // contact details and other private settings: only the owner
       match /private/{doc} {
-        allow read, write: if signedIn() && me() == uid;
+        allow read, delete: if signedIn() && me() == uid;
+        allow create, update: if signedIn() && me() == uid && (doc != 'contact' ||
+          (request.resource.data.keys().hasOnly(['instagram', 'email'])
+            && request.resource.data.instagram is string && request.resource.data.instagram.size() <= 30
+            && request.resource.data.email is string && request.resource.data.email.size() <= 254));
       }
       match /saves/{listingId} {
         allow read, write: if signedIn() && me() == uid;
@@ -59,6 +63,11 @@ service cloud.firestore {
         && d.ownerName is string && d.ownerName.size() <= 60
         && d.area is string && d.area.size() <= 80
         && d.photos is list && d.photos.size() > 0 && d.photos.size() <= 20
+        && (!('walk' in d) || d.walk == null || (d.walk is int && d.walk > 0 && d.walk < 1000))
+        && (!('location' in d) || d.location == null
+          || (d.location is map && d.location.keys().hasOnly(['lat', 'lng'])
+            && d.location.lat is number && d.location.lng is number
+            && d.location.lat > 41 && d.location.lat < 43 && d.location.lng > -89 && d.location.lng < -87))
         && (!('description' in d) || (d.description is string && d.description.size() <= 4000));
     }
 
@@ -100,7 +109,9 @@ service cloud.firestore {
     match /requests/{id} {
       allow read: if resource.data.status == 'open'
         || (signedIn() && resource.data.ownerId == me());
+      // one request per person: its id is the owner's uid
       allow create: if isNU()
+        && id == me()
         && request.resource.data.ownerId == me()
         && request.resource.data.status == 'open'
         && isNow(request.resource.data.createdAt)
@@ -115,6 +126,11 @@ service cloud.firestore {
 
     // ---------- conversations ----------
     // One conversation per (listing, guest): id = listingId + '_' + guestId.
+    // a per-person map field (read marks, contact sharing, blocks) may change only at my own key
+    function ownOnly(f) {
+      return request.resource.data.get(f, {}).diff(resource.data.get(f, {})).affectedKeys().hasOnly([me()]);
+    }
+
     function convo(cid) {
       return get(/databases/$(database)/documents/conversations/$(cid)).data;
     }
@@ -136,7 +152,8 @@ service cloud.firestore {
         && request.resource.data.participants == resource.data.participants
         && request.resource.data.listingId == resource.data.listingId
         && request.resource.data.hostId == resource.data.hostId
-        && request.resource.data.guestId == resource.data.guestId;
+        && request.resource.data.guestId == resource.data.guestId
+        && ownOnly('read') && ownOnly('share') && ownOnly('blocked');
       allow delete: if false;
 
       match /messages/{mid} {
@@ -144,6 +161,8 @@ service cloud.firestore {
         allow create: if isNU()
           && me() in convo(cid).participants
           && request.resource.data.senderId == me()
+          && request.resource.data.get('kind', 'text') == 'text'
+          && convo(cid).get('blocked', {}).keys().size() == 0
           && isNow(request.resource.data.createdAt)
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0

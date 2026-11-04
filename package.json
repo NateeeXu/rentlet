@@ -11,9 +11,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "firebase": "^13.2.0"
+    "firebase": "^13.2.0",
+    "leaflet": "^1.9.4"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.22",
     "@types/node": "^26.6.6",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",

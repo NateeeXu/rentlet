@@ -113,6 +113,8 @@ img,video{display:block}
 .pf-ver small{display:block;font-size:12px;color:var(--muted)}
 .pf-m{font-size:13px;color:var(--muted);margin:12px 0 0}
 .pf .card{margin-top:14px}
+.pf-cards{display:grid;gap:14px;margin-top:14px}
+.pf .pf-cards>.card{margin-top:0}
 .pf-about{font-size:15px;line-height:1.45;margin:14px 0 0}
 .pf-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .pf-tags span{font-size:13px;padding:5px 10px;border-radius:99px;background:var(--canvas);color:var(--ink2)}
@@ -139,6 +141,7 @@ img,video{display:block}
   .pp .pf{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);column-gap:40px;align-items:start;max-width:920px}
   .pp .pf>*{grid-column:1}
   .pp .pf>.card{grid-column:2;grid-row:1 / span 9;margin-top:0}
+  .pp .pf>.pf-cards{grid-column:2;grid-row:1 / span 9;margin-top:0}
   .pp .pf .acts{grid-template-columns:repeat(2,minmax(0,1fr));max-width:420px}
 }
 /* quick messages sheet */
@@ -262,6 +265,7 @@ a.rcard:hover h3{text-decoration:underline;text-underline-offset:3px}
 .opt[aria-checked=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .opt .rd{width:18px;height:18px;border-radius:99px;border:1.5px solid var(--ring);flex:none}
 .opt[aria-checked=true] .rd{border:5px solid var(--ink)}
+.opt[disabled]{opacity:.55;cursor:not-allowed}
 .opt small{display:block;font-size:12px;color:var(--muted)}
 .opt b{display:block;font-size:14px}
 
@@ -337,39 +341,20 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
 <div class="stage" id="stage"></div>
 <script>
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const money=n=>'$'+n.toLocaleString('en-US');
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>'$'+Math.round(n).toLocaleString('en-US');
 const span=(s,e)=>window.WhenPicker?WhenPicker.label(s,e):`${s} – ${e}`;
-const clock=()=>new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}).replace(/ /g,' ');
+const pic=x=>x||'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const ICON={check:'<path d="M5.5 12.5l4 4 9-9"/>',send:'<path d="M12 19V6M6.5 11.5 12 6l5.5 5.5"/>',search:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
   back:'<path d="M15 6l-6 6 6 6"/>',right:'<path d="M9 6l6 6-6 6"/>',down:'<path d="M6 9l6 6 6-6"/>',up:'<path d="M6 15l6-6 6 6"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',
   more:'<circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/>',
-  photo:'<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 15.5l-5-5-8 8.5"/>',plus:'<path d="M12 5v14M5 12h14"/>',
   lock:'<rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',copy:'<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>',
-  bolt:'<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',user:'<circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/>',flag:'<path d="M5.5 21V4M5.5 4.5h11l-2 4 2 4h-11"/>',block:'<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>',
-  chat:'<path d="M4.5 6.5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-4.5 3.5v-3.5h0a1 1 0 0 1-1-1z"/>',inbox:'<path d="M4 13.5 6.5 5h11l2.5 8.5V19H4z"/><path d="M4 13.5h5a3 3 0 0 0 6 0h5"/>',home:'<path d="M4 11l8-6.5 8 6.5"/><path d="M6 9.5V20h12V9.5"/>'};
+  bolt:'<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',user:'<circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/>',flag:'<path d="M5.5 21V4M5.5 4.5h11l-2 4 2 4h-11"/>',block:'<circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/>'};
 const ic=(n,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
 
-/* ---------- options ---------- */
-const QS=new URLSearchParams(location.search);
-
-/* ---------- data ---------- */
-const FURN={bedframe:'Bed',bedding:'Bedding',wardrobe:'Wardrobe',desk:'Desk',chair:'Chair',lamp:'Lamp',floorlamp:'Floor lamp',sofa:'Sofa',tv:'TV',bookshelf:'Bookshelf'};
-/* facts match room.html; the street address stays hidden until both sides swap contacts */
-const ROOMS={
- l1:{who:'Maya',role:'Junior, Medill',col:'#3d3d45',title:'Private room in a 3-bed',area:'Downtown Evanston',addr:'Davis St at Sherman Ave, Apt 3C',img:'bedroom',price:1390,start:'2027-01-02',end:'2027-04-30',deposit:500,incl:'Wi-Fi and heat',extra:'Electricity share, about $40 / mo',furn:['bedframe','bedding','wardrobe','desk','chair','lamp','floorlamp'],keep:false,landlord:'wa',ok:true,c:['wechat','maya_nu_2027']},
- l2:{who:'Leo',role:'Senior, McCormick',col:'#4f5f4a',title:'Entire 1-bed apartment',area:'South Evanston',addr:'Hinman Ave near Main St, Apt 2F',img:'living',price:1540,start:'2027-01-01',end:'2027-06-30',deposit:1540,incl:'Water',extra:'Electricity and gas, about $85 / mo',furn:['bedframe','wardrobe','desk','chair','floorlamp'],keep:true,takeover:true,landlord:'ok',ok:true,c:['wechat','leo_takes_over']},
- l3:{who:'Priya',role:'Grad student, Kellogg',col:'#8a6d3b',title:'Private room, shared kitchen',area:'Southeast Evanston',addr:'Judson Ave near Dempster St',img:'living',flip:1,price:1250,start:'2027-02-01',end:'2027-06-30',deposit:400,incl:'Wi-Fi',extra:'Utilities share, about $35 / mo',furn:['bedframe','desk','chair','lamp'],keep:false,landlord:'none',ok:true,c:['email','priya@kellogg.northwestern.edu']},
- l4:{who:'Sam',role:'Junior, Weinberg',col:'#2f5d7a',title:'Studio with a desk nook',area:'Downtown Evanston',addr:'Church St near Orrington Ave, Apt 5B',img:'bedroom',flip:1,price:1480,start:'2026-12-20',end:'2027-03-15',deposit:600,incl:'Heat and water',extra:'Electricity, about $60 / mo',furn:['bedframe','bedding','desk','chair','lamp'],keep:false,landlord:'ok',ok:true,c:['wechat','sam_weinberg']},
- l5:{who:'Ava',role:'Senior, SESP',col:'#3b6a5a',title:'Private room in a 2-bed',area:'North Evanston',addr:'Central St near Ridge Ave',img:'kitchen',price:1180,start:'2027-01-05',end:'2027-05-31',deposit:1180,incl:'Wi-Fi',extra:'Utilities share, about $45 / mo',furn:['bedframe','wardrobe','desk','chair'],keep:true,takeover:true,landlord:'ok',ok:true,c:['wechat','ava_sesp']},
- l6:{who:'Noah',role:'Sophomore, Bienen',col:'#7a4b3a',title:'Private room by the lake',area:'Northeast Evanston',addr:'Sheridan Rd near Lincoln St',img:'kitchen',flip:1,price:1620,start:'2027-01-03',end:'2027-04-30',deposit:500,incl:'Wi-Fi and heat',extra:'Electricity share, about $40 / mo',furn:['bedframe','bedding','wardrobe','desk','chair','lamp'],keep:false,landlord:'none',ok:false,c:['email','noah@u.northwestern.edu']}};
-const MY={key:null,title:'Private room in a 2-bed',area:'Central Evanston',addr:'Maple Ave near Church St, Apt 2',img:'kitchen',flip:1,price:1320,start:'2027-01-04',end:'2027-06-15',deposit:500,incl:'Wi-Fi and heat',extra:'Electricity, about $35 / mo',stays:['Bed','Bedding','Desk','Chair','Bookshelf'],keep:false};
-const ME={wechat:'yan_evanston',email:'yan.c@u.northwestern.edu'};
+/* ---------- words ---------- */
 const KEYS=['dates','stays','money','tour','landlord'],ASKS=['dates','tour','money','stays','landlord'];
 const LABEL={dates:'Dates',stays:'What stays',money:'Money',tour:'Video tour',landlord:'Landlord OK'};
-const short=a=>a.length>3?listText(a.slice(0,3)).replace(' and ',', ')+` +${a.length-3} more`:listText(a);
-const listText=a=>{const l=a.map((x,i)=>i?x.toLowerCase():x);return l.length>1?l.slice(0,-1).join(', ')+' and '+l[l.length-1]:l[0]||''};
 const SAFE={looking:'You pay the host directly. Rentlet never holds money.',subletting:'Your subletter pays you directly. Rentlet never holds money.'};
 /* quick messages: grouped by the decision being made, separate sets per role, several join into ONE message,
    never asks for off-platform contact. k links a line to a settle item for the contextual chips. */
@@ -382,112 +367,95 @@ const QR={
  host:{groups:[['basics','Basics'],['who','Who’s moving in'],['process','Process'],['replies','Replies']],items:[
   ['basics','still','Hi {name}! Are you still looking?'],['basics','dates','What dates do you need, and are they flexible?','dates'],['basics','budget','What’s your budget, with utilities?','money'],
   ['who','who','Is it just you? Any pets?'],['who','life','What’s your schedule like, and how do you feel about quiet hours, smoking, cooking and guests?'],['who','furn','Do you need it furnished, or will you bring your own things?','stays'],
-  ['process','verify','Could you verify your school or work email?'],['process','app','The building runs its own application and credit check. OK with that?'],['process','pay','Rent and any deposit follow the lease, with a receipt. OK with that?'],['process','ref','Could a previous roommate or landlord vouch for you?'],['process','tour','When could you do a video tour or a visit?','tour'],
+  ['process','app','The building runs its own application and credit check. OK with that?'],['process','pay','Rent and any deposit follow the lease, with a receipt. OK with that?'],['process','ref','Could a previous roommate or landlord vouch for you?'],['process','tour','When could you do a video tour or a visit?','tour'],
   ['replies','avail','Still available. Ask me anything.'],['replies','send','I’ll send photos and the cost breakdown shortly.'],['replies','taken','Sorry, it’s taken.'],['replies','check','Let me check and get back to you.']]}};
-/* {dates} is the seeker's plan from the search bar (same session key as the room page) */
-const PLAN=(()=>{try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'null');if(p&&p.start&&p.end)return p}catch(_){}return {start:'2027-01-03',end:'2027-04-30'}})();
+/* {dates} is the seeker's plan from the search bar (same session key as the room page), else the room's own dates */
+const PLAN=(()=>{try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'null');if(p&&p.start&&p.end)return p}catch(_){}return null})();
 const role=t=>t.tab==='subletting'?'host':'seeker';
-const qItems=t=>QR[role(t)].items.map(([g,id,x,k])=>({g,id,k,x:x.replace('{name}',t.p.name).replace('{dates}',span(PLAN.start,PLAN.end))}));
+const qItems=t=>QR[role(t)].items.map(([g,id,x,k])=>({g,id,k,x:x.replace('{name}',t.p.name).replace('{dates}',PLAN?span(PLAN.start,PLAN.end):t.r.span)}));
 const ask=(t,k)=>(qItems(t).find(i=>i.k===k)||{}).x||'';
-/* profiles: no contact details and no street address, ever */
-const PF={
- l1:{chip:'Student',org:'Northwestern · Medill',ver:[['Northwestern email','Oct 2, 2026'],['Lease proof · Private room in a 3-bed','Oct 9, 2026']],about:'Studying abroad January to April. Tidy, out most days by 9.',life:['Quiet weeknights','Non-smoker','No pets']},
- l2:{chip:'Student',org:'Northwestern · McCormick',ver:[['Northwestern email','Sep 30, 2026'],['Lease proof · Entire 1-bed apartment','Oct 6, 2026']],about:'Graduating in December. Easygoing and cooks a lot.',life:['Non-smoker','Cooks often']},
- l3:{chip:'Student',org:'Northwestern · Kellogg',ver:[['Northwestern email','Oct 5, 2026'],['Lease proof · Private room, shared kitchen','Oct 11, 2026']],about:'On an internship from February.',life:['Quiet','Non-smoker']},
- l4:{chip:'Student',org:'Northwestern · Weinberg',ver:[['Northwestern email','Oct 1, 2026'],['Lease proof · Studio with a desk nook','Oct 12, 2026']],about:'Away for winter quarter. Quiet, early riser.',life:['Quiet','Non-smoker','No pets']},
- l5:{chip:'Student',org:'Northwestern · SESP',ver:[['Northwestern email','Oct 4, 2026'],['Lease proof · Private room in a 2-bed',null]],about:'Moving for a job in January.',life:['Non-smoker']},
- l6:{chip:'Student',org:'Northwestern · Bienen',ver:[['Northwestern email',null]],about:'On exchange this winter and spring.',life:['Practises on campus','Non-smoker']},
- s1:{chip:'Student',org:'Northwestern · Feinberg',ver:[['Northwestern email','Oct 8, 2026']],about:'PhD student, in the lab most days.',life:['Quiet','Non-smoker'],kind:'Private room',budget:1450,note:'Quiet place close to campus. Doesn’t smoke.'},
- s2:{chip:'New hire',org:'Analyst, starts Jan 6 in the Loop',ver:[['Work email','Oct 28, 2026']],about:'Starting a new job downtown. Out most weekdays.',life:['Non-smoker','No pets'],kind:'Private room',budget:1400,note:'Needs a furnished room near the train.'},
- s3:{chip:'Visiting researcher',org:'Kellogg · winter quarter',ver:[['School email',null]],about:'Here for winter quarter only.',life:['Quiet','Cooks often'],kind:'Room or studio',budget:1350,note:'Happy to share a kitchen.'}};
 
-const TH={};let ORD=100;
-const M=(f,x,t)=>({f,x,t}),D=x=>({f:'day',x}),SY=x=>({f:'sys',x});
-function fresh(k){const R=ROOMS[k];return {id:k,tab:'looking',p:{name:R.who,role:R.role,col:R.col,ok:R.ok},
-  r:{key:k,title:R.title,area:R.area,addr:R.addr,img:R.img,flip:R.flip,price:R.price,start:R.start,end:R.end,deposit:R.deposit,incl:R.incl,extra:R.extra,stays:R.furn.map(f=>FURN[f]),keep:R.keep,takeover:R.takeover},
-  msgs:[D('Today')],unread:false,when:'Now',ord:++ORD,taken:null,blocked:false,draft:'',drawn:0,notes:{},q:[],
-  settle:{dates:['open',''],stays:['open',''],money:['open',''],tour:['open',''],landlord:R.landlord==='ok'?['done','Verified on the listing']:R.landlord==='wa'?['wait','']:['open','']},
-  share:{mine:null,theirs:null},their:{kind:R.c[0],val:R.c[1]}}}
-function hostThread(id,p,want,their){return {...fresh('l1'),id,tab:'subletting',p,r:{...MY},want,their,settle:{dates:['open',''],stays:['open',''],money:['open',''],tour:['open',''],landlord:['done','You confirmed']}}}
-function seed(){
-  let t=fresh('l4');Object.assign(t,{when:'10:02 AM',ord:20,msgs:[D('Yesterday'),M('me','Hi Sam! I start an internship downtown in January. Could the studio work for me?','4:12 PM'),M('them','Hi! Happy to chat.','4:30 PM'),M('them','My landlord already signed off on the sublet, so that part’s easy.','4:31 PM'),D('Today'),M('me','Great. Does the desk stay?','9:58 AM'),M('them','Yes, the desk, chair and lamp all stay.','10:02 AM')]});
-  t.settle.stays=['done','Bed, bedding, desk +2 more'];TH.l4=t;
-  t=fresh('l1');Object.assign(t,{when:'9:41 AM',ord:19,unread:true,msgs:[D('Yesterday'),M('me','Hi Maya! I’m looking at Jan 2 to Apr 30. Is the room still available?','6:05 PM'),M('them','Hi! Yes, it’s free for exactly those dates.','6:20 PM'),M('me','Great. Which furniture stays?','6:22 PM'),M('them','Bed, wardrobe, desk and both lamps.','6:40 PM'),D('Today'),M('me','What’s the deposit, and is it refundable?','8:50 AM'),SY(SAFE.looking),M('them','$500, refundable. I’m asking my landlord about the sublet today.','9:41 AM'),{f:'unlock'}]});
-  Object.assign(t.settle,{dates:['done','Jan 2 – Apr 30, 2027'],stays:['done','Bed, bedding, wardrobe +4 more'],money:['done','$1,390 / mo · $500 deposit'],landlord:['wait','Maya is asking']});t.notes={money:1,unlock:1};TH.l1=t;
-  t=fresh('l2');Object.assign(t,{when:'Yesterday',ord:18,msgs:[D('Mon'),M('me','Hi Leo! Is the lease takeover still open from January?','11:02 AM'),M('them','Yes! It runs to June 30.','11:30 AM'),M('me','Is there a fee to transfer?','11:41 AM'),M('them','$150, and the building already approved it.','12:05 PM'),{f:'unlock'},D('Yesterday'),M('me','Thanks for the video. I’d like to take it.','7:10 PM'),M('them','Great! Let’s sort out the paperwork.','7:24 PM'),SY('You and Leo swapped contact details')]});
-  KEYS.forEach(k=>t.settle[k]=['done',{dates:'Jan 1 – Jun 30, 2027',stays:'Yours to keep: bed, wardrobe, desk +2 more',money:'$1,540 / mo · $1,540 deposit',tour:'Received',landlord:'Approved · $150 transfer fee'}[k]]);
-  t.share={mine:'wechat',theirs:{kind:'wechat',val:'leo_takes_over'}};t.notes={money:1,unlock:1,swapped:1};TH.l2=t;
-  t=fresh('l3');Object.assign(t,{when:'Mon',ord:17,taken:'Oct 28',msgs:[D('Mon'),M('me','Hi Priya! Could I move in on Feb 1?','2:14 PM'),M('them','Yes, Feb 1 works.','3:02 PM'),M('me','Great. Could you send a video tour?','3:05 PM')]});
-  t.settle.dates=['done','Feb 1 – Jun 30, 2027'];t.settle.tour=['wait',''];TH.l3=t;
-  t=hostThread('s1',{name:'Jordan',role:'PhD student, Feinberg',col:'#4a5d6b',ok:true},['2027-02-01','2027-06-15'],{kind:'email',val:'jordan.p@u.northwestern.edu'});
-  Object.assign(t,{when:'11:20 AM',ord:16,msgs:[D('Today'),M('them','Hi! Is your room free from Feb 1?','8:30 AM'),M('me','Yes, through Jun 15.','8:41 AM'),M('them','Perfect. What’s the deposit?','8:45 AM'),M('me','$500, refundable.','9:02 AM'),SY(SAFE.subletting),M('them','Great. I shared my email so we can sort out the lease.','11:18 AM'),M('me','Sounds good.','11:20 AM'),{f:'unlock'}]});
-  Object.assign(t.settle,{dates:['done','Feb 1 – Jun 15, 2027'],money:['done','$1,320 / mo · $500 deposit'],tour:['done','Sent']});t.share.theirs=t.their;t.notes={money:1,unlock:1};TH.s1=t;
-  t=hostThread('s2',{name:'Daniel',role:'New analyst, starts in January',col:'#6b5b45',ok:true},['2027-01-04','2027-06-15'],{kind:'wechat',val:'dan_moves_jan'});
-  Object.assign(t,{when:'9:12 AM',ord:15,unread:true,msgs:[D('Today'),M('them','Hi! I start a new job in the Loop on Jan 6. Is your room free from Jan 4?','9:10 AM'),M('them','Also, does the bookshelf stay?','9:12 AM')]});TH.s2=t;
-  t=hostThread('s3',{name:'Mei',role:'Exchange student, Kellogg',col:'#7a4b3a',ok:false},['2027-01-04','2027-03-20'],{kind:'wechat',val:'mei_kellogg'});
-  Object.assign(t,{when:'Tue',ord:14,msgs:[D('Tue'),M('them','Hi! I’m here for winter quarter only. Could I do Jan 4 to Mar 20?','10:15 AM'),M('me','That could work. Let me think about it.','10:40 AM'),M('them','Thank you! Could I see a video of the room?','10:42 AM'),M('me','Sure, I’ll record one this week.','11:00 AM'),M('them','Great, thanks.','11:05 AM'),M('me','Talk soon.','11:06 AM')]});
-  t.settle.dates=['wait',''];t.settle.tour=['wait','Mei would like one'];TH.s3=t;
-}
-seed();
-
-/* ---------- state helpers ---------- */
-let TAB='looking',CUR=null,PENDING=[],Q='',EMPTY=false,UNDO=null,PICK=null,REPORT=null,VIEW='inbox',RAIL=false,QSEL=new Set(),QTAB='all';
+/* ---------- live data (src/chat.ts sends it to RL_chat.update) ---------- */
+let AUTH=RL.authed?'in':'out',ME=RL.user,LIST='loading',TH={},ACTIVE=[],MYC=null,PROF={},FLASH=null,ENTRY=null,WANT=null;
+const LOCAL={};/* per conversation: the unsent draft and how much of the thread is already drawn */
+let TAB='looking',CUR=null,PENDING=[],Q='',UNDO=null,PICK=null,REPORT=null,VIEW='inbox',RAIL=false,QSEL=new Set(),QTAB='all';
 const th=()=>TH[CUR];
 const count=(t,f)=>t.msgs.filter(m=>m.f===f).length;
 const unlocked=t=>count(t,'me')>=3&&count(t,'them')>=3&&t.p.ok;
 const swapped=t=>t.share.mine&&t.share.theirs;
 const doneN=t=>KEYS.filter(k=>t.settle[k][0]==='done').length;
-const inTab=tab=>EMPTY?[]:Object.values(TH).filter(t=>t.tab===tab&&!t.blocked).sort((a,b)=>b.ord-a.ord);
+const inTab=tab=>Object.values(TH).filter(t=>t.tab===tab&&!t.blocked).sort((a,b)=>b.ord-a.ord);
 const host=t=>t.tab==='subletting';
-const kindLabel=k=>k==='wechat'?'Instagram':'Email',kindWord=k=>k==='wechat'?'Instagram':'email';
-const lastLine=t=>{const m=[...t.msgs].reverse().find(m=>m.f==='me'||m.f==='them');if(!m)return 'New conversation';const x=m.img?'Sent a photo':m.vid?'Sent a video tour':m.x.replace(/\n+/g,' ');return (m.f==='me'?'You: ':'')+x};
+const kindLabel=k=>k==='instagram'?'Instagram':'Email',kindWord=k=>k==='instagram'?'Instagram':'email';
 let site,stage;const isPhone=()=>site&&site.clientWidth<=900;
+const chat=()=>window.RentletChat;
 
 /* ---------- render: shell ---------- */
+const meAv=()=>ME&&ME.photo?`<img src="${esc(ME.photo)}" alt="" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover">`:esc(((ME&&ME.name)||'Y').trim().charAt(0).toUpperCase());
+const header=()=>`<header class="hdr"><div class="wrap"><a class="logo" href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><nav aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a></nav><div class="hdr-r"><a class="btn btn-secondary post" href="post.html">Post a listing</a>${AUTH==='in'?`<a class="me-link" href="profile.html" aria-label="Your profile"><span class="me-av" aria-hidden="true" style="overflow:hidden">${meAv()}</span></a>`:'<button type="button" class="btn btn-secondary" data-rl-signin>Sign in</button>'}</div></div></header>`;
 function shell(){
-  stage.innerHTML=`<div class="site" id="site"><header class="hdr"><div class="wrap"><a class="logo" href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><nav aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a></nav><div class="hdr-r"><a class="btn btn-secondary post" href="post.html">Post a listing</a><a class="me-link" href="profile.html" aria-label="Your profile"><span class="me-av" aria-hidden="true">Y</span></a></div></div></header>
+  if(AUTH!=='in'){
+    stage.innerHTML=`<div class="site p-A view-inbox" id="site">${header()}<div class="body"><aside class="inbox" aria-label="Conversations"><div class="inbox-h"><h1>Messages</h1></div><div class="empty"><p>Sign in with your Northwestern Google account to see your messages.</p><button type="button" class="btn btn-primary" data-rl-signin>Sign in</button></div></aside><section class="thread" aria-label="Conversation"><div class="none"></div></section><aside class="side" aria-label="This room"></aside></div><div class="toast" id="toast" role="status"></div></div>`;
+    site=$('#site');return}
+  stage.innerHTML=`<div class="site" id="site">${header()}
   <div class="body"><aside class="inbox" id="inbox" aria-label="Conversations"><div class="inbox-h"><h1>Messages</h1><div class="tabs" role="tablist" id="tabs"></div></div><label class="search">${ic('search','sm')}<span class="sr">Search conversations</span><input id="q" type="search" placeholder="Search people or rooms" autocomplete="off"></label><div id="undo"></div><div class="convs" id="convs"></div></aside>
   <section class="thread" id="thread" aria-label="Conversation"></section><aside class="side" id="side" aria-label="This room"></aside><section class="pp" id="pp" aria-label="Profile"></section></div>
   <div class="scrim" id="scrim"></div><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shT"></div><div class="toast" id="toast" role="status"></div></div>`;
   site=$('#site');$('#q').value=Q;$('#q').oninput=e=>{Q=e.target.value;renderList()};
-  if(!CUR&&!isPhone()){const f=inTab(TAB)[0];if(f)CUR=f.id}
   renderAll();
 }
-function siteClass(){site.className=`site p-A${VIEW!=='inbox'?' v-thread':''} view-${VIEW}`}
+function siteClass(){if(site)site.className=`site p-A${VIEW!=='inbox'?' v-thread':''} view-${VIEW}`}
 function renderAll(){siteClass();renderList();renderThread();renderRail();}
-function refresh(flash){renderList();if(th()){renderMsgs();renderQuick();renderRail(flash);renderPin();}}
 
 /* ---------- inbox ---------- */
-const avatar=(p,s)=>`<span class="av" style="background:${p.col}${s?`;width:${s}px;height:${s}px`:''}" aria-hidden="true">${p.name[0]}${p.ok?`<span class="vf">${ic('check')}</span>`:''}</span>`;
-function renderList(){
+const avatar=(p,s)=>`<span class="av" style="background:${p.col}${s?`;width:${s}px;height:${s}px`:''}" aria-hidden="true">${p.photo?`<img src="${esc(p.photo)}" alt="" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:inherit;object-fit:cover">`:esc((p.name||'?')[0])}${p.ok?`<span class="vf">${ic('check')}</span>`:''}</span>`;
+function renderList(){if(!$('#convs'))return;
   $('#tabs').innerHTML=['looking','subletting'].map(t=>`<button role="tab" data-act="tab" data-tab="${t}" aria-selected="${TAB===t}">${t==='looking'?'Looking':'Subletting'}${inTab(t).some(x=>x.unread)?'<i class="dot"></i><span class="sr">, unread</span>':''}</button>`).join('');
-  $('#undo').innerHTML=UNDO?`<div class="undo"><span>${esc(TH[UNDO].p.name)} is blocked.</span><button data-act="unblock">Undo</button></div>`:'';
+  $('#undo').innerHTML=UNDO&&TH[UNDO]?`<div class="undo"><span>${esc(TH[UNDO].p.name)} is blocked.</span><button data-act="unblock">Undo</button></div>`:'';
   const all=inTab(TAB),q=Q.trim().toLowerCase(),list=q?all.filter(t=>(t.p.name+' '+t.r.title+' '+t.r.area).toLowerCase().includes(q)):all;
-  $('#convs').innerHTML=!all.length?(TAB==='looking'?`<div class="empty"><p>No conversations yet. Rooms you message show up here.</p><a class="btn btn-secondary" href="index.html">Find a place</a></div>`:`<div class="empty"><p>When someone messages you about your room it shows up here.</p><a class="btn btn-secondary" href="post.html">Post a listing</a></div>`)
+  $('#convs').innerHTML=LIST==='loading'?`<div class="empty"><p>Loading your conversations…</p></div>`
+   :LIST==='error'?`<div class="empty"><p>Couldn’t load your messages. Check your connection and try again.</p><button class="btn btn-secondary" data-act="retry">Try again</button></div>`
+   :!all.length?(TAB==='looking'?`<div class="empty"><p>No conversations yet. Rooms you message show up here.</p><a class="btn btn-secondary" href="index.html">Find a place</a></div>`:`<div class="empty"><p>When someone messages you about your room it shows up here.</p><a class="btn btn-secondary" href="post.html">Post a listing</a></div>`)
    :!list.length?`<div class="empty"><p>No matches.</p></div>`
-   :list.map(t=>`<button class="conv${t.id===CUR?' on':''}${t.unread?' unread':''}" data-act="conv" data-id="${t.id}" aria-current="${t.id===CUR}">${avatar(t.p)}<span style="min-width:0"><span class="cv-top"><b>${esc(t.p.name)}</b><time>${t.when}</time></span><span class="rel">${t.taken?'Taken · ':''}${esc(t.r.title)}</span><span class="last"><span>${esc(lastLine(t))}</span>${t.unread?'<i class="unread-dot" aria-label="Unread"></i>':''}</span></span></button>`).join('');
+   :list.map(t=>`<button class="conv${t.id===CUR?' on':''}${t.unread?' unread':''}" data-act="conv" data-id="${esc(t.id)}" aria-current="${t.id===CUR}">${avatar(t.p)}<span style="min-width:0"><span class="cv-top"><b>${esc(t.p.name)}</b><time>${esc(t.when)}</time></span><span class="rel">${t.taken?'No longer listed · ':''}${esc(t.r.title)}</span><span class="last"><span>${esc(t.last)}</span>${t.unread?'<i class="unread-dot" aria-label="Unread"></i>':''}</span></span></button>`).join('');
 }
 
 /* ---------- thread ---------- */
-function renderThread(){const t=th(),el=$('#thread');
-  if(!t){el.innerHTML='<div class="none"></div>';return}
-  el.innerHTML=`<div class="th-h"><button class="ibtn back" data-act="back" aria-label="Back to messages">${ic('back')}</button><button class="who" data-act="profile" aria-label="${esc(t.p.name)}, view profile">${avatar(t.p,40)}<span class="grow"><b>${esc(t.p.name)}</b><span>${esc(t.p.role)}${t.p.ok?'':' · verification in review'}</span></span></button><button class="ibtn" data-act="more" aria-label="More options" aria-haspopup="dialog">${ic('more')}</button></div>
-   ${t.taken?`<div class="gone"><span>${esc(t.p.name)}’s room was taken on ${t.taken}.</span><a class="btn btn-secondary" href="index.html">See similar rooms</a></div>`:''}
+/* the composer is rebuilt only when the conversation or its open/closed state changes; the rest updates in place */
+const topSig=t=>[t.id,t.blocked||t.blockedBy].join('|');
+const whoHtml=t=>`${avatar(t.p,40)}<span class="grow"><b>${esc(t.p.name)}</b><span>${esc(t.p.role)}</span></span>`;
+function renderTop(){const t=th(),w=$('#thread .who'),g=$('#gonebar');if(!t||!w||!g)return;
+  const h=whoHtml(t);if(w._h!==h){w.innerHTML=h;w._h=h;w.setAttribute('aria-label',`${t.p.name}, view profile`)}
+  const b=goneBar(t);if(g._h!==b){g.innerHTML=b;g._h=b}}
+let TOP='';
+function goneBar(t){const n=esc(t.p.name);
+  if(t.blocked)return `<div class="gone"><span>You blocked ${n}.</span><button class="btn btn-secondary" data-act="unblock-cur">Unblock</button></div>`;
+  if(t.blockedBy)return `<div class="gone"><span>${n} isn’t taking messages in this conversation.</span></div>`;
+  if(t.taken)return host(t)?`<div class="gone"><span>Your listing isn’t active anymore.</span></div>`:`<div class="gone"><span>${n}’s room is no longer listed.</span><a class="btn btn-secondary" href="index.html">See similar rooms</a></div>`;
+  return ''}
+function renderThread(){const t=th(),el=$('#thread');if(!el)return;
+  if(!t){TOP='';el.innerHTML='<div class="none"></div>';return}
+  TOP=topSig(t);const closed=t.blocked||t.blockedBy,typing=document.activeElement&&document.activeElement.id==='inp';
+  el.innerHTML=`<div class="th-h"><button class="ibtn back" data-act="back" aria-label="Back to messages">${ic('back')}</button><button class="who" data-act="profile" aria-label="${esc(t.p.name)}, view profile">${whoHtml(t)}</button><button class="ibtn" data-act="more" aria-label="More options" aria-haspopup="dialog">${ic('more')}</button></div>
+   <div id="gonebar" style="display:contents">${goneBar(t)}</div>
    <button class="pinl" id="pinl" data-act="rail"></button>
-   <div class="msgs" id="msgs" aria-live="polite"></div><div class="quick" id="quick"></div>
-   <form class="composer" id="composer" autocomplete="off"><button type="button" class="ibtn" data-act="qopen" aria-label="Quick messages" aria-haspopup="dialog">${ic('bolt')}</button><button type="button" class="ibtn attach" data-act="attach" aria-label="Attach a photo">${ic('photo')}</button><input type="file" id="file" accept="image/*" multiple hidden><label class="sr" for="inp">Message ${esc(t.p.name)}</label><textarea id="inp" rows="1" placeholder="Message ${esc(t.p.name)}"></textarea><button class="ibtn send" type="submit" aria-label="Send" disabled>${ic('send')}</button></form>`;
-  t.drawn=t.msgs.length;bindComposer(t);renderMsgs();renderQuick();renderPin();
+   <div class="msgs" id="msgs" aria-live="polite"></div>${closed?'':`<div class="quick" id="quick"></div>
+   <form class="composer" id="composer" autocomplete="off"><button type="button" class="ibtn" data-act="qopen" aria-label="Quick messages" aria-haspopup="dialog">${ic('bolt')}</button><label class="sr" for="inp">Message ${esc(t.p.name)}</label><textarea id="inp" rows="1" maxlength="2000" placeholder="Message ${esc(t.p.name)}"></textarea><button class="ibtn send" type="submit" aria-label="Send" disabled>${ic('send')}</button></form>`}`;
+  t.local.key='';if(t.loaded)t.local.drawn=t.msgs.length;if(!closed)bindComposer(t);renderQuick();renderMsgs();renderPin();if(typing&&$('#inp'))$('#inp').focus({preventScroll:true});
 }
-function msgHtml(t,m,i){const nw=i>=t.drawn?' new':'';
-  if(m.f==='day')return `<div class="stamp">${m.x}</div>`;
+function msgHtml(t,m,i){const nw=i>=t.local.drawn?' new':'';
+  if(m.f==='day')return `<div class="stamp">${esc(m.x)}</div>`;
   if(m.f==='sys')return `<div class="sys${nw}">${esc(m.x)}</div>`;
   if(m.f==='unlock')return `<div class="sys${nw}">Contact details unlocked</div>`;
   const prev=t.msgs[i-1],next=t.msgs[i+1],gap=prev&&(prev.f==='me'||prev.f==='them')&&prev.f!==m.f?' gap':'';
-  const body=m.img?`<img src="${m.img}" alt="Photo you sent">`:m.vid?`<video src="${m.vid}" controls playsinline preload="metadata" aria-label="Video tour"></video>`:esc(m.x);
-  return `<div class="b ${m.f}${m.img||m.vid?' media':''}${gap}${nw}">${body}</div>`+(!next||next.f!==m.f?`<div class="mt ${m.f}">${m.t||''}</div>`:'')}
+  return `<div class="b ${m.f}${gap}${nw}">${esc(m.x)}</div>`+(!next||next.f!==m.f?`<div class="mt ${m.f}">${esc(m.t||'')}</div>`:'')}
 function renderMsgs(){const t=th(),el=$('#msgs');if(!t||!el)return;
-  el.innerHTML=t.msgs.map((m,i)=>msgHtml(t,m,i)).join('')+(t.typing?`<div class="typing" aria-label="${esc(t.p.name)} is typing"><i></i><i></i><i></i></div>`:'');
-  t.drawn=t.msgs.length;el.scrollTop=el.scrollHeight}
+  if(!t.loaded){t.local.key='';el.innerHTML='<div class="stamp">Loading messages…</div>';return}
+  const key=JSON.stringify(t.msgs);if(key===t.local.key)return;
+  if(!t.local.key&&!t.local.seen){t.local.seen=true;t.local.drawn=t.msgs.length}
+  t.local.key=key;
+  el.innerHTML=t.msgs.length?t.msgs.map((m,i)=>msgHtml(t,m,i)).join(''):t.isDraft?'<div class="stamp">New conversation</div>':'';
+  t.local.drawn=t.msgs.length;el.scrollTop=el.scrollHeight}
 /* quick asks come from the items that are still open */
 function openAsks(t){return t.taken?[]:ASKS.filter(k=>t.settle[k][0]==='open'&&!(host(t)&&k==='landlord'))}
 /* at most two quick asks, drawn from the settle items still open; the bolt sheet has the full set */
@@ -496,89 +464,73 @@ function renderQuick(){const t=th(),el=$('#quick');if(!t||!el)return;
   el.hidden=!el.innerHTML}
 const MAXH=5*20+22+2;
 function grow(){const i=$('#inp');if(!i)return;i.style.height='auto';const h=Math.min(i.scrollHeight+2,MAXH);i.style.height=h+'px';i.style.overflowY=i.scrollHeight+2>MAXH?'auto':'hidden';$('#composer .send').disabled=!i.value.trim()}
-function bindComposer(t){const i=$('#inp'),f=$('#composer'),file=$('#file');i.value=t.draft||'';grow();
-  i.addEventListener('input',()=>{t.draft=i.value;if(!i.value.trim())PENDING=[];grow()});
+function bindComposer(t){const i=$('#inp'),f=$('#composer');i.value=t.local.draft||'';grow();
+  i.addEventListener('input',()=>{t.local.draft=i.value;if(!i.value.trim())PENDING=[];grow()});
   i.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&e.keyCode!==229){e.preventDefault();submit()}});
-  f.addEventListener('submit',e=>{e.preventDefault();submit()});
-  file.addEventListener('change',()=>{[...file.files].filter(x=>x.type.startsWith('image/')).forEach(x=>send(null,URL.createObjectURL(x)));file.value=''})}
-function submit(){const i=$('#inp'),v=i.value.trim();if(!v)return;i.value='';th().draft='';grow();send(v)}
-function insert(text,keys,caret){const t=th();if(!t)return;closeSheet();closeRail();const i=$('#inp');i.value=text;t.draft=text;PENDING=keys;grow();i.focus();if(caret!=null)i.setSelectionRange(caret,caret);else i.setSelectionRange(text.length,text.length)}
+  f.addEventListener('submit',e=>{e.preventDefault();submit()})}
+function submit(){const i=$('#inp'),v=i.value.trim();if(!v)return;i.value='';th().local.draft='';grow();send(v)}
+function insert(text,keys,caret){const t=th();if(!t||!$('#inp'))return;closeSheet();closeRail();const i=$('#inp');i.value=text;t.local.draft=text;PENDING=keys;grow();i.focus();if(caret!=null)i.setSelectionRange(caret,caret);else i.setSelectionRange(text.length,text.length)}
 
-/* ---------- sending and simulated replies ---------- */
-function send(text,img){const t=th();if(!t)return;
-  t.msgs.push(img?{f:'me',img,t:clock()}:{f:'me',x:text,t:clock()});t.when=clock();t.ord=++ORD;
-  const ks=PENDING.slice();PENDING=[];
-  ks.forEach(k=>{if(t.settle[k][0]==='open')t.settle[k]=['wait','']});
-  if(ks.includes('money'))moneyNote(t);
-  checkUnlock(t);refresh();queueReply(t,ks)}
-function moneyNote(t){if(!t.notes.money){t.notes.money=1;t.msgs.push(SY(SAFE[t.tab]))}}
-function checkUnlock(t){if(unlocked(t)&&!t.notes.unlock){t.notes.unlock=1;t.msgs.push({f:'unlock'})}}
-function queueReply(t,ks){t.q.push(ks);if(!t.typing)setTimeout(()=>runReply(t),reduced?60:500)}
-function runReply(t){if(!t.q.length)return;t.typing=true;if(t.id===CUR)renderMsgs();
-  setTimeout(()=>{const batch=t.q.splice(0);const keys=[...new Set(batch.flat())];const out=[];let flash=null;
-    if(!keys.length)out.push({x:count(t,'them')===0&&!host(t)?`Hi! Yes, it’s free ${span(t.r.start,t.r.end)}.`:['Sounds good.','Sure, happy to help.','Let me check and get back to you today.'][count(t,'them')%3]});
-    keys.forEach(k=>{const r=reply(t,k);out.push(...r.m);if(r.s){t.settle[k]=r.s;flash=k}});
-    out.forEach(m=>t.msgs.push({f:'them',t:clock(),...m}));t.when=clock();t.ord=++ORD;t.typing=false;
-    if(t.id!==CUR||t.blocked)t.unread=true;checkUnlock(t);refresh(flash);if(t.q.length)runReply(t)},reduced?120:1400)}
-function reply(t,k){const R=t.r;
-  if(host(t))return {dates:{m:[{x:`${span(...t.want)}, if that works.`}],s:['done',span(...t.want)]},tour:{m:[{x:'Yes please! Any evening works.'}],s:['wait',`${t.p.name} would like one`]},
-    money:{m:[{x:'No, that’s clear. Thanks!'}],s:['done',`${money(R.price)} / mo · ${money(R.deposit)} deposit`]},stays:{m:[{x:'The desk and bookshelf would be great.'}],s:['done',short(R.stays)]},landlord:{m:[{x:'Great, thanks for checking.'}]}}[k];
-  return {dates:{m:[{x:`Yes, it’s free ${span(R.start,R.end)}.`}],s:['done',span(R.start,R.end)]},
-    tour:{m:[{x:'Here’s a quick video tour.'},{vid:'img/tour.webm'}],s:['done','Received']},
-    money:{m:[{x:`${money(R.price)} / mo with ${R.incl.toLowerCase()} included. ${R.extra}. Deposit ${money(R.deposit)}, refundable.`}],s:['done',`${money(R.price)} / mo · ${money(R.deposit)} deposit`]},
-    stays:{m:[{x:`${listText(R.stays)} ${R.keep?'are yours to keep':'stay'}.`}],s:['done',short(R.stays)]},
-    landlord:{m:[{x:R.takeover?'Yes, the landlord approved the takeover.':'Yes, my landlord is fine with a sublet.'}],s:['done',`Confirmed by ${t.p.name}`]}}[k]}
+/* ---------- sending ---------- */
+function send(text){const t=th();if(!t||!chat())return;const id=t.id,draft=t.isDraft,ks=PENDING.slice();PENDING=[];
+  chat().send(id,text,ks).then(ok=>{
+    if(!ok){toast('Couldn’t send. Check your connection and try again.');const i=$('#inp');if(CUR===id&&i&&!i.value.trim()){i.value=text;LOCAL[id].draft=text;grow()}return}
+    if(draft&&CUR===id){const u=new URL(location.href);u.searchParams.delete('listing');u.searchParams.delete('with');u.searchParams.set('c',id);history.replaceState(null,'',u)}})}
+function needsFirst(t){if(!t.isDraft)return false;toast('Send a message first.');return true}
+function setNote(k,s,v){const t=th();if(!t||needsFirst(t))return;FLASH=k;chat().note(t.id,k,s,v).then(ok=>{if(!ok)toast('Couldn’t save that. Try again.')})}
 
 /* ---------- rail: room card, settle list, contact ---------- */
-function roomCard(t){const R=t.r,sw=swapped(t),inner=`<img src="img/${R.img}.jpg" alt="" class="${R.flip?'flip':''}"><div class="rc">${host(t)?'<small>Your listing</small>':''}<h3>${esc(R.title)}</h3><p>${esc(sw?R.addr:R.area)} · ${span(R.start,R.end)}</p><div class="pr">${money(R.price)} <small>/ mo</small></div></div>`;
-  return host(t)?`<a class="card rcard" href="post.html">${inner}</a>`:`<a class="card rcard" href="room.html?room=${R.key}">${inner}</a>`}
-function rowDetail(t,k){const [s,d]=t.settle[k];return s==='done'?d:s==='wait'?(d||`Waiting on ${t.p.name}`):''}
-function settleRow(t,k,flash){const s=t.settle[k][0],d=rowDetail(t,k);
+function roomCard(t){const R=t.r;return `<a class="card rcard" href="room.html?room=${esc(R.key)}"><img src="${esc(pic(R.photo))}" alt=""><div class="rc">${host(t)?'<small>Your listing</small>':''}<h3>${esc(R.title)}</h3><p>${esc(R.area)} · ${esc(R.span)}</p><div class="pr">${money(R.price)} <small>/ mo</small></div></div></a>`}
+function settleRow(t,k,flash){const [s,d]=t.settle[k];
   return `<button class="st ${s}${flash===k?' flash':''}" data-act="st" data-k="${k}" aria-haspopup="dialog"><span class="tick">${s==='done'?ic('check'):''}</span><span><b>${LABEL[k]}</b>${d?`<span class="d">${esc(d)}</span>`:''}</span>${ic('right','sm')}</button>`}
 function settleCard(t,flash){return `<div class="card"><p class="tl">Settled<span>${doneN(t)} of 5</span></p><div class="settle">${KEYS.map(k=>settleRow(t,k,flash)).join('')}</div></div>`}
 function lockLine(t){const a=Math.min(3,count(t,'me')),b=Math.min(3,count(t,'them')),n=t.p.name,need=a<3||b<3;
   const why=need&&!t.p.ok?`Unlocks after 3 replies each and when ${n} is verified`:need?'Unlocks after 3 replies each':`Unlocks when ${n} is verified`;
-  return `<p class="lock">${ic('lock','sm')}<span>${why} · you ${a}/3 · ${esc(n)} ${b}/3</span></p>`}
+  return `<p class="lock">${ic('lock','sm')}<span>${esc(why)} · you ${a}/3 · ${esc(n)} ${b}/3</span></p>`}
 function contactRow(c){return `<div class="cx"><span><small>${kindLabel(c.kind)}</small>${c.kind==='email'?`<a href="mailto:${esc(c.val)}">${esc(c.val)}</a>`:`<b>${esc(c.val)}</b>`}</span><button class="btn btn-secondary" data-act="copy" data-v="${esc(c.val)}" aria-label="Copy ${kindLabel(c.kind)}">${ic('copy','sm')}Copy</button></div>`}
 function shareState(t){const n=esc(t.p.name);
   if(!unlocked(t))return lockLine(t);
   if(swapped(t))return contactRow(t.share.theirs)+`<p class="mut">You shared your ${kindWord(t.share.mine)}.</p>`;
-  if(t.share.mine)return `<p class="mut">You shared your ${kindWord(t.share.mine)}. Waiting for ${n}.</p><button class="btn btn-secondary wide" data-act="withdraw">Withdraw</button>`;
+  if(t.share.mine)return `<p class="mut">You shared your ${kindWord(t.share.mine)}. Waiting for ${n}.</p>${t.share.theirsShared?'':'<button class="btn btn-secondary wide" data-act="withdraw">Withdraw</button>'}`;
   return null}
-function choices(){return ['wechat','email'].map(k=>`<button class="opt" role="radio" data-act="pick" data-kind="${k}" aria-checked="${PICK===k}"><span class="rd"></span><span><small>${kindLabel(k)}</small><b>${ME[k]}</b></span></button>`).join('')}
-function contactCard(t){const n=esc(t.p.name),st=shareState(t),hint=t.share.theirs?`${n} already shared. Share yours to see it.`:`${n} sees yours only when they share too.`;
+function choices(){if(!MYC)return '<p class="mut">Loading your contact details…</p>';
+  const opts=['instagram','email'].map(k=>MYC[k]?`<button class="opt" role="radio" data-act="pick" data-kind="${k}" aria-checked="${PICK===k}"><span class="rd"></span><span><small>${kindLabel(k)}</small><b>${esc(MYC[k])}</b></span></button>`:`<button class="opt" role="radio" aria-checked="false" aria-disabled="true" disabled><span class="rd"></span><span><small>${kindLabel(k)}</small><b>Not added yet</b></span></button>`).join('');
+  return opts+(MYC.instagram&&MYC.email?'':'<div class="acts"><a class="btn btn-secondary wide" href="profile.html">Add contact details on your profile</a></div>')}
+function contactCard(t){const n=esc(t.p.name),st=shareState(t),hint=t.share.theirsShared?`${n} already shared. Share yours to see it.`:`${n} sees yours only when they share too.`;
   return `<div class="card swapc"><p class="tl">Contact details</p>${st||`<p class="mut">${hint}</p><button class="btn btn-primary wide" data-act="share">Share my contact</button>`}</div>`}
 function railInner(t,flash){return roomCard(t)+settleCard(t,flash)+contactCard(t)}
 function renderRail(flash){const el=$('#side'),t=th();if(!el)return;
-  if(!t){el.innerHTML='';return}
+  if(!t){el.innerHTML='';el.classList.remove('open');return}
   const sc=el.scrollTop;el.innerHTML=`<div class="side-h"><b>This room</b><button class="ibtn" data-act="rail-close" aria-label="Close">${ic('x')}</button></div>`+railInner(t,flash);el.scrollTop=sc;
   el.classList.toggle('open',RAIL)}
 function renderPin(){const t=th(),el=$('#pinl');if(!t||!el)return;
   el.setAttribute('aria-label',`${t.r.title}, settled ${doneN(t)} of 5. Show room details`);
-  el.innerHTML=`<img src="img/${t.r.img}.jpg" alt="" class="${t.r.flip?'flip':''}"><span style="min-width:0"><b>${esc(t.r.title)}</b><span class="s">${span(t.r.start,t.r.end)}</span></span><span class="n"><b>${money(t.r.price)} / mo</b><span>${doneN(t)} of 5 settled${ic('up','sm')}</span></span>`;}
+  el.innerHTML=`<img src="${esc(pic(t.r.photo))}" alt=""><span style="min-width:0"><b>${esc(t.r.title)}</b><span class="s">${esc(t.r.span)}</span></span><span class="n"><b>${money(t.r.price)} / mo</b><span>${doneN(t)} of 5 settled${ic('up','sm')}</span></span>`;}
 
 /* ---------- profile ---------- */
-const mins=x=>{const m=/^(\d+):(\d+) (AM|PM)$/.exec(x||'');return m?(+m[1]%12+(m[3]==='PM'?12:0))*60+ +m[2]:null};
-/* reply time only when the thread itself shows it */
-function replyTime(t){const g=[];let pend=null;t.msgs.forEach(m=>{if(m.f==='day'){pend=null;return}if(m.f==='me'&&pend==null)pend=mins(m.t);else if(m.f==='them'&&pend!=null){const x=mins(m.t);if(x!=null&&x>=pend)g.push(x-pend);pend=null}});
-  return !g.length?'':Math.max(...g)<=60?'Usually replies within an hour':'Usually replies within a day'}
 const MD=x=>new Date(x+'T00:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'});
 const dd=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5),days=n=>n===1?'1 day':n+' days';
-function reqCard(t,P){const [a,b]=t.want,i=dd(MY.start,a),o=dd(b,MY.end);
+/* the guest's open request, measured against the host's own listing */
+function reqCard(t,Q){const R=t.r,a=Q.start,b=Q.end,i=dd(R.start,a),o=dd(b,R.end);
   const pin=i===0?'Same day':i>0?`${days(i)} after you`:`${days(-i)} too early`,pout=o===0?'Same day':o>0?`${days(o)} before`:`${days(-o)} past lease`;
-  const bud=MY.price<=P.budget?`Your rent fits their budget (up to ${money(P.budget)})`:`Your rent is ${money(MY.price-P.budget)} over their budget`;
-  return `<article class="card reqc" aria-label="${esc(t.p.name)}’s request"><div class="ct"><b>${esc(t.p.name)} · ${esc(P.chip)}</b><span class="unit">${esc(P.kind)}</span></div><p class="meta">${span(a,b)}</p>
-   <div class="legs"><div class="leg"><span class="leg-k">Move in</span><span>${MD(MY.start)} → <b>${MD(a)}</b></span><span class="pill">${pin}</span></div><div class="leg"><span class="leg-k">Move out</span><span>${MD(MY.end)} → <b>${MD(b)}</b></span><span class="pill">${pout}</span></div></div>
-   <p class="bud">${bud}</p><p class="quote">“${esc(P.note)}”</p></article>`}
-function listingCard(t){const R=t.r;return `<a class="card rcard pf-room" href="room.html?room=${R.key}"><img src="img/${R.img}.jpg" alt="" class="${R.flip?'flip':''}"><div class="rc"><h3>${esc(R.title)}</h3><p>${esc(R.area)} · ${span(R.start,R.end)}</p><div class="pr">${money(R.price)} <small>/ mo</small></div>${t.taken?`<span class="taken">Taken on ${t.taken}</span>`:''}</div></a>`}
-function profHtml(t){const P=PF[t.id]||PF.l4,n=esc(t.p.name),rt=replyTime(t);
-  return `<div class="pf"><div class="pf-top">${avatar(t.p,64)}<div><h2>${n}</h2><p><span class="rchip">${esc(P.chip)}</span>${esc(P.org)}</p></div></div>
-   <ul class="pf-ver">${P.ver.map(([l,d])=>`<li class="${d?'ok':''}">${ic(d?'check':'lock','sm')}<span><b>${esc(l)}</b><small>${d?'Verified '+d:'In review'}</small></span></li>`).join('')}</ul>
-   <p class="pf-m">Member since Oct 2026</p>${host(t)?reqCard(t,P):listingCard(t)}
-   <p class="pf-about">${esc(P.about)}</p><div class="pf-tags">${P.life.map(x=>`<span>${esc(x)}</span>`).join('')}</div>${rt?`<p class="pf-m">${rt}</p>`:''}
-   <div class="acts"><button class="btn btn-secondary wide" data-act="report">${ic('flag','sm')}Report</button><button class="btn btn-secondary wide" data-act="block">${ic('block','sm')}Block</button></div></div>`}
+  const bud=Q.budget==null?'No maximum budget':R.price<=Q.budget?`Your rent fits their budget (up to ${money(Q.budget)})`:`Your rent is ${money(R.price-Q.budget)} over their budget`;
+  return `<article class="card reqc" aria-label="${esc(t.p.name)}’s request"><div class="ct"><b>${esc(t.p.name)}${Q.role?` · ${esc(Q.role)}`:''}</b><span class="unit">${esc(Q.kind)}</span></div><p class="meta">${span(a,b)}</p>
+   <div class="legs"><div class="leg"><span class="leg-k">Move in</span><span>${MD(R.start)} → <b>${MD(a)}</b></span><span class="pill">${pin}</span></div><div class="leg"><span class="leg-k">Move out</span><span>${MD(R.end)} → <b>${MD(b)}</b></span><span class="pill">${pout}</span></div></div>
+   <p class="bud">${bud}</p>${Q.note?`<p class="quote">“${esc(Q.note)}”</p>`:''}</article>`}
+function listingCard(d){return `<a class="card rcard pf-room" href="room.html?room=${esc(d.code)}"><img src="${esc(pic(d.photos&&d.photos[0]))}" alt=""><div class="rc"><h3>${esc(d.title)}</h3><p>${esc(d.area)} · ${span(d.start,d.end)}</p><div class="pr">${money(d.price)} <small>/ mo</small></div></div></a>`}
+function goneCard(t){const R=t.r;return `<a class="card rcard pf-room" href="room.html?room=${esc(R.key)}"><img src="${esc(pic(R.photo))}" alt=""><div class="rc"><h3>${esc(R.title)}</h3><p>${esc(R.area)} · ${esc(R.span)}</p><div class="pr">${money(R.price)} <small>/ mo</small></div><span class="taken">No longer listed</span></div></a>`}
+function profHtml(t){const n=esc(t.p.name),Q=(PROF[t.p.uid]||{}).req||null,theirs=ACTIVE.filter(d=>d.ownerId===t.p.uid);
+  const cards=(Q&&host(t)?reqCard(t,Q):'')+theirs.map(listingCard).join('')+(!host(t)&&t.taken&&!theirs.length?goneCard(t):'');
+  const chip=(Q&&Q.role)||'Northwestern',org=(Q&&Q.org)||t.p.year||'';
+  return `<div class="pf"><div class="pf-top">${avatar(t.p,64)}<div><h2>${n}</h2><p><span class="rchip">${esc(chip)}</span>${esc(org)}</p></div></div>
+   <ul class="pf-ver"><li class="${t.p.ok?'ok':''}">${ic(t.p.ok?'check':'lock','sm')}<span><b>Northwestern Google account</b><small>${t.p.ok?'Verified at sign-in':'Not verified'}</small></span></li></ul>
+   ${t.p.since?`<p class="pf-m">${esc(t.p.since)}</p>`:''}${cards?`<div class="pf-cards">${cards}</div>`:''}
+   ${t.p.bio?`<p class="pf-about">${esc(t.p.bio)}</p>`:''}${Q&&Q.life.length?`<div class="pf-tags">${Q.life.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:''}${t.replyTime?`<p class="pf-m">${esc(t.replyTime)}</p>`:''}
+   <div class="acts"><button class="btn btn-secondary wide" data-act="report">${ic('flag','sm')}Report</button>${t.isDraft?'':`<button class="btn btn-secondary wide" data-act="block">${ic('block','sm')}Block</button>`}</div></div>`}
 function openProfile(){const t=th();if(!t)return;
+  if(host(t)&&!PROF[t.p.uid]&&chat()){const uid=t.p.uid;PROF[uid]={};chat().openRequest(uid).then(q=>{PROF[uid]={req:q};drawProfile()})}
   const pp=$('#pp');pp.innerHTML=`<div class="pp-h"><button class="ibtn" data-act="prof-back" aria-label="Back to the conversation">${ic('back')}</button><b>Profile</b></div><div class="pp-b">${profHtml(t)}</div>`;pp.classList.add('on');closeRail();setTimeout(()=>pp.querySelector('button').focus({preventScroll:true}),30)}
+function drawProfile(){const t=th(),b=$('#pp.on .pp-b');if(!t||!b)return;const sc=b.scrollTop;b.innerHTML=profHtml(t);b.scrollTop=sc}
 function closeProfile(){const pp=$('#pp');if(pp)pp.classList.remove('on')}
 
 /* ---------- quick messages sheet ---------- */
@@ -598,53 +550,80 @@ function qPicked(){const t=th(),its=qItems(t).filter(i=>QSEL.has(i.id));return [
 /* ---------- settle sheet bodies ---------- */
 function sBody(t,k){const R=t.r,hs=host(t),n=esc(t.p.name),[s,d]=t.settle[k];
   const P=(act,l,x='')=>`<button class="btn btn-primary wide" data-act="${act}" data-k="${k}" ${x}>${esc(l)}</button>`,S=(act,l)=>`<button class="btn btn-secondary wide" data-act="${act}" data-k="${k}">${esc(l)}</button>`;
-  const status=s==='done'?'Settled':s==='wait'?(d||`Waiting on ${t.p.name}`):'Open';let body='',acts='';
-  if(k==='dates'){const r=hs?span(...t.want):span(R.start,R.end);body=s==='done'?`<p>${esc(d)}</p>`:hs?`<p>${n} asked for ${r}.</p>`:'';
-    acts=s==='done'?S('s-reopen','Reopen'):P('s-done',`Confirm ${r}`,`data-v="${r}"`)+S('s-ins','Propose other dates')}
-  if(k==='stays'){body=`<ul class="list">${R.stays.map(x=>`<li>${ic('check','sm')}${esc(x)}</li>`).join('')}</ul>${R.keep?'<p class="mut">Yours to keep.</p>':''}`;
+  const status=s==='done'?'Settled':s==='wait'?d:'Open';let body='',acts='';
+  if(k==='dates'){const r=R.span;body=s==='done'?`<p>${esc(d)}</p>`:'';
+    acts=s==='done'?S('s-reopen','Reopen'):P('s-done',`Confirm ${r}`,`data-v="${esc(r)}"`)+S('s-ins','Propose other dates')}
+  if(k==='stays'){body=R.stays.length?`<ul class="list">${R.stays.map(x=>`<li>${ic('check','sm')}${esc(x)}</li>`).join('')}</ul>${R.keep?`<p class="mut">${hs?'Theirs':'Yours'} to keep.</p>`:''}`:'<p>Nothing stays in the room.</p>';
     acts=s==='done'?S('s-reopen','Reopen'):P('s-done','Confirm what stays')+S('s-ins',hs?'Ask what they need':'Ask about an item')}
-  if(k==='money'){body=`<dl class="dl"><div><dt>Rent</dt><dd>${money(R.price)} / mo</dd></div><div><dt>Deposit</dt><dd>${money(R.deposit)}, refundable</dd></div><div><dt>Included</dt><dd>${esc(R.incl)}</dd></div><div><dt>Extra</dt><dd>${esc(R.extra)}</dd></div></dl><p class="safe">${ic('lock','sm')}<span>${SAFE[t.tab]}</span></p>`;
+  if(k==='money'){body=`<dl class="dl"><div><dt>Rent</dt><dd>${money(R.price)} / mo</dd></div><div><dt>Deposit</dt><dd>${R.deposit?`${money(R.deposit)}${R.refund?', refundable':''}`:'None'}</dd></div><div><dt>Included</dt><dd>${esc(R.incl||'Nothing extra')}</dd></div><div><dt>Extra</dt><dd>${esc(R.extra||'None listed')}</dd></div></dl><p class="safe">${ic('lock','sm')}<span>${SAFE[t.tab]}</span></p>`;
     acts=s==='done'?S('s-reopen','Reopen'):P('s-done','Confirm money')+S('s-ins','Ask a question')}
   if(k==='tour'){body='';
     acts=s==='done'?S('s-reopen','Reopen'):s==='wait'?P('s-done',hs?'Mark as sent':'Mark as received'):P('s-ins',hs?'Offer a video tour':'Ask for a video tour')}
-  if(k==='landlord'){body=s==='done'?`<p>${esc(d)}.</p>`:'';
+  if(k==='landlord'){const who=hs?'Your listing says':`${n}’s listing says`;
+    body=s==='done'?`<p>${esc(d)}.</p>`:`<p>${who} ${R.channel==='official'?'it goes through the building or landlord.':'it’s arranged privately, not through the building.'}</p>`;
     acts=s==='done'?S('s-reopen','Reopen'):hs||s==='wait'?P('s-done','Mark as confirmed'):P('s-ins','Ask about the landlord')}
   return {status,body,acts}}
-function doneDetail(t,k,v){const R=t.r;return {dates:v,stays:(R.keep?'Yours to keep: ':'')+short(R.stays),money:`${money(R.price)} / mo · ${money(R.deposit)} deposit`,tour:host(t)?'Sent':'Received',landlord:host(t)?'You confirmed':`Confirmed by ${t.p.name}`}[k]}
 function insText(t,k){if(k==='dates')return host(t)?['Would other dates work for you? I could do ',null]:['Could other dates work? I’m looking at ',null];
   if(k==='stays'&&!host(t))return ['Does the  stay too?',9];return [ask(t,k),null]}
 
 /* ---------- sheets ---------- */
-let sheetKind=null;
+let sheetKind=null,sheetSig='';
 /* every sheet: fixed header (title, subtitle, close, tabs), a list that scrolls, a fixed footer; tabbed sheets keep one height */
 function openSheet(kind,h,body,foot,top,tall,ftCls){sheetKind=kind;const s=$('#sheet');s.innerHTML=h+(top?`<div class="sh-top">${top}</div>`:'')+`<div class="sh-sc">${body}</div>`+(foot?`<div class="sh-ft${ftCls?' '+ftCls:''}">${foot}</div>`:'');s.classList.toggle('wide',kind==='quick'||kind==='profile');s.classList.toggle('tall',!!tall);s.classList.add('on');$('#scrim').classList.add('on');setTimeout(()=>{const f=s.querySelector('button:not([disabled])');f&&f.focus({preventScroll:true})},30)}
 function closeSheet(){sheetKind=null;const s=$('#sheet');if(!s)return;s.classList.remove('on');if(!RAIL)$('#scrim').classList.remove('on')}
 const head=(title,sub)=>`<div class="sh-h"><div><h2 id="shT">${title}</h2>${sub?`<p>${sub}</p>`:''}</div><button class="ibtn" data-act="sheet-close" aria-label="Close">${ic('x')}</button></div>`;
-function settleSheet(k){const t=th(),b=sBody(t,k);openSheet('settle:'+k,head(LABEL[k],esc(b.status)),b.body?`<div class="sh-b">${b.body}</div>`:'',b.acts)}
-function shareSheet(){const t=th(),n=esc(t.p.name);openSheet('share',head('Share my contact',t.share.theirs?`${n} already shared. You’ll both see each other’s.`:`${n} sees it only when they share too.`),`<div role="radiogroup" aria-label="Contact to share">${choices()}</div>`,`<button class="btn btn-primary wide" data-act="share-go" ${PICK?'':'disabled'}>Share</button><button class="btn btn-secondary wide" data-act="sheet-close">Cancel</button>`)}
+function settleSheet(k){const t=th(),b=sBody(t,k);sheetSig=JSON.stringify(t.settle[k]);openSheet('settle:'+k,head(LABEL[k],esc(b.status)),b.body?`<div class="sh-b">${b.body}</div>`:'',b.acts)}
+function shareSheet(){const t=th(),n=esc(t.p.name),ok=PICK&&MYC&&MYC[PICK];openSheet('share',head('Share my contact',t.share.theirsShared?`${n} already shared. You’ll both see each other’s.`:`${n} sees it only when they share too.`),`<div role="radiogroup" aria-label="Contact to share">${choices()}</div>`,`<button class="btn btn-primary wide" data-act="share-go" ${ok?'':'disabled'}>Share</button><button class="btn btn-secondary wide" data-act="sheet-close">Cancel</button>`)}
 const REASONS=['Asked for money before a viewing','Listing looks fake','Rude or unsafe','Something else'];
 function reportSheet(){const t=th();openSheet('report',head(`Report ${esc(t.p.name)}`),`<div role="radiogroup" aria-label="Reason">${REASONS.map((r,i)=>`<button class="opt" role="radio" data-act="reason" data-i="${i}" aria-checked="${REPORT===i}"><span class="rd"></span><span><b>${r}</b></span></button>`).join('')}</div>`,`<button class="btn btn-primary wide" data-act="report-go" ${REPORT==null?'disabled':''}>Send report</button><button class="btn btn-secondary wide" data-act="sheet-close">Cancel</button>`)}
-function blockSheet(){const t=th(),n=esc(t.p.name);openSheet('block',head(`Block ${n}?`,`${n} can’t message you, and this conversation leaves your inbox.`),'',`<button class="btn btn-primary wide" data-act="block-go">Block</button><button class="btn btn-secondary wide" data-act="sheet-close">Cancel</button>`)}
+function blockSheet(){const t=th(),n=esc(t.p.name);openSheet('block',head(`Block ${n}?`,`${n} can’t message you in this conversation, and it leaves your inbox.`),'',`<button class="btn btn-primary wide" data-act="block-go">Block</button><button class="btn btn-secondary wide" data-act="sheet-close">Cancel</button>`)}
 function redrawSheet(){if(!sheetKind)return;const sc=$('#sheet .sh-sc').scrollTop;if(sheetKind.startsWith('settle:'))settleSheet(sheetKind.slice(7));else if(sheetKind==='share')shareSheet();else if(sheetKind==='report')reportSheet();else if(sheetKind==='quick')qSheet();$('#sheet .sh-sc').scrollTop=sc}
 
 function closeRail(){RAIL=false;const s=$('#side');if(s)s.classList.remove('open');if(!sheetKind)$('#scrim')?.classList.remove('on')}
 
-/* ---------- swap ---------- */
-let shareTimer=null;
-function doShare(kind){const t=th();t.share.mine=kind;PICK=null;
-  if(t.share.theirs)swapDone(t);else{clearTimeout(shareTimer);const id=t.id;shareTimer=setTimeout(()=>{const x=TH[id];if(x.share.mine&&!x.share.theirs){x.share.theirs=x.their;swapDone(x);if(x.id!==CUR)x.unread=true;refresh()}},reduced?400:4000)}
-  refresh()}
-function swapDone(t){if(!t.notes.swapped){t.notes.swapped=1;t.msgs.push(SY(`You and ${t.p.name} swapped contact details`))}}
-
 /* ---------- navigation ---------- */
-function openThread(id){const t=TH[id];if(!t)return;const prev=th();if(prev){const i=$('#inp');if(i)prev.draft=i.value}
-  CUR=id;TAB=t.tab;t.unread=false;PENDING=[];PICK=null;closeRail();closeSheet();closeProfile();VIEW='thread';
+function setUrl(t){const u=new URL(location.href);['c','listing','with'].forEach(k=>u.searchParams.delete(k));
+  if(t&&t.isDraft){u.searchParams.set('listing',t.r.key);if(host(t))u.searchParams.set('with',t.other)}else if(t)u.searchParams.set('c',t.id);
+  history.replaceState(null,'',u)}
+/* desktop: show a conversation without moving the phone view */
+function select(id){const t=TH[id];if(!t)return;CUR=id;TAB=t.tab;if(chat())chat().open(id);renderAll();requestAnimationFrame(()=>{const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight});markSeen()}
+function openThread(id){const t=TH[id];if(!t)return;const prev=th();if(prev){const i=$('#inp');if(i)prev.local.draft=i.value}
+  CUR=id;TAB=t.tab;PENDING=[];PICK=null;closeRail();closeSheet();closeProfile();VIEW='thread';if(chat())chat().open(id);
   siteClass();renderList();renderThread();renderRail();requestAnimationFrame(()=>{const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight});
-  const u=new URL(location.href);u.searchParams.set('with',id);history.replaceState(null,'',u)}
+  setUrl(t);markSeen()}
 function setTab(tab){TAB=tab;Q='';$('#q').value='';const list=inTab(tab);
-  if(isPhone()){VIEW='inbox';if(!th()||th().tab!==tab)CUR=null;siteClass();renderList();renderThread();renderRail();return}
-  if(list[0])openThread(list[0].id);else{CUR=null;renderAll()}}
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2200)}
+  if(isPhone()){VIEW='inbox';if(!th()||th().tab!==tab){CUR=null;if(chat())chat().open(null)}siteClass();renderList();renderThread();renderRail();return}
+  if(list[0])openThread(list[0].id);else{CUR=null;if(chat())chat().open(null);renderAll()}}
+function autoSelect(){if(ENTRY!=='done'||CUR||isPhone())return;const f=inTab(TAB)[0];if(f)select(f.id)}
+function markSeen(){const t=th();if(t&&t.unread&&chat()&&document.visibilityState==='visible'&&(!isPhone()||VIEW==='thread'))chat().seen(t.id)}
+document.addEventListener('visibilitychange',markSeen);
+/* messages.html?c=<id>, ?listing=<code>&with=<uid>: open that conversation, or a new one about that listing */
+function entry(){if(ENTRY||AUTH!=='in'||LIST!=='ready'||!chat())return;
+  const q=new URLSearchParams(location.search),c=q.get('c'),l=q.get('listing'),w=q.get('with');
+  if(!c&&!l&&!w){ENTRY='done';pickTab();return autoSelect()}
+  ENTRY='pending';
+  chat().resolve({c,listing:l,with:w}).then(r=>{ENTRY='done';
+    if(r&&r.id){WANT=r.id;return want()}
+    if(r&&r.notice)toast(r.notice);setUrl(null);pickTab();autoSelect()},()=>{ENTRY='done';pickTab();autoSelect()})}
+/* start on the tab with the newest conversation */
+function pickTab(){const n=Object.values(TH).filter(t=>!t.blocked).sort((a,b)=>b.ord-a.ord)[0];if(n&&n.tab!==TAB){TAB=n.tab;renderList()}}
+function want(){if(WANT&&TH[WANT]){const id=WANT;WANT=null;openThread(id)}}
+function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),2200)}
+
+/* ---------- updates from src/chat.ts ---------- */
+window.RL_onAuth=()=>{};/* src/chat.ts redraws the page when the account changes; no reload */
+window.RL_onListings=list=>{if(!list)return;ACTIVE=list;if(chat())chat().listings(list);drawProfile()};
+window.RL_chat={update(s){
+  if(s.auth==='unknown')return;
+  const was=AUTH,wasUid=ME&&ME.uid;AUTH=s.auth;ME=s.me;LIST=s.list;
+  TH={};s.threads.forEach(v=>{v.local=LOCAL[v.id]||(LOCAL[v.id]={draft:'',drawn:0,key:'',seen:false});TH[v.id]=v});
+  if(was!==AUTH||(ME&&ME.uid)!==wasUid||!site){CUR=null;UNDO=null;ENTRY=AUTH==='in'?ENTRY:null;closeSheet();shell();entry();want();return}
+  if(CUR&&!TH[CUR]){CUR=null;renderAll()}
+  const t=th();renderList();
+  if(t){if(topSig(t)!==TOP)renderThread();else{renderTop();renderQuick();renderMsgs();renderPin()}renderRail(FLASH);
+    if(sheetKind&&sheetKind.startsWith('settle:')&&JSON.stringify(t.settle[sheetKind.slice(7)])!==sheetSig)redrawSheet();
+    drawProfile()}
+  FLASH=null;entry();want();autoSelect();markSeen()}};
 
 /* ---------- clicks ---------- */
 document.addEventListener('click',e=>{
@@ -653,35 +632,37 @@ document.addEventListener('click',e=>{
   if(e.target.id==='scrim'){if(sheetKind)closeSheet();else closeRail();return}
   if(!a)return;const t=th(),k=a.dataset.k,act=a.dataset.act;
   switch(act){
+   case 'retry':return location.reload();
    case 'tab':return setTab(a.dataset.tab);
    case 'conv':return openThread(a.dataset.id);
    case 'back':VIEW='inbox';closeRail();siteClass();return;
    case 'rail':RAIL=true;renderRail();$('#scrim').classList.add('on');return;
    case 'rail-close':return closeRail();
    case 'st':return settleSheet(k);
-   case 's-done':t.settle[k]=['done',doneDetail(t,k,a.dataset.v)];if(k==='money')moneyNote(t);refresh(k);return closeSheet();
-   case 's-reopen':t.settle[k]=['open',''];refresh(k);return sheetKind?redrawSheet():null;
+   case 's-done':closeSheet();return setNote(k,'done',a.dataset.v);
+   case 's-reopen':return setNote(k,null);
    case 's-ins':{const [x,c]=insText(t,k);return insert(x,[k],c)}
    case 'ask':return insert(ask(t,k),[k]);
    case 'qopen':QSEL.clear();QTAB='all';return qSheet();
    case 'qtab':QTAB=a.dataset.qg;qSheet();return $('#sheet .sh-sc').scrollTop=0;
    case 'qtog':{const id=a.dataset.id;QSEL.has(id)?QSEL.delete(id):QSEL.add(id);return redrawSheet()}
-   case 'qins':{const [x,ks]=qPicked();QSEL.clear();insert(x,ks);const i=$('#inp');i.setSelectionRange(0,0);i.scrollTop=0;return}
+   case 'qins':{const [x,ks]=qPicked();QSEL.clear();insert(x,ks);const i=$('#inp');if(i){i.setSelectionRange(0,0);i.scrollTop=0}return}
    case 'qsend':{const [x,ks]=qPicked();QSEL.clear();closeSheet();PENDING=ks;return send(x)}
    case 'profile':closeSheet();return openProfile();
    case 'prof-back':closeProfile();return renderRail();
-   case 'attach':return $('#file').click();
-   case 'more':return openSheet('more',head(esc(t.p.name)),`<div class="acts" style="margin-top:6px"><button class="btn btn-secondary wide" data-act="profile">${ic('user','sm')}View profile</button><button class="btn btn-secondary wide" data-act="report">${ic('flag','sm')}Report</button><button class="btn btn-secondary wide" data-act="block">${ic('block','sm')}Block</button></div>`,'');
+   case 'more':return openSheet('more',head(esc(t.p.name)),`<div class="acts" style="margin-top:6px"><button class="btn btn-secondary wide" data-act="profile">${ic('user','sm')}View profile</button><button class="btn btn-secondary wide" data-act="report">${ic('flag','sm')}Report</button>${t.isDraft?'':`<button class="btn btn-secondary wide" data-act="block">${ic('block','sm')}Block</button>`}</div>`,'');
    case 'report':REPORT=null;return reportSheet();
    case 'reason':REPORT=+a.dataset.i;return reportSheet();
-   case 'report-go':closeSheet();t.msgs.push(SY('You reported this conversation.'));refresh();return toast('Report sent');
+   case 'report-go':{if(REPORT==null)return;const reason=REASONS[REPORT];closeSheet();return chat().report(t.id,reason).then(ok=>toast(ok?'Report sent':'Couldn’t send the report. Try again.'))}
    case 'block':return blockSheet();
-   case 'block-go':{closeSheet();closeProfile();t.blocked=true;UNDO=t.id;const next=inTab(TAB)[0];CUR=null;if(next&&!isPhone())return openThread(next.id);VIEW='inbox';renderAll();return}
-   case 'unblock':{const id=UNDO;UNDO=null;TH[id].blocked=false;return openThread(id)}
-   case 'share':PICK=null;return shareSheet();
+   case 'block-go':{const id=t.id;closeSheet();closeProfile();chat().block(id).then(ok=>{if(!ok){UNDO=null;toast('Couldn’t block. Try again.');renderList()}});
+     UNDO=id;CUR=null;chat().open(null);const next=inTab(TAB).find(x=>x.id!==id);if(next&&!isPhone())return openThread(next.id);VIEW='inbox';setUrl(null);renderAll();return}
+   case 'unblock':{const id=UNDO;UNDO=null;if(!id)return;chat().unblock(id).then(ok=>{if(!ok)toast('Couldn’t unblock. Try again.')});return openThread(id)}
+   case 'unblock-cur':return chat().unblock(t.id).then(ok=>{if(!ok)toast('Couldn’t unblock. Try again.')});
+   case 'share':{if(needsFirst(t))return;PICK=null;MYC=null;shareSheet();const id=t.id;chat().myContact().then(c=>{MYC=c;if(sheetKind==='share'&&CUR===id)shareSheet()},()=>{MYC={instagram:'',email:''};if(sheetKind==='share')shareSheet()});return}
    case 'pick':PICK=a.dataset.kind;return shareSheet();
-   case 'share-go':if(!PICK)return;{const kd=PICK;closeSheet();return doShare(kd)}
-   case 'withdraw':t.share.mine=null;clearTimeout(shareTimer);return refresh();
+   case 'share-go':if(!PICK)return;{const kd=PICK;PICK=null;closeSheet();return chat().share(t.id,kd).then(ok=>{if(!ok)toast('Couldn’t share. Try again.')})}
+   case 'withdraw':return chat().withdraw(t.id).then(ok=>{if(!ok)toast('Couldn’t withdraw. Try again.')});
    case 'copy':{const v=a.dataset.v;try{navigator.clipboard.writeText(v).catch(()=>{})}catch(_){}return toast('Copied '+v)}
    case 'sheet-close':return closeSheet();
   }});
@@ -689,14 +670,10 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape'||!site)return;if(she
 
 /* ---------- start ---------- */
 stage=$('#stage');
-let fm=null;try{fm=sessionStorage.getItem('cs-first-msg');sessionStorage.removeItem('cs-first-msg')}catch(_){}
-const W=QS.get('with');
-if(W&&ROOMS[W]&&(fm||!TH[W]))TH[W]=fresh(W);
-if(W&&TH[W]){CUR=W;TAB=TH[W].tab;VIEW='thread'}
-shell();if(CUR&&TH[CUR].unread){TH[CUR].unread=false;renderList()}
-if(fm&&CUR===W)setTimeout(()=>send(fm),400);
-let lastPhone=isPhone();addEventListener('resize',()=>{const p=isPhone();if(p!==lastPhone){lastPhone=p;if(!p&&!CUR){const f=inTab(TAB)[0];if(f)openThread(f.id)}closeRail();closeProfile();siteClass();renderRail()}});
+shell();
+let lastPhone=isPhone();addEventListener('resize',()=>{const p=isPhone();if(p!==lastPhone){lastPhone=p;if(!p&&!CUR)autoSelect();closeRail();closeProfile();siteClass();renderRail();markSeen()}});
 </script>
 <script type="module" src="/src/rentlet.ts"></script>
+<script type="module" src="/src/chat.ts"></script>
 </body>
 </html>

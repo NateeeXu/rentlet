@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
 <style>
 /* Requests near a campus: a two-column waterfall feed of the people who need a room, with the matches for your
-   own listing on top. ?live=1 shows your own request as live instead of in review. */
+   own listing on top. */
 :root{--canvas:#f7f7f7;--soft:#f2f2f4;--ink:#222;--ink2:#484848;--muted:#717171;--line:#dddddd;--hair:#e8e8e8;--warn:#8a5200;--warn-bg:#fff4e5;--serif:"Newsreader",Georgia,serif}
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -28,14 +28,15 @@ img{display:block}
 .logo{display:flex;align-items:center;min-height:44px}
 .logo img{height:30px;display:block}
 .nav{display:flex;gap:2px}
-.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:40px;display:flex;align-items:center;border-radius:999px;text-decoration:none;white-space:nowrap}
+.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:44px;display:flex;align-items:center;border-radius:999px;text-decoration:none;white-space:nowrap}
 .nav a:hover{background:var(--soft);color:var(--ink)}
 .nav a[aria-current]{color:var(--ink);text-decoration:underline;text-underline-offset:6px}
 .badge{min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;display:inline-grid;place-items:center;margin-left:6px;text-decoration:none}
 .hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
-.me{width:36px;height:36px;border-radius:50%;background:#222;color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;text-decoration:none;flex:none}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1px solid transparent;font-size:14px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;text-decoration:none;color:var(--ink)}
+.me{width:44px;height:44px;overflow:hidden;border-radius:50%;background:#222;color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;text-decoration:none;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 16px;border-radius:999px;border:1px solid transparent;font-size:14px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;text-decoration:none;color:var(--ink)}
 .btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn{max-width:100%}.btn .bl{min-width:0;overflow:hidden;text-overflow:ellipsis} /* a long first name never pushes a button out of its row */
 .btn-secondary{background:#fff;border-color:var(--line)}
 .btn-secondary:hover{border-color:var(--ink)}
 .btn-lg{height:48px;padding:0 22px;font-size:15px}
@@ -61,7 +62,7 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 .f-camp{width:280px;min-width:0;flex:none}
 .f-camp .fld{width:100%}
 .f-date{padding:0}
-.f-date .fd{height:100%;border:0;background:none;display:flex;align-items:center;gap:8px;padding:0 14px;font-weight:600;font-size:14px;min-width:0;flex:1;border-radius:999px;text-align:left;font-variant-numeric:tabular-nums}
+.f-date .fd{height:calc(100% + 2px);margin:-1px 0;border:0;background:none;display:flex;align-items:center;gap:8px;padding:0 14px;font-weight:600;font-size:14px;min-width:0;flex:1;border-radius:999px;text-align:left;font-variant-numeric:tabular-nums}
 .f-date .fx{width:32px;height:32px;margin-right:6px;border-radius:50%;border:0;background:var(--soft);font-size:16px;line-height:1;flex:none;display:grid;place-items:center;padding:0}
 .f-sort{margin-left:auto;cursor:pointer}
 .f-sort select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;font-size:16px}
@@ -69,8 +70,8 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0}
 .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.seg{display:inline-flex;align-items:center;gap:2px;height:44px;padding:1px;border:1px solid var(--line);border-radius:999px;background:#fff}
-.seg button{height:40px;padding:0 12px;border:0;border-radius:999px;background:none;font-size:14px;font-weight:600;color:var(--ink2);white-space:nowrap;margin:0;min-width:0}
+.seg{display:inline-flex;align-items:center;gap:2px;height:44px;padding:0 1px;border:1px solid var(--line);border-radius:999px;background:#fff}
+.seg button{height:44px;margin:-1px 0!important;padding:0 12px;border:0;border-radius:999px;background:none;font-size:14px;font-weight:600;color:var(--ink2);white-space:nowrap;min-width:0}
 .seg button.on{background:var(--ink);color:#fff}
 .dbar{position:sticky;top:72px;z-index:10;background:var(--canvas);display:flex;align-items:center;gap:10px;padding:12px 0;margin:8px 0 8px}
 .dd{display:flex;gap:10px;align-items:center;flex:1;min-width:0}
@@ -159,6 +160,7 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
   .dbar .f-camp{width:auto;flex:1 1 auto}.dd{display:none}.fpill{display:inline-flex}
 }
 @container (max-width:640px){
+  .fcols a{display:flex;align-items:center;min-height:44px;padding:0}
   .wrap{padding:0 16px}
   .hdr .wrap{height:60px;gap:8px}
   .logo img{height:24px}
@@ -221,37 +223,20 @@ const md=s=>`${MO[+s.slice(5,7)-1]} ${+s.slice(8)}`;
 const wl=(s,e)=>WhenPicker.label(s,e);
 const SCH=WhereSearch.SCHOOLS;
 
-/* example seekers (the real page lists posted, reviewed requests) with the answers the request form collects */
-const REQ=[
- {id:'r13',who:'Noor',role:'Intern',kind:'Private room',start:'2026-12-20',end:'2027-03-14',budget:1700,campusId:'nu-evn',near:'shuttle',flex:'1w',util:true,furn:'full',verified:true,posted:'2026-10-29',active:'2026-10-29',note:'Winter internship. Quiet, and I cook most nights.'},
- {id:'r2',who:'Mei',role:'New hire',kind:'Room or whole place',start:'2027-01-03',end:'2027-03-31',budget:1500,campusId:'nu-evn',near:'shuttle',flex:'1w',util:true,furn:'full',verified:true,posted:'2026-10-25',active:'2026-10-27',note:'Starting a job downtown. A furnished place for my first three months.'},
- {id:'r1',who:'Jordan',role:'Student',kind:'Private room',start:'2027-01-05',end:'2027-04-30',budget:1450,campusId:'nu-evn',near:'walk',flex:'exact',util:false,furn:'any',verified:true,posted:'2026-10-20',active:'2026-10-26',note:'Grad student at Kellogg. Quiet, and I don’t smoke.'},
- {id:'r3',who:'Alex',role:'Intern',kind:'Private room',start:'2027-01-10',end:'2027-03-25',budget:1600,campusId:'nu-evn',near:'any',flex:'exact',util:false,furn:'full',verified:true,posted:'2026-10-28',active:'2026-10-28',note:'Winter internship. I need a desk and good Wi-Fi.'},
- {id:'r10',who:'Ines',role:'Visiting researcher',kind:'Private room',start:'2026-12-15',end:'2027-02-28',budget:1550,campusId:'nu-evn',near:'walk',flex:'3d',util:false,furn:'part',verified:true,posted:'2026-09-12',active:'2026-09-12',note:'Ten weeks with a lab on campus. Early riser.'},
- {id:'r14',who:'Tom',role:'New hire',kind:'Room or whole place',start:'2027-01-15',end:'2027-03-01',budget:1500,campusId:'nu-evn',near:'any',flex:'exact',util:false,furn:'any',verified:false,posted:'2026-10-26',active:'2026-10-26',note:'Six weeks of training downtown. Bringing my cat.'},
- {id:'r4',who:'Sofia',role:'Visiting researcher',kind:'Room or whole place',start:'2027-01-02',end:'2027-06-15',budget:1350,campusId:'nu-evn',near:'any',flex:'exact',util:false,furn:'any',verified:true,posted:'2026-10-18',active:'2026-10-18',note:'Working in a lab on campus. Happy to share a kitchen.'},
- {id:'r8',who:'Hana',role:'Student',kind:'Private room',start:'2027-01-02',end:'2027-08-31',budget:1250,campusId:'nu-evn',near:'walk',flex:'exact',util:false,furn:'any',verified:true,posted:'2026-10-15',active:'2026-10-15',note:'PhD student. Two quarters and the summer.'},
- {id:'r5',who:'Priya',role:'Student',kind:'Private room',start:'2027-03-28',end:'2027-06-12',budget:1300,campusId:'nu-evn',near:'walk',flex:'exact',util:false,furn:'full',verified:true,posted:'2026-10-22',active:'2026-10-22',note:'Exchange student, here for spring quarter only.'},
- {id:'r6',who:'Daniel',role:'New hire',kind:'Whole place',start:'2027-06-01',end:'2027-08-31',budget:1700,campusId:'nu-evn',near:'any',flex:'exact',util:false,furn:'any',verified:false,posted:'2026-10-10',active:'2026-10-10',note:'Moving for a new role. Open to taking over a lease.'},
- {id:'r7',who:'Leo',role:'Intern',kind:'Private room',start:'2027-06-14',end:'2027-08-20',budget:1400,campusId:'nu-evn',near:'shuttle',flex:'1w',util:false,furn:'full',verified:true,posted:'2026-10-24',active:'2026-10-24',note:'Summer internship. Flexible by about a week.'},
- {id:'r9',who:'Marcus',role:'Other',kind:'Whole place',start:'2027-02-01',end:'2027-05-31',budget:null,campusId:'nu-evn',near:'any',flex:'exact',util:false,furn:'any',verified:false,posted:'2026-10-08',active:'2026-10-08',note:'Here for a family move in spring. A quiet one-bed near the lake.'},
- {id:'r11',who:'Ken',role:'Intern',kind:'Private room',start:'2027-06-10',end:'2027-08-28',budget:1350,campusId:'nu-chi',near:'any',flex:'exact',util:false,furn:'full',verified:true,posted:'2026-10-21',active:'2026-10-21',note:'Summer internship in the Loop. Tidy and quiet.'},
- {id:'r12',who:'Ava',role:'Student',kind:'Whole place',start:'2027-01-03',end:'2027-06-12',budget:1600,campusId:'nu-chi',near:'walk',flex:'exact',util:false,furn:'any',verified:true,posted:'2026-10-19',active:'2026-10-19',note:'Two quarters in Hyde Park. A small studio is perfect.'}
-];
-/* your own request (request.html), shown first; it is reviewed before it goes live */
-let mine=null;try{mine=JSON.parse(sessionStorage.getItem('cs-my-request')||'null')}catch(_){}
-if(mine&&QS.get('live')==='1')mine.live=true;
+/* open requests from people looking for a place, live from Firestore (src/requests.ts fills it through
+   RL_onRequests): first name, Google photo and the answers the request form collects. null until it loads. */
+let REQ=null,REQ_ERR=false;
+/* once you're signed in: your own open request and your active listings (src/requests.ts, RL_onMine) */
+let ME=null;
+const myUid=()=>RL.authed&&RL.user?RL.user.uid:null;
+const others=()=>(REQ||[]).filter(q=>q.uid!==myUid());
+const LS=()=>ME&&ME.listings||[];
+const mhref=(code,uid)=>`messages.html?listing=${encodeURIComponent(code)}&with=${encodeURIComponent(uid)}`;
 
-/* your listing: the post.html draft if there is one, else the seeded live listing (post.html's defaults) */
-const LISTING={campusId:'nu-evn',area:'Downtown Evanston',walk:11,unit:'room',layout:'3B2B',start:'2026-12-20',end:'2027-03-15',rent:1480,fees:['Wi-Fi','Heat'],furn:'full',shuttle:'covered'};
-try{const d=JSON.parse(sessionStorage.getItem('cs-post-draft')||'null');if(d){const m=d.multi||{};
-  Object.assign(LISTING,{campusId:SCH.some(x=>x[0]===d.campusId)?d.campusId:LISTING.campusId,unit:d.unit||LISTING.unit,layout:d.layout||LISTING.layout,start:d.start||LISTING.start,end:d.end||LISTING.end,rent:d.rent||LISTING.rent,fees:m.fees||LISTING.fees,furn:d.furn||LISTING.furn,shuttle:d.shuttle||LISTING.shuttle})}}catch(_){}
-const L=LISTING;
-const ltitle=()=>L.unit==='whole'?(L.layout==='Studio'?'Whole studio':`Whole ${L.layout}`):`Private room in a ${L.layout}`;
-
-/* matching (decided Oct 30): hard filters, then dates 35, money 25, verified 20, commute 10, furnished 10 */
+/* matching (decided Oct 30): hard filters, then dates 35, money 25, verified 20, commute 10, furnished 10.
+   L is one of your listings; a listing without a walking time counts as half for "walkable". */
 const FLEXD={exact:0,'3d':3,'1w':7},UTIL=['Heat','Water','Electricity','Gas'];
-function score(q){
+function score(q,L){
   if(q.campusId!==L.campusId)return null;
   const f=FLEXD[q.flex]||0,fs=add(q.start,-f),fe=add(q.end,f),term=nights(L.start,L.end);
   const os=T(fs)>T(L.start)?fs:L.start,oe=T(fe)<T(L.end)?fe:L.end,ov=Math.max(0,nights(os,oe));
@@ -271,7 +256,7 @@ function score(q){
   if(q.util){if(utilIn.length){s.money=Math.min(25,s.money+3);R.push(['util',`${utilIn.join(' and ')} included`])}else C.push(['util','Wants utilities included'])}
   s.ver=q.verified?20:0;if(q.verified)R.push(['ver','Verified']);
   if(q.near==='any')s.commute=10;
-  else if(q.near==='walk'){s.commute=L.walk<=15?10:L.walk<=25?5:0;if(L.walk<=15)R.push(['commute',`${L.walk} min walk, as wanted`]);else if(L.walk>25)C.push(['commute','Wants to walk to campus'])}
+  else if(q.near==='walk'){if(L.walk==null)s.commute=5;else{s.commute=L.walk<=15?10:L.walk<=25?5:0;if(L.walk<=15)R.push(['commute',`${L.walk} min walk, as wanted`]);else if(L.walk>25)C.push(['commute','Wants to walk to campus'])}}
   else{s.commute=L.shuttle==='covered'?10:L.shuttle==='unknown'?5:0;if(L.shuttle==='covered')R.push(['commute','On the shuttle line, as wanted']);else if(L.shuttle==='not_covered')C.push(['commute','Wants the shuttle line'])}
   if(q.furn==='any')s.furn=10;
   else if(q.furn==='full'){s.furn=L.furn==='full'?10:L.furn==='part'?5:0;if(L.furn==='full')R.push(['furn','Furnished, as wanted']);else C.push(['furn','Wants it fully furnished'])}
@@ -281,18 +266,30 @@ function score(q){
   if(nights(q.active,TODAY)>30){if(ti<3)ti++;C.push(['stale',`Last active ${Math.round(nights(q.active,TODAY)/7)} weeks ago`])}
   const reasons=['dates','money','ver','furn','commute','util'].flatMap(k=>R.filter(r=>r[0]===k).map(r=>r[1])).slice(0,3);
   const caution=['stale','dates','money','furn','commute','util'].flatMap(k=>C.filter(c=>c[0]===k).map(c=>c[1]))[0]||'';
-  return ti<3?{q,total,tier:TIERS[ti],reasons,caution}:null}
+  return ti<3?{q,L,total,tier:TIERS[ti],reasons,caution}:null}
 const TR={Strong:0,Good:1,Possible:2};
-const MATCHES=REQ.map(score).filter(Boolean).sort((a,b)=>TR[a.tier]-TR[b.tier]||b.total-a.total||T(b.q.posted)-T(a.q.posted));
-const BADGE=MATCHES.filter(m=>m.tier!=='Possible').length;
+const matchesFor=L=>others().map(q=>score(q,L)).filter(Boolean).sort((a,b)=>TR[a.tier]-TR[b.tier]||b.total-a.total||T(b.q.posted)-T(a.q.posted));
+/* the header badge: people who are a strong or good match for any of your listings */
+const badge=()=>new Set(LS().flatMap(L=>matchesFor(L).filter(m=>m.tier!=='Possible').map(m=>m.q.id))).size;
+/* which of your listings a message to this person is about: the best match, else one at their campus, else your newest */
+function listingFor(q){let best=null;
+  for(const L of LS()){const m=score(q,L);if(m&&(!best||TR[m.tier]<TR[best.tier]||(m.tier===best.tier&&m.total>best.total)))best=m}
+  if(best)return best.L;
+  const here=LS().filter(L=>L.campusId===q.campusId);
+  return here.find(L=>L.start<q.end&&q.start<L.end)||here[0]||LS()[0]||null}
 
-/* filters */
-const R={campusId:L.campusId,start:null,end:null,kind:'either',sort:'soon',sheet:null};
-{const want=QS.get('campus');let plan={};try{plan=JSON.parse(sessionStorage.getItem('cs-plan')||'{}')}catch(_){}
-  const id=[want,mine&&mine.campusId].find(x=>x&&SCH.some(s=>s[0]===x));if(id)R.campusId=id}
+/* filters. The campus starts from ?campus=, else your own request's, your listing's, or the homepage's */
+const R={campusId:SCH[0][0],start:null,end:null,kind:'either',sort:'soon',sheet:null,auto:true};
+let PLAN={};try{PLAN=JSON.parse(sessionStorage.getItem('cs-plan')||'{}')}catch(_){}
+const known=x=>x&&SCH.some(s=>s[0]===x);
+{const want=QS.get('campus');if(known(want)){R.campusId=want;R.auto=false}else if(known(PLAN.school))R.campusId=PLAN.school}
+function autoCampus(){if(!R.auto)return;const my=myHere(true),L=LS()[0];
+  const id=[my&&my.campusId,L&&L.campusId,PLAN.school].find(known);if(id)R.campusId=id;
+  if(REQ&&(!RL.authed||ME))R.auto=false} /* settled once everything has loaded */
 const campus=()=>(SCH.find(s=>s[0]===R.campusId)||SCH[0])[1];
+const campusOf=id=>(SCH.find(s=>s[0]===id)||SCH[0])[1];
 const KINDS=[['room','Room'],['whole','Whole place'],['either','Either']],SORTS=[['soon','Soonest move-in'],['budget','Highest budget']];
-const inCampus=()=>REQ.filter(q=>q.campusId===R.campusId);
+const inCampus=()=>others().filter(q=>q.campusId===R.campusId);
 function shown(){
   let l=inCampus();
   if(R.start&&R.end)l=l.filter(q=>Math.min(T(q.end),T(R.end))-Math.max(T(q.start),T(R.start))>0);
@@ -300,7 +297,8 @@ function shown(){
   if(R.kind==='whole')l=l.filter(q=>q.kind!=='Private room');
   const b=q=>q.budget==null?Infinity:q.budget;
   return l.sort(R.sort==='budget'?(x,y)=>b(y)-b(x)||T(x.start)-T(y.start):(x,y)=>T(x.start)-T(y.start)||b(y)-b(x))}
-const myHere=()=>mine&&mine.campusId===R.campusId?mine:null;
+/* your own request, shown first at its campus */
+function myHere(any){const u=myUid();const my=u&&REQ?REQ.find(q=>q.uid===u):null;return my&&(any||my.campusId===R.campusId)?my:null}
 const chip=(t,on,attrs)=>`<button type="button" class="chip ${on?'on':''}" aria-pressed="${on}" ${attrs}>${t}</button>`;
 const seg=()=>`<div class="seg" role="group" aria-label="Room">${KINDS.map(([v,t])=>`<button type="button" class="${R.kind===v?'on':''}" aria-pressed="${R.kind===v}" data-one="kind:${v}">${t}</button>`).join('')}</div>`;
 const campusFld=()=>`<form class="f-camp" data-wform><div class="fld ws" data-wseg aria-label="Campus">${ic('pin','sm pin')}<span data-wval>${esc(campus())}</span>${ic('down','chev')}</div></form>`;
@@ -311,56 +309,75 @@ const nf=()=>(R.start?1:0)+(R.kind!=='either'?1:0);
 /* pieces */
 const tick=v=>v?`<span class="tk" title="Verified" role="img" aria-label="Verified">${ic('check')}</span>`:'';
 const budTxt=b=>b==null?'Any price':`Up to ${money(b)} / mo`;
-const myTag=()=>mine&&mine.live?'Live':'In review';
-const mrow=m=>{const q=m.q;return `<article class="mr" data-mid="${q.id}"><span class="av" aria-hidden="true">${esc(q.who[0])}</span><div class="mc"><h3>${esc(q.who)} · ${esc(q.role)}${tick(q.verified)}</h3>
+const myTag=()=>'Live';
+/* a person's Google photo when they have one, else their first initial */
+const face=q=>q.photo?`<img src="${esc(q.photo)}" alt="" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`:esc((q.who||'?')[0]);
+const mrow=m=>{const q=m.q;return `<article class="mr" data-mid="${esc(q.id)}"><span class="av" aria-hidden="true" style="overflow:hidden">${face(q)}</span><div class="mc"><h3>${esc(q.who)} · ${esc(q.role)}${tick(q.verified)}</h3>
   <p class="need">${esc(q.kind)} · <span class="nw">${wl(q.start,q.end)}</span> · <span class="nw">${budTxt(q.budget)}</span></p>
   <div class="rs">${m.reasons.map(r=>`<span class="rc">${esc(r)}</span>`).join('')}${m.caution?`<span class="rc warn">${ic('warn')}${esc(m.caution)}</span>`:''}</div></div>
-  <div class="mx"><span class="tier ${m.tier.toLowerCase()}">${m.tier}</span><a class="btn btn-secondary" href="messages.html?with=${encodeURIComponent(q.id)}">${ic('chat','sm')}Message ${esc(q.who)}</a></div></article>`};
-const fav=q=>`<span class="fav" aria-hidden="true">${esc(q.who[0])}</span>`;
-const fcard=(q,isMine)=>`<button type="button" class="fc ${isMine?'mine':''}" data-fc="${isMine?'mine':q.id}" aria-label="${esc(q.who)}, ${esc(q.role)}. ${esc(q.kind)}, ${wl(q.start,q.end)}">${isMine?`<span class="qtag">${myTag()}</span>`:''}
+  <div class="mx"><span class="tier ${m.tier.toLowerCase()}">${m.tier}</span><a class="btn btn-secondary" href="${mhref(m.L.code,q.uid)}">${ic('chat','sm')}<span class="bl">Message ${esc(q.who)}</span></a></div></article>`};
+const fav=q=>`<span class="fav" aria-hidden="true" style="overflow:hidden">${face(q)}</span>`;
+const fcard=(q,isMine)=>`<button type="button" class="fc ${isMine?'mine':''}" data-fc="${isMine?'mine':esc(q.id)}" aria-label="${esc(q.who)}, ${esc(q.role)}. ${esc(q.kind)}, ${wl(q.start,q.end)}">${isMine?`<span class="qtag">${myTag()}</span>`:''}
   <span class="fh2">${esc(q.kind)}</span><span class="fdt">${wl(q.start,q.end)}</span>${q.note?`<span class="fq">${esc(q.note)}</span>`:''}
   <span class="frow">${fav(q)}<span class="fm"><b>${esc(q.who)}</b><span class="rl"> · ${esc(q.role)}</span>${tick(q.verified)}</span><span class="fb">${budTxt(q.budget)}</span></span></button>`;
 
-const header=()=>`<header class="hdr"><div class="wrap">
+const header=()=>{const BADGE=badge();return `<header class="hdr"><div class="wrap">
   <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
   <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html" aria-current="page">Requests${BADGE?`<span class="badge" aria-label="${BADGE} matches for your listing">${BADGE}</span>`:''}</a></nav>
   <div class="hdr-right"><a class="btn btn-secondary hide-m" href="post.html">Post a listing</a><a class="btn btn-secondary hide-m" href="request.html">Post a request</a>
     <button class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu>${ic('menu')}</button>${RL.authed?`<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn btn-secondary" data-rl-signin>Sign in</button>`}</div>
-  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html" aria-current="page">Requests${BADGE?`<span class="badge">${BADGE}</span>`:''}</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav></div></header>`;
+  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html" aria-current="page">Requests${BADGE?`<span class="badge">${BADGE}</span>`:''}</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav></div></header>`};
 const footer=()=>`<footer class="foot"><div class="wrap"><div class="fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
   <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a></div>
   <div><h4>Post</h4><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></div>
-  <div><h4>Legal</h4><a href="#">Safety &amp; rules</a><a href="#">Terms</a><a href="#">Privacy</a></div></div></div></footer>`;
+  <div><h4>Legal</h4><a href="how-it-works.html">Safety &amp; rules</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></div></div></div></footer>`;
 
 /* the feed: two columns on anything wider than a phone; each card goes to the shortest column, so it reads left to right like a waterfall */
 let FEED=[],feedW=0;
 function layoutFeed(){const f=$('[data-feed]');if(!f)return;const W=$('#site').clientWidth,n=W>=600?2:1;
   f.style.setProperty('--n',n);f.innerHTML=Array.from({length:n},()=>'<div class="fcol"></div>').join('');const cols=[...f.children];
   FEED.forEach(h=>{const t=document.createElement('template');t.innerHTML=h.trim();cols.reduce((a,b)=>b.offsetHeight<a.offsetHeight?b:a).appendChild(t.content.firstChild)});feedW=W}
+/* Message on someone's request: about one of your listings. Sign in first; no listing yet, post one first. */
+function msgAction(q){
+  if(!myUid())return `<button type="button" class="btn btn-primary full" data-msg>${ic('chat','sm')}<span class="bl">Message ${esc(q.who)}</span></button>`;
+  if(!ME)return `<button type="button" class="btn btn-primary full" disabled>Checking your listings…</button>`;
+  if(ME.error)return `<p class="fm">Couldn’t check your listings.</p><button type="button" class="btn btn-secondary full" data-reload>Try again</button>`;
+  const L=listingFor(q);
+  if(!L)return `<p class="fm">You message people about a place you’ve posted. Post yours first.</p><a class="btn btn-primary full" href="post.html">Post a listing</a>`;
+  return `<a class="btn btn-primary full" href="${mhref(L.code,q.uid)}">${ic('chat','sm')}<span class="bl">Message ${esc(q.who)}</span></a>`}
+/* your own request: edit it, or take it down (asks once more first) */
+const mineActs=q=>R.sheet.confirm?`<p class="fm">Take your request down? People with a place won’t see it anymore.</p><button type="button" class="btn btn-primary full" data-close-req="${esc(q.id)}">Take it down</button><button type="button" class="btn btn-secondary full" data-keep>Keep it</button>`
+  :`<a class="btn btn-secondary full" href="request.html?edit=1">Edit</a><div style="text-align:center;margin-top:8px"><button type="button" class="lnk" data-ask-close>Take it down</button></div>`;
 function sheet(list,my){
   if(!R.sheet)return '';
   if(R.sheet.t==='f')return `<div class="gscrim"><div class="gs" role="dialog" aria-modal="true" aria-label="Filters"><button type="button" class="x" data-close aria-label="Close">×</button><div class="gh">Filters</div>
     <span class="lbl">Dates</span><div data-fcal></div>${R.start?'<button type="button" class="lnk" data-clear>Clear dates</button>':''}
     <span class="lbl">Room</span>${seg()}<span class="lbl">Sort</span><div class="chips">${SORTS.map(([v,t])=>chip(t,R.sort===v,`data-one="sort:${v}"`)).join('')}</div>
     <button type="button" class="btn btn-primary full" data-close>Show ${list.length+(my?1:0)}</button></div></div>`;
-  const isMine=R.sheet.id==='mine',q=isMine?my:REQ.find(x=>x.id===R.sheet.id);if(!q)return '';
+  const isMine=R.sheet.id==='mine',q=isMine?my:others().find(x=>x.id===R.sheet.id);if(!q)return '';
   return `<div class="gscrim"><div class="gs" role="dialog" aria-modal="true" aria-label="${esc(q.who)}’s request"><button type="button" class="x" data-close aria-label="Close">×</button>
     ${isMine?`<span class="qtag" style="display:inline-block;margin-bottom:10px">${myTag()}</span>`:''}${q.note?`<p class="gq">${esc(q.note)}</p>`:''}<p class="fm"><b>${esc(q.who)}</b><span class="rl"> · ${esc(q.role)}</span>${tick(q.verified)}</p>
     <dl class="gd"><dt>Room</dt><dd>${esc(q.kind)}</dd><dt>Dates</dt><dd>${wl(q.start,q.end)} · ${WhenPicker.nights(q.start,q.end)} nights</dd><dt>Budget</dt><dd>${budTxt(q.budget)}</dd></dl>
-    ${isMine?`<a class="btn btn-secondary full" href="request.html?edit=1">Edit</a>`:`<a class="btn btn-primary full" href="messages.html?with=${encodeURIComponent(q.id)}">${ic('chat','sm')}Message ${esc(q.who)}</a>`}</div></div>`}
+    ${isMine?mineActs(q):msgAction(q)}</div></div>`}
 
 function render(){
   if(window.WhenPicker)WhenPicker.close();
   const list=shown(),my=myHere(),n=inCampus().length;
+  if(R.sheet&&R.sheet.t==='req'&&!(R.sheet.id==='mine'?my:others().some(x=>x.id===R.sheet.id)))R.sheet=null; /* taken down meanwhile */
   FEED=[...(my?[fcard(my,1)]:[]),...list.map(q=>fcard(q))];
   const top=`<h1>Requests near ${esc(campus())}${n?`<span class="cnt" aria-label="${n} requests">${n}</span>`:''}</h1>`;
-  const matches=R.campusId===L.campusId&&MATCHES.length?`<section class="mbox" aria-label="Matches for your listing"><h2>Matches for your listing</h2>
-    <p class="mline"><b>${ltitle()}</b><span>${wl(L.start,L.end)}</span><span>${money(L.rent)} / mo</span><a class="lnk" href="post.html">Edit listing</a></p>
-    <div class="mlist">${MATCHES.map(mrow).join('')}</div></section><h2 class="fh">Everyone near ${esc(campus())}</h2>`:'';
+  /* matches for each of your listings at this campus */
+  const boxes=REQ?LS().filter(L=>L.campusId===R.campusId).map(L=>[L,matchesFor(L)]).filter(([,m])=>m.length):[];
+  const matches=boxes.length?`<section class="mbox" aria-label="Matches for your listing"><h2>Matches for your listing</h2>
+    ${boxes.map(([L,M])=>`<p class="mline"><b>${esc(L.title)}</b><span>${wl(L.start,L.end)}</span><span>${money(L.rent)} / mo</span><a class="lnk" href="room.html?room=${encodeURIComponent(L.code)}">See listing</a></p>
+    <div class="mlist">${M.map(mrow).join('')}</div>`).join('')}</section><h2 class="fh">Everyone near ${esc(campus())}</h2>`:'';
   const bar=`<div class="dbar">${campusFld()}<div class="dd">${dateFld()}${seg()}${sortFld()}</div><button type="button" class="fld fpill" data-fsheet aria-haspopup="dialog">${ic('sort','sm')}Filters${nf()?` · ${nf()}`:''}</button></div>`;
+  const elsewhere=SCH.find(s=>s[0]!==R.campusId&&others().some(q=>q.campusId===s[0]));
   let body;
-  if(!n&&!my)body=`<div class="empty"><h3>No requests near ${esc(campus())} yet</h3><div class="acts"><a class="btn btn-primary" href="request.html">Post a request</a><button type="button" class="btn btn-secondary" data-campus="${L.campusId}">See ${esc((SCH.find(s=>s[0]===L.campusId)||SCH[0])[1])}</button></div></div>`;
+  if(REQ_ERR&&!REQ)body=`<div class="empty"><h3>Couldn’t load requests</h3><div class="acts"><button type="button" class="btn btn-secondary" data-reload>Try again</button></div></div>`;
+  else if(!REQ)body=`<div class="empty"><h3>Loading requests…</h3></div>`;
+  else if(!n&&!my)body=`<div class="empty"><h3>No requests near ${esc(campus())} yet</h3><div class="acts"><a class="btn btn-primary" href="request.html">Post a request</a>${elsewhere?`<button type="button" class="btn btn-secondary" data-campus="${elsewhere[0]}">See ${esc(elsewhere[1])}</button>`:''}</div></div>`;
   else if(!list.length&&!my)body=`<div class="empty"><h3>No requests match</h3><div class="acts"><button type="button" class="btn btn-secondary" data-reset>Clear filters</button></div></div>`;
   else body=`<div class="feed" data-feed></div><p class="fend">That’s everyone near ${esc(campus())}</p>`;
   const nudge=n?`<section class="nudge"><div class="wrap"><p><span>Leaving a room near ${esc(campus())}? <b>${n} ${n===1?'person':'people'}</b> above need${n===1?'s':''} one.</span><a class="btn btn-secondary btn-lg" href="post.html">Post a listing</a></p></div></section>`:'';
@@ -370,8 +387,15 @@ function render(){
   const fc=$('[data-fcal]');if(fc)WhenPicker.mount({mount:fc,start:R.start,end:R.end,act:'in',onChange:(s,e)=>{if(s&&e&&e>s){R.start=s;R.end=e;render()}}});
   document.querySelectorAll('.ws-pop').forEach(p=>p.remove());
   document.querySelectorAll('[data-wform]').forEach(f=>{f.addEventListener('submit',e=>e.preventDefault());
-    WhereSearch.attach({form:f,seg:f.querySelector('[data-wseg]'),valueEl:f.querySelector('[data-wval]'),current:campus(),onCampus:v=>{R.campusId=v;render()}})})}
+    WhereSearch.attach({form:f,seg:f.querySelector('[data-wseg]'),valueEl:f.querySelector('[data-wval]'),current:campus(),onCampus:v=>{R.campusId=v;R.auto=false;render()}})})}
 new ResizeObserver(()=>requestAnimationFrame(()=>{if($('#site').clientWidth!==feedW)layoutFeed()})).observe(document.getElementById('site'));
+
+/* live data (src/requests.ts). A redraw keeps an open sheet open; while the date picker is open, it waits for it to close. */
+function refresh(){if(document.querySelector('[data-when][aria-expanded="true"]')){clearTimeout(refresh.t);refresh.t=setTimeout(refresh,400);return}
+  autoCampus();const x=$('.gs .x'),had=document.activeElement===x;render();if(had){const nx=$('.gs .x');if(nx)nx.focus()}}
+window.RL_onRequests=rows=>{if(rows){REQ=rows;REQ_ERR=false}else REQ_ERR=true;refresh()};
+window.RL_onMine=m=>{ME=m;refresh()};
+window.RL_onAuth=()=>{if(!RL.authed)ME=null;refresh()};
 
 document.addEventListener('click',e=>{const t=e.target;
   const hb=t.closest('[data-hmenu]'),hm=$('#hmenu');
@@ -380,15 +404,22 @@ document.addEventListener('click',e=>{const t=e.target;
   const fc=t.closest('[data-fc]');if(fc){R.sheet={t:'req',id:fc.dataset.fc};render();$('.gs .x').focus();return}
   if(t.closest('[data-fsheet]')){R.sheet={t:'f'};render();$('.gs .x').focus();return}
   if(t.closest('[data-close]')||t.matches('.gscrim')){R.sheet=null;render();return}
+  if(t.closest('[data-msg]')){RL.signIn();return} /* signing in redraws the sheet with the right button */
+  if(t.closest('[data-reload]')){location.reload();return}
+  if(t.closest('[data-ask-close]')){R.sheet.confirm=true;render();return}
+  if(t.closest('[data-keep]')){R.sheet.confirm=false;render();return}
+  const cr=t.closest('[data-close-req]');if(cr){cr.disabled=true;cr.textContent='Taking it down…';
+    RentletRequests.closeRequest(cr.dataset.closeReq).then(()=>{R.sheet=null;render();Rentlet.toast('Your request is down.');RentletRequests.refreshMine()},()=>{Rentlet.toast('Couldn’t take it down. Check your connection and try again.');render()});return}
   const o=t.closest('[data-one]');if(o){const [k,v]=o.dataset.one.split(':');R[k]=v;render();return}
-  const w=t.closest('[data-when]');if(w)return WhenPicker.open({anchor:w,mode:'leave',start:R.start||L.start,end:R.end||L.end,onDone:(s,e2)=>{R.start=s;R.end=e2;render()}});
+  const w=t.closest('[data-when]');if(w){const L=LS().find(x=>x.campusId===R.campusId);return WhenPicker.open({anchor:w,mode:'leave',start:R.start||(L&&L.start),end:R.end||(L&&L.end),onDone:(s,e2)=>{R.start=s;R.end=e2;render()}})}
   if(t.closest('[data-clear]')){R.start=R.end=null;render();return}
   if(t.closest('[data-reset]')){R.start=R.end=null;R.kind='either';render();return}
-  const c=t.closest('[data-campus]');if(c){R.campusId=c.dataset.campus;render();return}});
+  const c=t.closest('[data-campus]');if(c){R.campusId=c.dataset.campus;R.auto=false;render();return}});
 document.addEventListener('change',e=>{if(e.target.matches('[data-sort]')){R.sort=e.target.value;render()}});
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(R.sheet){R.sheet=null;render();return}const hm=$('#hmenu');if(hm&&!hm.hidden){hm.hidden=true;$('[data-hmenu]').focus()}});
 render();
 </script>
 <script type="module" src="/src/rentlet.ts"></script>
+<script type="module" src="/src/requests.ts"></script>
 </body>
 </html>

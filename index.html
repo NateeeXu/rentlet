@@ -820,8 +820,18 @@ const L=[];let LOADED=false;
 /* a listing photo is a full URL; the bundled images are short names */
 const pic=x=>!x?'data:image/gif;base64,R0lGODlhAQABAAAAACw=':(/[\/:]/.test(x)?x:`img/${x}.jpg`);
 const agoOf=ms=>{const m=Math.max(0,Math.round((Date.now()-ms)/6e4));if(m<2)return 'Posted just now';if(m<60)return `Posted ${m} minutes ago`;const h=Math.round(m/60);if(h<24)return `Posted ${h} hour${h>1?'s':''} ago`;const d=Math.round(h/24);if(d<2)return 'Posted yesterday';if(d<7)return `Posted ${d} days ago`;const w=Math.round(d/7);return w<2?'Posted last week':`Posted ${w} weeks ago`};
-/* requests from people looking (filled when requests are connected) */
-const Q=[];
+/* requests from people looking for a place, live from Firestore (src/requests.ts calls RL_onRequests):
+   QALL is every open request, Q the ones at the chosen place (plan.school). First name and Google photo only. */
+const QALL=[],Q=[];
+const syncQ=()=>Q.splice(0,Q.length,...QALL.filter(q=>q.campusId===plan.school));
+/* redraw "People looking for a place" and the count under it in place, so the reel above keeps running */
+function cxPeopleSync(){const was=JSON.stringify(Q);syncQ();if(JSON.stringify(Q)===was)return;
+  const box=$('#cxJustBox');if(!box)return;
+  $$('[data-cxpeople]').forEach(x=>x.remove());if(Q.length)box.insertAdjacentHTML('afterend',cxPeople());
+  $$('[data-pcount]').forEach(x=>x.innerHTML=cxCount())}
+window.RL_onRequests=rows=>{if(rows)QALL.splice(0,QALL.length,...rows);cxPeopleSync()};
+/* a new campus in the search bar (its own change handler sets plan.school first) */
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='aCamp')cxPeopleSync()});
 /* showcase pairs for the heroes (illustrative, not inventory) */
 const DEFAULT={school:'nu-evn',start:'2027-01-03',end:'2027-04-30',budget:1500};
 const MINE={school:'nu-evn',start:'2027-01-02',end:'2027-04-30',budget:1390};
@@ -1016,18 +1026,41 @@ const cxDone=()=>`<div class="cx-done"><span class="ok">${ic('check')}</span><di
 const cxAlerts=()=>`<section class="cx-sec" id="cxAlerts"><div class="wrap"><div class="cx-subs"><div class="sl"><h2>Be the first to know</h2><p>Rooms like these go fast. We’ll email you when a new one matches your search.</p><div class="cx-crit" data-cxcrit>${cxCritHtml()}</div></div>
   <div data-cxsubs>${CXALR?cxDone():cxForm()}</div></div></div></section>`;
 /* people looking for a place: who, when, what they need; tap for details */
-const cxPeople=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-sh"><div><h2>People looking for a place</h2><p>Students, interns and new hires who need a room nearby. Tap one to see what they need.</p></div><button type="button" class="cx-lnk" data-toast="Opens all requests.">See all requests</button></div>
-  <div class="cx-ppl" id="cxPpl">${Q.map((q,i)=>`<button type="button" class="cx-pc" data-cxperson="${i}"><span class="pt"><i class="av">${q.who[0]}</i><span class="nm"><b>${q.who}</b><small>${q.role}</small></span></span><span class="pd">${wl(q.start,q.end)}</span><span class="pf">${q.kind} · up to <b>${money(q.budget)}</b> / mo</span></button>`).join('')}</div>
+const cxEsc=v=>String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+/* their Google photo when they have one, else their first initial */
+const cxFace=q=>q.photo?`<img src="${cxEsc(q.photo)}" alt="" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`:cxEsc((q.who||'?')[0]);
+const cxPeople=()=>`<section class="cx-sec" data-cxpeople><div class="wrap"><div class="cx-sh"><div><h2>People looking for a place</h2><p>Students, interns and new hires who need a room nearby. Tap one to see what they need.</p></div><button type="button" class="cx-lnk" data-cxhref="requests.html?campus=${cxEsc(plan.school)}" style="min-height:44px;display:inline-flex;align-items:flex-end">See all requests</button></div>
+  <div class="cx-ppl" id="cxPpl">${Q.map((q,i)=>`<button type="button" class="cx-pc" data-cxperson="${i}"><span class="pt"><i class="av" style="overflow:hidden">${cxFace(q)}</i><span class="nm"><b>${cxEsc(q.who)}</b><small>${cxEsc(q.role)}</small></span></span><span class="pd">${wl(q.start,q.end)}</span><span class="pf">${cxEsc(q.kind)} · ${q.budget==null?'any price':`up to <b>${money(q.budget)}</b> / mo`}</span></button>`).join('')}</div>
   <div class="cx-pnav"><button type="button" class="cx-nb" data-cxpp="-1" aria-label="Earlier requests">${ic('back')}</button><button type="button" class="cx-nb" data-cxpp="1" aria-label="More requests">${ic('arrow')}</button></div></div></section>`;
-function cxSheet(i){const q=Q[i],m=document.createElement('div');m.className='cx-mdl';m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${q.who}’s request"><div class="pt"><i class="av">${q.who[0]}</i><div><h3>${q.who}</h3><small>${q.role}</small></div><button type="button" class="x" data-cxclose aria-label="Close">×</button></div>
-  <dl><dt>Dates</dt><dd>${wl(q.start,q.end)} · ${nights(q.start,q.end)} nights</dd><dt>Looking for</dt><dd>${q.kind}</dd><dt>Budget</dt><dd>up to ${money(q.budget)} / mo</dd><dt>Area</dt><dd>Around Northwestern · Evanston</dd></dl>
-  <p class="note">${q.note}</p><div class="acts"><button type="button" class="pri" data-cxmsg="${q.who}">Message ${q.who}</button><button type="button" class="sec2" data-cxclose>Close</button></div></div>`;
-  ($('.stage.phone')||document.body).appendChild(m);m.addEventListener('click',e=>{if(e.target===m||e.target.closest('[data-cxclose]'))m.remove();if(e.target.closest('[data-cxmsg]')){m.remove();toast(`Sign in to message ${q.who}.`)}});$('.x',m).focus()}
+/* Message: signed in, about one of your listings (messages.html?listing=&with=); with no listing yet, post one first */
+function cxSheet(i){const q=Q[i];if(!q)return;const m=document.createElement('div');m.className='cx-mdl';
+  const own=RL.user&&q.uid===RL.user.uid;
+  m.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${cxEsc(q.who)}’s request"><div class="pt"><i class="av" style="overflow:hidden">${cxFace(q)}</i><div><h3>${cxEsc(q.who)}</h3><small>${cxEsc(q.role)}</small></div><button type="button" class="x" data-cxclose aria-label="Close" style="width:44px;height:44px">×</button></div>
+  <dl><dt>Dates</dt><dd>${wl(q.start,q.end)} · ${nights(q.start,q.end)} nights</dd><dt>Looking for</dt><dd>${cxEsc(q.kind)}</dd><dt>Budget</dt><dd>${q.budget==null?'Any price':`up to ${money(q.budget)} / mo`}</dd><dt>Area</dt><dd>Around ${schoolName(q.campusId)}</dd></dl>
+  ${q.note?`<p class="note">${cxEsc(q.note)}</p>`:''}<div class="acts">${own?`<button type="button" class="pri" data-cxhref="request.html?edit=1">Edit your request</button>`:`<button type="button" class="pri" data-cxmsg style="min-width:0;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Message ${cxEsc(q.who)}</button>`}<button type="button" class="sec2" data-cxclose>Close</button></div></div>`;
+  ($('.stage.phone')||document.body).appendChild(m);
+  m.addEventListener('click',e=>{if(e.target===m||e.target.closest('[data-cxclose]')){m.remove();return}
+    const h=e.target.closest('[data-cxhref]');if(h){location.href=h.dataset.cxhref;return}
+    const b=e.target.closest('[data-cxmsg]');if(b)cxMessage(q,b,m)});
+  $('.x',m).focus()}
+async function cxMessage(q,b,m){
+  if(b.disabled)return;
+  if(!RL.authed&&!(await RL.signIn()))return;
+  if(RL.user&&q.uid===RL.user.uid){location.href='request.html?edit=1';return}
+  if(!window.RentletRequests){toast('Still loading. Try again in a moment.');return}
+  const was=b.textContent;b.disabled=true;b.textContent='Checking your listings…';
+  let L=null;try{L=RentletRequests.pickListingFor(q,await RentletRequests.myListings())}catch(_){b.disabled=false;b.textContent=was;toast('Couldn’t check your listings. Try again.');return}
+  if(L){location.href=RentletRequests.messageHref(L.code,q.uid);return}
+  /* you message people about a place you've posted */
+  $('.acts',m).insertAdjacentHTML('beforebegin','<p class="note">You message people about a place you’ve posted. Post yours first.</p>');
+  b.outerHTML='<button type="button" class="pri" data-cxhref="post.html">Post a listing</button>'}
 /* the post prompt (review switch data-post): cut, one plain line, a stripped band, or the current band */
 let postMode='line';try{postMode=localStorage.getItem('cs-home-post')||'line'}catch(_){}
+/* how many people above (open requests at this place) need a room */
+const cxCount=()=>Q.length?`<b>${Q.length} ${Q.length===1?'person':'people'}</b> above need${Q.length===1?'s':''} one.`:'Post it in a few steps. It’s live as soon as you publish.';
 const cxPost=()=>{
   if(postMode==='cut')return '';
-  if(postMode==='line')return `<section class="cx-sec cx-postline"><div class="wrap"><p><span>Leaving a room near <span data-pcamp>${campusShort()}</span>? ${Q.length?`<b>${Q.length} people</b> above need one for these dates.`:'Post it in a few steps. It’s live as soon as you publish.'}</span><button type="button" class="btn btn-secondary" onclick="location.href='post.html'">Post a listing</button></p></div></section>`;
+  if(postMode==='line')return `<section class="cx-sec cx-postline"><div class="wrap"><p><span>Leaving a room near <span data-pcamp>${campusShort()}</span>? <span data-pcount>${cxCount()}</span></span><button type="button" class="btn btn-secondary" onclick="location.href='post.html'">Post a listing</button></p></div></section>`;
   if(postMode==='strip')return `<section class="cx-sec"><div class="wrap"><div class="cx-post strip"><div><h2>Moving out?</h2><p>Post the room you’re leaving. The people above need these dates near <span data-pcamp>${campusShort()}</span>.</p><button type="button" class="go" onclick="location.href='post.html'">Post a listing</button></div></div></div></section>`;
   return OLD_POST()};
 const OLD_POST=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-post"><div><h2>Leaving early?<br>Someone’s arriving.</h2><p>Moving for a new job, an internship or a semester abroad? Post your room and see people who need those dates.</p>
@@ -1410,5 +1443,6 @@ setTimeout(()=>{if(!booted){LOADED=true;boot()}},2500);
 if(wantAi&&current==='orbit')setTimeout(()=>window.__a4&&window.__a4.spin(),reduced?0:1100);
 </script>
 <script type="module" src="/src/rentlet.ts"></script>
+<script type="module" src="/src/requests.ts"></script>
 </body>
 </html>

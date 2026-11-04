@@ -17,7 +17,6 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
 import { firstName } from './lib/nu';
 import {
-  areaFromAddress,
   CAMPUS_KEY,
   titleOf,
   toCard,
@@ -26,6 +25,8 @@ import {
   type ListingDoc,
   type PostForm,
 } from './lib/listingView';
+import { asPlace, listingPlace, sameAddress, type PickedPlace } from './lib/place';
+import { lookupPlace } from './place';
 
 const MAX_ACTIVE = 3;
 const AREA_CAPTION: Record<string, string> = {
@@ -84,7 +85,40 @@ async function compress(dataUrl: string, max = 2000, quality = 0.85): Promise<Bl
   );
 }
 
-type PostState = PostForm & { photos: Record<string, string[]>; video?: string | null; step?: number; done?: boolean; act?: string };
+type PostState = PostForm & {
+  photos: Record<string, string[]>;
+  video?: string | null;
+  step?: number;
+  done?: boolean;
+  act?: string;
+  place?: unknown; // PickedPlace from the "Where is it?" step, when the host picked a HERE suggestion
+};
+
+// The place for this listing: the address or directory building the host picked, if the street address
+// still matches it (a walk measured to another campus is looked up again or dropped), else the typed
+// address looked up with HERE now. Null when neither helps.
+async function placeFor(S: PostState, address: string, campusId: CampusId): Promise<PickedPlace | null> {
+  let place = asPlace(S.place);
+  if (place && !sameAddress(place.label, address)) place = null;
+  if (place && place.campusId && place.campusId !== campusId) {
+    const again = place.id ? await lookupPlace({ id: place.id }, campusId) : null;
+    place = again ?? { ...place, walk: null, campusId };
+  }
+  if (!place && address.length >= 5) place = await lookupPlace({ q: address }, campusId);
+  return place;
+}
+
+// The name on the host's page (they may have changed it), else their Google first name.
+async function hostName(uid: string, displayName: string | null): Promise<string> {
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    const name = snap.exists() ? String(snap.data().name || '').trim() : '';
+    if (name) return name.slice(0, 60);
+  } catch {
+    /* fall back below */
+  }
+  return firstName(displayName);
+}
 
 export async function publishListing(S: PostState, video: File | null, onStep?: (s: PublishStep) => void): Promise<string> {
   const user = auth.currentUser;
@@ -94,6 +128,8 @@ export async function publishListing(S: PostState, video: File | null, onStep?: 
   if (mine.size >= MAX_ACTIVE) throw new PublishError('limit');
 
   const code = await freeCode();
+  // HERE answers while the photos upload
+  const placing = placeFor(S, String(S.f?.addr ?? '').trim(), (S.campusId in CAMPUS_KEY ? S.campusId : 'nu-evn') as CampusId).catch(() => null);
 
   onStep?.('photos');
   const photos: string[] = [];
@@ -128,14 +164,17 @@ export async function publishListing(S: PostState, video: File | null, onStep?: 
     else f[k] = value;
   }
   const form: PostForm = JSON.parse(
-    JSON.stringify({ ...S, f, photos: undefined, video: undefined, step: undefined, done: undefined, act: undefined }),
+    JSON.stringify({ ...S, f, photos: undefined, video: undefined, step: undefined, done: undefined, act: undefined, place: undefined }),
   );
   const campusId = (S.campusId in CAMPUS_KEY ? S.campusId : 'nu-evn') as CampusId;
   form.campusId = campusId;
+  // every listing shows at its spot on the map; the street address, building and website stay host-only
+  form.map = true;
+  const spot = listingPlace(await placing, location.addr || '', campusId);
 
   await setDoc(doc(db, 'listings', code), {
     ownerId: user.uid,
-    ownerName: firstName(user.displayName),
+    ownerName: await hostName(user.uid, user.displayName),
     ownerPhoto: user.photoURL ?? '',
     status: 'active',
     code,
@@ -143,14 +182,15 @@ export async function publishListing(S: PostState, video: File | null, onStep?: 
     campusId,
     kind: S.subletType,
     title: titleOf(form),
-    area: areaFromAddress(location.addr || '', campusId),
+    area: spot.area,
     price: Math.round(Number(S.rent) || 0),
     start: S.start,
     end: S.end,
     photos,
     captions,
     video: videoUrl,
-    walk: null,
+    walk: spot.walk,
+    location: spot.location, // null when no place was picked or found
     form,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -159,7 +199,8 @@ export async function publishListing(S: PostState, video: File | null, onStep?: 
     address: location.addr || '',
     building: location.building || '',
     site: location.site || '',
-    showOnMap: !!S.map,
+    showOnMap: true,
+    zip: spot.zip,
   });
   return code;
 }

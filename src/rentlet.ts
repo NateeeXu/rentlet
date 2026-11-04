@@ -7,7 +7,7 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { firstName, isNorthwesternEmail } from './lib/nu';
 import * as listings from './listings';
@@ -31,6 +31,7 @@ declare global {
       signIn(): Promise<boolean>;
       signOut(): Promise<void>;
       toast(message: string): void;
+      report(listingId: string, reason: string, details: string): Promise<boolean>;
     };
   }
 }
@@ -90,14 +91,14 @@ function toast(message: string) {
 async function saveProfile(u: User) {
   const ref = doc(db, 'users', u.uid);
   const existing = await getDoc(ref);
+  // the first name comes from Google once; after that the person may change it on their page
   await setDoc(
     ref,
     {
-      name: firstName(u.displayName),
       photoURL: u.photoURL ?? '',
       nu: true,
       updatedAt: serverTimestamp(),
-      ...(existing.exists() ? {} : { joinedAt: serverTimestamp() }),
+      ...(existing.exists() && existing.data().name ? {} : { name: firstName(u.displayName), joinedAt: serverTimestamp() }),
     },
     { merge: true },
   );
@@ -159,11 +160,30 @@ async function popupSignIn(): Promise<boolean> {
   }
 }
 
+// A report goes to the reports collection, which only the project owner can read (Firebase console).
+async function report(listingId: string, reason: string, details: string): Promise<boolean> {
+  const u = auth.currentUser;
+  if (!u) return false;
+  try {
+    await addDoc(collection(db, 'reports'), {
+      reporterId: u.uid,
+      listingId: String(listingId).slice(0, 20),
+      reason: String(reason).slice(0, 100),
+      details: String(details).trim().slice(0, 1000),
+      createdAt: serverTimestamp(),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 window.Rentlet = {
   user: null,
   signIn,
   signOut: () => firebaseSignOut(auth),
   toast,
+  report,
 };
 
 onAuthStateChanged(auth, async (u) => {

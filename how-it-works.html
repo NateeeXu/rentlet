@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How it works · Rentlet</title>
+<meta name="description" content="How finding and posting a sublet or lease takeover works on Rentlet: verification, money, privacy and what Rentlet is not.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+:root{--canvas:#f7f7f7;--soft:#f2f2f2;--ink:#222;--ink2:#484848;--muted:#717171;--line:#dddddd;--hair:#e8e8e8;--serif:"Newsreader",Georgia,"Times New Roman",serif;--ease:cubic-bezier(.22,1,.36,1)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--canvas);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+img{display:block}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.site{container-type:inline-size;overflow-x:clip;min-height:100vh}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+/* header (from index.html) */
+.hdr{background:#fff;border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:20}
+.hdr .wrap{display:flex;align-items:center;gap:20px;height:72px;position:relative}
+.logo{display:flex;align-items:center;min-height:44px}
+.logo img{height:30px}
+.nav{display:flex;gap:2px}
+.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:44px;display:flex;align-items:center;border-radius:999px;text-decoration:none;white-space:nowrap}
+.nav a:hover{background:var(--soft);color:var(--ink)}
+.nav a[aria-current]{color:var(--ink);background:var(--soft)}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;border:1px solid transparent;font-size:15px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;text-decoration:none;color:var(--ink);transition:border-color .15s,background .15s}
+.btn-primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn-primary:hover{background:#000}
+.btn-secondary{background:#fff;border-color:var(--line)}
+.btn-secondary:hover{border-color:var(--ink)}
+.btn-ghost{padding:0 14px}
+.btn-ghost:hover{background:var(--soft)}
+.hdr .btn{font-size:14px}
+.icon-btn{width:44px;height:44px;padding:0;border-radius:999px;border:0;background:none;display:none;align-items:center;justify-content:center}
+.icon-btn:hover,.icon-btn[aria-expanded=true]{background:var(--soft)}
+.hmenu{position:absolute;right:16px;top:calc(100% + 8px);z-index:40;min-width:220px;display:flex;flex-direction:column;padding:8px;border-radius:16px;background:#fff;border:1px solid var(--hair)}
+.hmenu[hidden]{display:none}
+.hmenu a{display:flex;align-items:center;height:44px;padding:0 14px;border-radius:10px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none}
+.hmenu a:hover,.hmenu a[aria-current]{background:var(--soft)}
+.hmenu hr{border:0;border-top:1px solid var(--hair);margin:6px 8px}
+
+/* content */
+.hero{padding:56px 0 32px}
+.hero h1{font-family:var(--serif);font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-.6px;margin:0}
+.hero p{margin:14px 0 0;font-size:17px;line-height:1.55;color:var(--ink2);max-width:600px}
+.grid{display:grid;grid-template-columns:200px minmax(0,760px);gap:56px;justify-content:start}
+.toc{position:sticky;top:96px;align-self:start;padding-top:4px}
+.toc p{margin:0 0 6px;font-size:13px;font-weight:600;color:var(--muted)}
+.toc a{display:flex;align-items:center;min-height:44px;padding:0 0 0 14px;border-left:2px solid var(--hair);font-size:15px;color:var(--ink2);text-decoration:none}
+.toc a:hover{color:var(--ink)}
+.toc a[aria-current]{color:var(--ink);font-weight:600;border-left-color:var(--ink)}
+.chips{display:none}
+.sheet{background:#fff;border:1px solid var(--hair);border-radius:16px;padding:8px 36px}
+.sec{padding:32px 0;border-top:1px solid var(--hair)}
+.sec:first-child{border-top:0}
+.sec h2{font-family:var(--serif);font-size:28px;font-weight:500;line-height:1.15;letter-spacing:-.4px;margin:0 0 16px}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px;counter-reset:st}
+.steps li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:14px;align-items:start;font-size:16px;line-height:1.55}
+.steps li::before{counter-increment:st;content:counter(st);width:28px;height:28px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:600;line-height:1;margin-top:-1px}
+.note{margin:14px 0 0;padding-left:42px;font-size:14px;line-height:1.55;color:var(--muted)}
+.acts{margin-top:20px;display:flex;gap:12px;flex-wrap:wrap}
+.lines{list-style:none;margin:0;padding:0}
+.lines li{font-size:16px;line-height:1.55;padding:12px 0;border-top:1px solid var(--hair)}
+.lines li:first-child{border-top:0;padding-top:0}
+.lines li:last-child{padding-bottom:0}
+.sub{margin:0 0 8px;font-size:14px;font-weight:600;color:var(--ink2)}
+.sub+.lines{margin-bottom:20px}
+.sub+.lines:last-child{margin-bottom:0}
+.tip{display:flex;gap:10px;align-items:flex-start;margin:16px 0 0;padding:12px 14px;border:1px solid var(--hair);border-radius:12px;font-size:15px;line-height:1.5}
+.tip .ic{width:18px;height:18px;margin-top:1px}
+.nots{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.nots li{display:flex;gap:12px;align-items:center;font-size:16px;line-height:1.45}
+.nots .ic{width:18px;height:18px;color:var(--ink2)}
+.rq p{margin:0;font-size:16px;line-height:1.55}
+.rq p+p{color:var(--ink2)}
+/* FAQ accordion: one row open at a time */
+.faq{border-top:1px solid var(--hair)}
+.fq{border-bottom:1px solid var(--hair)}
+.fq h3{margin:0;font-size:16px}
+.fq button{width:100%!important;margin:0;min-height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 2px;border:0;background:none;text-align:left;font-size:16px;font-weight:600;line-height:1.4;color:var(--ink)}
+.fq .pm{position:relative;width:20px;height:20px;flex:none}
+.fq .pm::before,.fq .pm::after{content:"";position:absolute;left:3px;right:3px;top:9px;height:1.6px;border-radius:2px;background:var(--ink2);transition:transform .26s var(--ease)}
+.fq .pm::after{transform:rotate(90deg)}
+.fq.open .pm::after{transform:rotate(0)}
+.fa{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s var(--ease)}
+.fa>div{overflow:hidden;visibility:hidden;transition:visibility 0s .28s}
+.fq.open .fa{grid-template-rows:1fr}
+.fq.open .fa>div{visibility:visible;transition:none}
+.fa p{margin:0;padding:0 2px 18px;font-size:15px;line-height:1.6;color:var(--ink2);max-width:640px}
+@media (prefers-reduced-motion:reduce){.fa,.fa>div,.fq .pm::after{transition:none}}
+
+/* footer (from index.html) */
+.foot{background:var(--canvas);border-top:1px solid var(--hair);padding:40px 0 28px;margin-top:56px}
+.fcols{display:grid;grid-template-columns:1.4fr repeat(4,minmax(0,1fr));gap:24px}
+.fcols h4{margin:0 0 4px;font-size:13px}
+.fcols a,.fcols .fl{display:flex;align-items:center;min-height:44px;min-width:44px;width:auto!important;margin:0;padding:0;border:0;background:none;font-size:14px;color:var(--muted);text-decoration:none;text-align:left}
+.fcols a:hover,.fcols .fl:hover{color:var(--ink);text-decoration:underline}
+.fcols .brand img{height:28px}
+.fcols .brand p{font-size:13px;color:var(--muted);line-height:1.6;margin:10px 0 0}
+.fbot{margin-top:28px;padding-top:18px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:#fff;font-size:14px;padding:12px 18px;border-radius:12px;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@container (max-width:1000px){
+  .nav,.hdr-right .hide-s{display:none}
+  .icon-btn{display:inline-flex}
+}
+@container (max-width:900px){
+  .grid{grid-template-columns:minmax(0,1fr);gap:0;padding-top:16px}
+  .toc{display:none}
+  .chips{display:flex;gap:8px;position:sticky;top:72px;z-index:10;background:var(--canvas);border-bottom:1px solid var(--hair);overflow-x:auto;scrollbar-width:none;padding:10px 24px}
+  .chips::-webkit-scrollbar{display:none}
+  .chips a{display:inline-flex;align-items:center;height:44px;padding:0 16px;flex:0 0 auto;white-space:nowrap;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:600;color:var(--ink);text-decoration:none}
+  .chips a[aria-current]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.fcols .brand{grid-column:1/-1}
+}
+@container (max-width:640px){
+  .wrap{padding:0 16px}
+  .hdr .wrap{height:64px;gap:12px}
+  .logo img{height:26px}
+  .hdr-right{gap:4px}
+  .hero{padding:36px 0 24px}
+  .hero h1{font-size:28px;letter-spacing:-.4px}
+  .hero p{font-size:16px}
+  .sec h2{font-size:22px;letter-spacing:-.3px}
+  .chips{top:64px;padding:10px 16px}
+  .sheet{padding:4px 20px}
+  .sec{padding:24px 0}
+  .steps li,.lines li,.nots li,.rq p{font-size:15px}
+  .fq button{font-size:15px}
+  .fa p{font-size:14px}
+  .foot{margin-top:40px}
+}
+</style>
+<style id="rentlet-base">
+/* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
+.rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
+html,body{background:#f7f7f7}
+:root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
+a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
+</style>
+</head>
+<body>
+<div class="site">
+<header class="hdr"><div class="wrap">
+  <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
+  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="how-it-works.html" aria-current="page">How it works</a><a href="messages.html">Messages</a></nav>
+  <div class="hdr-right">
+    <a class="btn btn-ghost hide-s" href="request.html">Post a request</a>
+    <a class="btn btn-secondary hide-s" href="post.html">Post a listing</a>
+    <button type="button" class="btn btn-ghost" data-toast="Sign in with your Northwestern Google account.">Sign in</button>
+    <button type="button" class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="how-it-works.html" aria-current="page">How it works</a><a href="messages.html">Messages</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav>
+</div></header>
+
+<main>
+  <div class="wrap"><div class="hero" id="top"><h1>How Rentlet works</h1><p>Rooms from people moving out near campus, as a short sublet or a lease takeover. You find one and arrange it directly, between the two of you.</p></div></div>
+  <nav class="chips" aria-label="On this page"><a href="#find" aria-current="true">Finding a room</a><a href="#post">Posting a room</a><a href="#request">Posting a request</a><a href="#verification">Verification</a><a href="#money">Money</a><a href="#privacy">Privacy</a><a href="#not">What it is not</a><a href="#faq">FAQ</a></nav>
+  <div class="wrap"><div class="grid">
+    <nav class="toc" aria-label="On this page"><p>On this page</p><a href="#find" aria-current="true">Finding a room</a><a href="#post">Posting a room</a><a href="#request">Posting a request</a><a href="#verification">Verification</a><a href="#money">Money</a><a href="#privacy">Privacy</a><a href="#not">What it is not</a><a href="#faq">FAQ</a></nav>
+    <div class="sheet">
+      <section class="sec" id="find" aria-labelledby="find-h"><h2 id="find-h">Finding a room</h2>
+        <ol class="steps"><li><span>Search by campus, dates and budget.</span></li><li><span>Message the host inside Rentlet.</span></li><li><span>Settle the dates, what stays, money, a video tour and the landlord’s OK in the chat.</span></li></ol>
+        <p class="note">Contact details are shared only when you both agree.</p>
+        <div class="acts"><a class="btn btn-primary" href="index.html">Find a place</a></div></section>
+      <section class="sec" id="post" aria-labelledby="post-h"><h2 id="post-h">Posting a room</h2>
+        <ol class="steps"><li><span>Post in about ten minutes: campus, dates, rent and deposit, photos.</span></li><li><span>It’s checked before it goes live.</span></li><li><span>People message you. You choose who gets the room.</span></li></ol>
+        <div class="acts"><a class="btn btn-secondary" href="post.html">Post a listing</a></div></section>
+      <section class="sec" id="request" aria-labelledby="request-h"><h2 id="request-h">Posting a request</h2>
+        <div class="rq"><p>Nothing fits yet? Post your campus, dates and budget.</p><p>Hosts near that campus can message you.</p></div>
+        <div class="acts"><a class="btn btn-secondary" href="request.html">Post a request</a></div></section>
+      <section class="sec" id="verification" aria-labelledby="verification-h"><h2 id="verification-h">Verification</h2>
+        <p class="sub">What the badge means</p><ul class="lines"><li>They confirmed a school or work email.</li><li>Hosts can add proof of their lease.</li></ul>
+        <p class="sub">What it doesn’t mean</p><ul class="lines"><li>It isn’t a guarantee about the person, the room or the deal.</li></ul></section>
+      <section class="sec" id="money" aria-labelledby="money-h"><h2 id="money-h">Money</h2>
+        <ul class="lines"><li>Rent and any deposit go to the host directly.</li><li>Rentlet never holds money and is not a broker or agent.</li><li>A deposit, when the host asks for one, is set by the host and shown on the listing.</li></ul>
+        <p class="tip"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg><span>Never pay before you’ve seen the lease.</span></p></section>
+      <section class="sec" id="privacy" aria-labelledby="privacy-h"><h2 id="privacy-h">Privacy</h2>
+        <ul class="lines"><li>Others can see your first name, role, school, dates and budget.</li><li>The street address shows only if the host chooses, or after you both agree.</li><li>Contact is an Instagram handle or email, never a phone number, shared only inside the conversation.</li></ul></section>
+      <section class="sec" id="not" aria-labelledby="not-h"><h2 id="not-h">What Rentlet is not</h2>
+        <ul class="nots" data-nots></ul></section>
+      <section class="sec" id="faq" aria-labelledby="faq-h"><h2 id="faq-h">FAQ</h2><div class="faq" data-faqs></div></section>
+    </div>
+  </div></div>
+</main>
+
+<footer class="foot"><div class="wrap"><div class="fcols">
+  <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
+  <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a><a href="messages.html">Messages</a></div>
+  <div><h4>Post</h4><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></div>
+  <div><h4>Areas</h4><a href="index.html">Northwestern Evanston</a><a href="index.html">Northwestern Chicago</a></div>
+  <div><h4>Legal</h4><a href="#verification">Safety &amp; rules</a><a href="terms.html">Terms</a><a href="#privacy">Privacy</a></div></div>
+  <div class="fbot"><span>© 2026 Rentlet</span><span>A student class project. Not affiliated with or endorsed by Northwestern University.</span></div></div></footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NOTS=['No payments or escrow','No background checks','No lease drafting','Not affiliated with any university'];
+const FAQ=[
+  ['Is Rentlet a broker?','No. It’s a place to post and find sublets and lease takeovers, and to talk to each other. We don’t act as an agent for either side.'],
+  ['Do you collect rent or deposits?','No. You pay the host or the building directly. Before you pay, check the lease, the landlord’s approval and who receives the money.'],
+  ['How are listings checked?','Every public listing and request is checked before it goes live.'],
+  ['When is my contact information shared?','Only when you both agree. Until then you talk inside Rentlet.'],
+  ['Can I use it if I’m not a student?','Yes. Rooms are listed by campus area, so they also suit interns and new hires nearby. You can verify with a work email.'],
+  ['Which areas do you cover?','Places near Northwestern’s Evanston and Chicago campuses.'],
+  ['How long until my listing is live?','Once it’s checked. You get the listing number when it’s live.'],
+  ['What happens after my move-in date?','Rentlet steps out once you’ve agreed. Rent, repairs and the deposit are between you, the host and the landlord. When a listing’s dates pass, its page shows that the sublet has ended.']];
+$('[data-nots]').innerHTML=NOTS.map(x=>`<li><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg><span>${x}</span></li>`).join('');
+$('[data-faqs]').innerHTML=FAQ.map(([q,a],i)=>`<div class="fq${i?'':' open'}"><h3><button type="button" id="fq${i}" aria-expanded="${!i}" aria-controls="fa${i}" data-faq><span>${q}</span><span class="pm" aria-hidden="true"></span></button></h3><div class="fa" id="fa${i}" role="region" aria-labelledby="fq${i}"><div><p>${a}</p></div></div></div>`).join('');
+
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+const SECS=$$('.toc a').map(a=>a.getAttribute('href').slice(1));
+const shown=e=>e&&getComputedStyle(e).display!=='none';
+const offset=()=>$('.hdr').offsetHeight+(shown($('.chips'))?$('.chips').offsetHeight:0)+16;
+function goTo(id){const el=document.getElementById(id);if(!el)return;
+  scrollTo({top:Math.max(0,el.getBoundingClientRect().top+scrollY-offset()),behavior:reduced?'auto':'smooth'});
+  if(id!=='top'){el.setAttribute('tabindex','-1');el.focus({preventScroll:true})}}
+/* highlight the section in view, in the side list and the chip row */
+function spy(){const lim=offset()+24;let cur=SECS[0];
+  for(const id of SECS)if(document.getElementById(id).getBoundingClientRect().top<=lim)cur=id;
+  if(innerHeight+scrollY>=document.documentElement.scrollHeight-4)cur=SECS[SECS.length-1];
+  $$('.toc a, .chips a').forEach(a=>{a.getAttribute('href')==='#'+cur?a.setAttribute('aria-current','true'):a.removeAttribute('aria-current')});
+  const row=$('.chips'),chip=$(`a[href="#${cur}"]`,row);
+  if(shown(row)){const l=chip.offsetLeft-16,r=chip.offsetLeft+chip.offsetWidth+16;if(l<row.scrollLeft||r>row.scrollLeft+row.clientWidth)row.scrollTo({left:l,behavior:reduced?'auto':'smooth'})}}
+addEventListener('scroll',spy,{passive:true});addEventListener('resize',spy);spy();
+function closeMenu(focus){const m=$('#hmenu'),b=$('[data-hmenu]');if(m.hidden)return;m.hidden=true;b.setAttribute('aria-expanded','false');if(focus)b.focus()}
+document.addEventListener('click',e=>{
+  const hb=e.target.closest('[data-hmenu]');if(hb){const m=$('#hmenu'),open=m.hidden;m.hidden=!open;hb.setAttribute('aria-expanded',String(open));if(open)$('a',m).focus({preventScroll:true});return}
+  const m=$('#hmenu');if(!m.hidden&&(!m.contains(e.target)||e.target.closest('a')))closeMenu(false);
+  const f=e.target.closest('[data-faq]');if(f){const item=f.closest('.fq'),open=!item.classList.contains('open');
+    $$('.fq',item.parentElement).forEach(x=>{x.classList.remove('open');$('[data-faq]',x).setAttribute('aria-expanded','false')});
+    if(open){item.classList.add('open');f.setAttribute('aria-expanded','true')}return}
+  const a=e.target.closest('a[href^="#"]');if(a){e.preventDefault();goTo(a.getAttribute('href').slice(1));return}
+  const t=e.target.closest('[data-toast]');if(t)toast(t.dataset.toast);
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu(true)});
+</script>
+</body>
+</html>

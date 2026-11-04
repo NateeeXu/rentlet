@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Post a listing · Rentlet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+/* Post a listing: one question per screen (flow A from post-options.html). The page is one screen tall; each step
+   centres when it is short and scrolls inside when it is long; the header and the Back / Next bar never move. */
+:root{--canvas:#f7f7f7;--soft:#f2f2f4;--ink:#222;--ink2:#484848;--muted:#717171;--faint:#9a9aa0;--line:#dddddd;--hair:#e8e8e8;--ok:#1a7f37;--serif:"Newsreader",Georgia,serif;--ctl:52px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--canvas);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+img{display:block}
+.stage{container-type:inline-size;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--canvas)}
+.hd{flex:none;background:#fff;border-bottom:1px solid var(--hair)}
+.hd .wrap{height:64px;display:flex;align-items:center;gap:16px}
+.hd img{height:26px}
+.hd .r{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:14px;font-weight:600}
+.hd .r .save{color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0 8px;height:44px;display:inline-flex;align-items:center}
+.hd .me{width:36px;height:36px;border-radius:50%;background:#222;color:#fff;display:grid;place-items:center;font-weight:700;text-decoration:none}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px;width:100%}
+
+/* one set of controls: the same height, font and radius everywhere */
+h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5px;line-height:1.15;margin:0}
+.hint{margin:8px 0 0;font-size:15px;color:var(--muted);line-height:1.5}
+.grp{margin-top:28px}
+.grp+.grp{margin-top:22px}
+.lbl{display:block;font-size:14px;font-weight:650;color:var(--ink);margin-bottom:8px}
+.lbl small{font-weight:500;font-size:12px;color:var(--muted);margin-left:6px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.in{height:var(--ctl);border:1px solid var(--line);border-radius:12px;background:#fff;display:flex;align-items:center;padding:0 14px;font-size:16px;gap:8px;min-width:0;margin:0}
+.in input{border:0;outline:0;flex:1;min-width:0;background:none;font-size:16px;font-variant-numeric:tabular-nums;padding:0}
+.in .u{color:var(--muted);font-size:14px;white-space:nowrap}
+.in .pre{color:var(--muted);font-size:16px}
+.in.ta{height:auto;padding:12px 14px;align-items:flex-start}
+.in.ta textarea{border:0;outline:0;flex:1;resize:none;font-size:16px;line-height:1.5;background:none;min-width:0;padding:0}
+.in:focus-within,.in.ws-on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+/* fields that open the homepage pickers (campus, rent) or drive the inline calendar (dates) */
+.in.pk{width:100%;text-align:left;cursor:pointer;justify-content:space-between;font-variant-numeric:tabular-nums}
+.in.pk:hover,.in.ws:hover{border-color:#b8b8bd}
+.in.pk[aria-expanded=true],.in.pk.act{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.in.pk .pkph{color:var(--muted)}
+.cal{margin-top:16px}
+.in svg.ch{width:16px;height:16px;flex:none;color:var(--muted)}
+.in.ws{cursor:pointer}
+.in.ws .ws-in{font-size:16px}
+.opts{display:grid;gap:10px}
+.opts.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--ctl);padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:#fff;text-align:left;width:100%}
+.opt:hover{border-color:#b8b8bd}
+.opt b{display:block;font-size:15px;font-weight:600}
+.opt span{display:block;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4}
+.opt.on,.opt.on:hover{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.opt .tk{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);flex:none;display:grid;place-items:center;font-size:11px;color:#fff}
+.opt.on .tk{background:var(--ink);border-color:var(--ink)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none}
+.chip:hover{border-color:#b8b8bd}
+.chip.on,.chip.on:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:var(--ctl);padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
+.tog b{font-size:15px;font-weight:600}
+.tog span{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.tog .lk{font-size:14px;font-weight:600;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;cursor:pointer;white-space:nowrap}
+.sw{width:44px;height:26px;border-radius:99px;background:var(--ink);position:relative;flex:none;border:0;padding:0;cursor:pointer}
+.sw::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff}
+.sw.off{background:#cfcfd4}.sw.off::after{right:auto;left:3px}
+.note{margin:12px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
+.sub{margin:0;font-size:13px;color:var(--muted);margin-bottom:8px}
+.photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ph{aspect-ratio:4/3;border-radius:12px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;color:var(--muted);text-align:center;border:1px dashed #cfcfd4;position:relative;overflow:hidden;cursor:pointer;margin:0;padding:6px}
+.ph:hover{border-color:#9a9aa0}
+.ph.has{border:0;cursor:default}
+.ph.has img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph.has img.flip{transform:scaleX(-1)}
+.ph.has em{position:absolute;left:8px;bottom:8px;font-style:normal;font-size:12px;font-weight:650;background:rgba(255,255,255,.92);border-radius:99px;padding:3px 8px;color:var(--ink)}
+.ph .x{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:var(--ink);font-size:16px;line-height:1;display:grid;place-items:center;padding:0}
+.ph b{font-size:14px;color:var(--ink)}
+.btn{height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--ink);color:#fff;font-weight:650;font-size:15px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.btn.lnk{background:none;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:0 8px;margin:0 -8px;height:44px}
+.btn.lnk:disabled{opacity:.35;cursor:default}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+
+.a-top{height:3px;background:var(--hair);position:relative;flex:none}
+.a-top i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);transition:width .4s cubic-bezier(.22,1,.36,1)}
+.a-scroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}
+.a-q{width:min(600px,100%);margin:auto;padding:40px 24px} /* margin:auto centres a short step; a long one scrolls */
+.a-step{font-size:13px;color:var(--muted);margin:0 0 8px}
+.a-foot{flex:none;background:#fff;border-top:1px solid var(--hair)}
+.a-foot .wrap{height:76px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.a-steps{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;flex:1}
+.a-steps button{width:32px;height:32px;border-radius:50%;border:1px solid var(--hair);background:#fff;font-size:12px;color:var(--muted);padding:0}
+.a-steps button.on{border-color:var(--ink);color:var(--ink);font-weight:650}
+.a-steps button.done{background:var(--soft);border-color:var(--soft);color:var(--ink2)}
+.review{display:grid;margin-top:8px}
+.rrow{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:14px;padding:12px 0;border-top:1px solid var(--hair);font-size:14px;align-items:start}
+.rrow:first-child{border-top:0}
+.rrow dt{color:var(--muted)}
+.rrow dd{margin:0;font-weight:600;line-height:1.4}
+.rrow .edit{font-size:13px;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0}
+.rcard{border:1px solid var(--hair);border-radius:18px;background:#fff;overflow:hidden}
+.rcard img{width:100%;aspect-ratio:16/9;object-fit:cover}
+.rcard .rc{padding:14px 16px}
+.rcard h3{font-family:var(--serif);font-size:22px;font-weight:500;margin:0}
+.rcard p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.rcard .pr{margin-top:8px;font-family:var(--serif);font-size:26px;font-weight:500}
+.rcard .pr small{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;color:var(--muted)}
+.done{text-align:center}
+.done .ok{width:56px;height:56px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin:0 auto 18px;font-size:22px}
+.done .acts{display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.done .acts .btn{flex:none;white-space:nowrap}
+
+@container (max-width:700px){
+  .hd .wrap{height:56px}.hd .r .save{display:none}
+  .wrap{padding:0 16px}
+  h2.q{font-size:26px}
+  .a-q{padding:24px 16px 28px}
+  .opts.two,.row2{grid-template-columns:minmax(0,1fr)}
+  .photos{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .a-foot .wrap{height:auto;padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+  .a-steps{display:none}
+  .rrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px}
+  .rrow dt{grid-column:1/-1}
+}
+</style>
+<link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style id="rentlet-base">
+/* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
+.rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
+html,body{background:#f7f7f7}
+:root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
+a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
+</style>
+</head>
+<body>
+<div class="stage" id="stage"></div>
+<script src="where-search.js?v=a680f16a"></script>
+<script src="when-picker.js?v=7860cfd6"></script>
+<script src="budget-picker.js?v=552d4e21"></script>
+<script>
+const $=s=>document.querySelector(s);
+/* everything the form knows, so a click anywhere can redraw the screen without losing anything */
+const S={step:0,done:false,f:{},
+  subletType:'sublet',transferChannel:'official',dep:'amount',refund:true,map:false,hasRoommates:'yes',gender:'Mixed',shuttle:'covered',route:'Intercampus Shuttle',layout:'3B2B',
+  start:'2026-12-20',end:'2027-03-15',act:'in',rent:1480,orig:1600,unit:'room',bath:'shared',furn:'full',neg:'little',view:'Courtyard',terms:null,proof:'student',
+  campus:'Northwestern · Evanston',campusId:'northwestern',video:null,
+  multi:{fees:['Wi-Fi','Heat'],amen:['Elevator','Package room'],habits:['Quiet weeknights','Non-smoking'],items:['Bed frame','Mattress','Bedding','Desk','Chair','Lamp']},
+  prefs:{Cleaning:'Weekly clean-up',Cooking:'Cooking often is fine',Smoking:'No smoking',Pets:'No pets',Visitors:'OK with notice'},
+  photos:{bedroom:['img/bedroom.jpg','img/bedroom.jpg|flip'],living:['img/living.jpg'],bath:[],kitchen:[],building:[]}};
+/* the campus the visitor searched on the homepage, and a draft they saved and left */
+try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&WhereSearch.SCHOOLS.find(x=>x[0]===p.school);if(row){S.campusId=row[0];S.campus=row[1]}}catch(_){}
+try{const d=JSON.parse(sessionStorage.getItem('cs-post-draft')||'null');if(d)Object.assign(S,d,{done:false})}catch(_){}
+const money=v=>'$'+v.toLocaleString('en-US');
+const val=(k,d)=>k in S.f?S.f[k]:d;
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+/* what rooms near this campus ask, for the rent picker's histogram (the real site uses the live listings) */
+const PRICES=[950,1050,1100,1150,1180,1200,1200,1250,1280,1300,1300,1320,1350,1380,1400,1400,1420,1450,1450,1480,1500,1500,1520,1550,1580,1600,1600,1650,1700,1700,1750,1800,1850,1900,1950,2000,2100,2200,2400,2800];
+const CHEV=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>`;
+
+const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}<a class="me" href="profile.html" aria-label="Your page">Y</a></div></div></header>`;
+const opt=(on,b,s,attrs='')=>`<button type="button" class="opt ${on?'on':''}" ${attrs}><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div><span class="tk">${on?'✓':''}</span></button>`;
+const chip=(t,on,attrs='')=>`<span class="chip ${on?'on':''}" ${attrs}>${t}</span>`;
+const one=(key,list)=>list.map(([v,t])=>chip(t,S[key]===v,`data-one="${key}:${v}"`)).join('');            /* single choice */
+const multi=(g,list)=>list.map(t=>chip(t,S.multi[g].includes(t),`data-multi="${g}:${t}"`)).join('');       /* any number */
+const grp=(label,inner,small='')=>`<div class="grp"><span class="lbl">${label}${small?`<small>${small}</small>`:''}</span>${inner}</div>`;
+const inp=(k,d,u='',pre='',ph='')=>`<label class="in">${pre?`<span class="pre">${pre}</span>`:''}<input value="${esc(val(k,d))}" placeholder="${esc(ph)}" data-f="${k}">${u?`<span class="u">${u}</span>`:''}</label>`;
+const ta=(k,d,ph='')=>`<label class="in ta"><textarea rows="2" placeholder="${esc(ph)}" data-f="${k}">${esc(val(k,d))}</textarea></label>`;
+const pk=(kind,text,u='')=>`<button type="button" class="in pk" data-pk="${kind}" aria-haspopup="dialog" aria-expanded="false"><span>${text}${u?` <span class="u">${u}</span>`:''}</span>${CHEV}</button>`;
+const sw=k=>`<button type="button" class="sw ${S[k]?'':'off'}" data-sw="${k}" role="switch" aria-checked="${S[k]}"></button>`;
+/* the two date fields always show the year, and pick which side the inline calendar sets next */
+const fullDay=s=>{const d=WhenPicker.day(s);return d.includes(',')?d:`${d}, ${s.slice(0,4)}`};
+const side=(k,s)=>`<button type="button" class="in pk ${S.act===k?'act':''}" data-side="${k}"><span data-side-t="${k}">${s?fullDay(s):'<span class="pkph">Pick a day</span>'}</span></button>`;
+let calApi=null;
+function syncDates(s,e){document.querySelectorAll('[data-side-t=in]').forEach(x=>x.innerHTML=s?fullDay(s):'<span class="pkph">Pick a day</span>');document.querySelectorAll('[data-side-t=out]').forEach(x=>x.innerHTML=e?fullDay(e):'<span class="pkph">Pick a day</span>');
+  document.querySelectorAll('[data-side]').forEach(b=>b.classList.toggle('act',b.dataset.side===S.act));document.querySelectorAll('[data-dates]').forEach(c=>c.classList.toggle('on',c.dataset.dates===`${S.start}:${S.end}`))}
+
+/* the mini program's option lists (utils/room-types.js, validators.js, listing-features.js), in English */
+const LAYOUTS=['Studio','1B1B','2B1B','2B2B','3B2B','Other'];
+const GENDER=['All men','All women','Mixed','Not sure yet','Prefer not to say'];
+const AMEN=['Washer & dryer','Elevator','Gym','Store downstairs','Package room','Parking'];
+const FEES=['Wi-Fi','Water','Heat','Electricity','Gas','Nothing extra'];
+const FURN=[['Bedroom',['Bed frame','Mattress','Bedding','Wardrobe']],['Study',['Desk','Chair','Lamp','Monitor']],['Living',['Sofa','TV','Speaker','Floor lamp']],['Kitchen',['Dining table','Pots','Tableware','Cookware','Microwave','Rice cooker']],['Life',['Vacuum','Drying rack','Air purifier','Fan']]];
+const PREFS=[['Cleaning',['Weekly clean-up','Clean after use','Basically tidy']],['Cooking',['Cooking often is fine','Less smoke, please']],['Smoking',['No smoking','Outside only']],['Pets',['No pets','Pets OK','Let’s talk']],['Visitors',['No overnight guests','OK with notice']]];
+const AREAS=[['bedroom','Bedroom',2],['living','Living room',1],['bath','Bathroom',1],['kitchen','Kitchen',1],['building','Window or building',1]];
+const ROUTES=['Intercampus Shuttle','Evanston Loop','Ryan Field'];
+const PRESETS=[['Winter quarter','2027-01-03','2027-03-20'],['Winter + spring','2027-01-03','2027-06-12'],['Until my lease ends','2026-12-20','2027-08-31']];
+
+const photoCount=()=>Object.values(S.photos).reduce((n,a)=>n+a.length,0);
+const areasDone=()=>AREAS.filter(([k,,min])=>S.photos[k].length>=min).length;
+const terms=()=>S.terms||(S.subletType==='takeover'?'gift':'use');
+const unitName=()=>S.unit==='whole'?'Whole place':'Private room';
+const typeName=()=>S.subletType==='takeover'?'Lease takeover':'Short sublet';
+const town=()=>S.campus.split(' · ')[1]||S.campus;
+const depLine=()=>S.dep==='amount'?`${money(+String(val('dep','600')).replace(/\D/g,'')||0)} deposit${S.refund?', refundable':''}`:'no deposit';
+const list=a=>{const w=a.map(f=>f==='Wi-Fi'?f:f.toLowerCase());return w.length>1?w.slice(0,-1).join(', ')+' and '+w[w.length-1]:w[0]||''};
+const photosHtml=()=>`<div class="photos">${AREAS.map(([k,name])=>S.photos[k].map((src,i)=>{const [u,f]=src.split('|');return `<div class="ph has"><img src="${u}" alt="" class="${f||''}"><em>${name}</em><button type="button" class="x" data-rm="${k}:${i}" aria-label="Remove">×</button></div>`}).join('')+`<label class="ph"><input type="file" accept="image/*" data-area="${k}" hidden><b>+ Add</b>${name}</label>`).join('')}</div>`;
+const card=()=>`<div class="rcard"><img src="${S.photos.bedroom[0]?S.photos.bedroom[0].split('|')[0]:'img/bedroom.jpg'}" alt=""><div class="rc"><h3>${unitName()} · ${S.layout==='Other'?val('layoutOther','')||'Other':S.layout}</h3><p>${town()} · ${typeName()} · ${WhenPicker.label(S.start,S.end)}</p><div class="pr">${money(S.rent)} <small>/ mo · ${depLine()}${S.multi.fees.length&&!S.multi.fees.includes('Nothing extra')?` · ${list(S.multi.fees)} included`:''}</small></div></div></div>`;
+
+/* the screens; each one maps onto the mini program's listing form fields */
+const STEPS=[
+ {q:'What are you leaving?',h:'This sets the rules for dates and the hand-over.',body:()=>`<div class="opts" style="margin-top:28px">${opt(S.subletType==='sublet','Short sublet','You keep the lease and come back. They stay for a fixed stretch.','data-set="subletType:sublet"')}${opt(S.subletType==='takeover','Lease takeover','They take over your lease until it ends. The landlord signs the transfer.','data-set="subletType:takeover"')}</div>`},
+ {q:'Where is it?',h:'Campus first, then the building. The street address is never shown unless you choose to.',body:()=>
+   grp('Campus',`<form data-wform><div class="in ws" data-wseg><span data-wval>${S.campus}</span>${CHEV}</div></form>`)+
+   grp('Building',inp('building','Evanston Place','','','Start typing; the apartment directory fills the rest'),'from the apartment directory, or type your own')+
+   grp('Street address',inp('addr','1890 Maple Ave, Evanston, IL')+`<p class="note" style="margin-top:8px">Suggestions by HERE. The area (Downtown Evanston) is picked from the address.</p>`)+
+   grp('Map',`<div class="tog"><div><b>Show the exact spot on the map</b><span>Off: people see the area only. The address is shared after you both agree.</span></div>${sw('map')}</div>`)+
+   grp('Apartment website',inp('site','','','','https://'),'optional')},
+ {q:'When is it free?',h:'Move-in is the first night they can sleep there. Dates can’t start before today.',body:()=>`<div class="grp"><div class="row2"><div><span class="lbl">Move in</span>${side('in',S.start)}</div><div><span class="lbl">Move out</span>${side('out',S.end)}</div></div></div><div class="grp"><div class="chips">${PRESETS.map(([t,s,e])=>chip(t,S.start===s&&S.end===e,`data-dates="${s}:${e}"`)).join('')}</div><div class="cal" data-cal></div></div>`},
+ {q:'Money',h:'Rent, deposit and what the rent includes. Money goes to you, never through Rentlet.',body:()=>
+   `<div class="grp"><div class="row2"><div><span class="lbl">Rent per month</span>${pk('rent',money(S.rent),'/ mo')}</div><div><span class="lbl">Original rent<small>what you pay now</small></span>${pk('orig',money(S.orig),'/ mo')}</div></div></div>`+
+   grp('Deposit',`<div class="opts two">${opt(S.dep==='none','No deposit','','data-set="dep:none"')}${opt(S.dep==='amount','A deposit','Paid to you, returned at move-out','data-set="dep:amount"')}</div>${S.dep==='amount'?`<div class="row2" style="margin-top:10px"><div>${inp('dep','600','one-time','$')}</div><div class="tog" style="min-height:var(--ctl);padding:0 16px"><b>Refundable</b>${sw('refund')}</div></div>`:''}`)+
+   grp('Rent includes',`<div class="chips">${multi('fees',FEES)}</div>`)+
+   `<div class="grp"><div class="row2"><div><span class="lbl">Other costs<small>about, per month</small></span>${inp('extra','60','','$','utilities, parking…')}</div><div><span class="lbl">Negotiable?</span><div class="chips" style="height:var(--ctl);align-items:center">${one('neg',[['little','A little'],['no','No']])}</div></div></div></div>`+
+   grp(S.subletType==='takeover'?'How the lease transfers':'How the sublet is arranged',`<div class="opts">${opt(S.transferChannel==='official','Through the building or landlord','The official process, with a transfer fee if they charge one','data-set="transferChannel:official"')}${opt(S.transferChannel==='private','Privately, between us','Not registered with the building. People are warned of the risk.','data-set="transferChannel:private"')}</div>`)},
+ {q:'The room',h:'What people compare first.',body:()=>
+   grp('Renting out',`<div class="opts two">${opt(S.unit==='room','A private room','In a shared place','data-set="unit:room"')}${opt(S.unit==='whole','The whole place','Studio or apartment','data-set="unit:whole"')}</div>`)+
+   grp('Layout',`<div class="chips">${LAYOUTS.map(l=>chip(l,l===S.layout,`data-set="layout:${l}"`)).join('')}</div>${S.layout==='Other'?`<div style="margin-top:10px">${inp('layoutOther','','','','e.g. 4B2B')}</div>`:''}<p class="note">The first number counts bedrooms, the second bathrooms.</p>`)+
+   grp('Bathroom',`<div class="chips">${one('bath',[['private','Private'],['shared','Shared']])}</div>`)+
+   `<div class="grp"><div class="row2"><div><span class="lbl">Size<small>optional</small></span>${inp('sqft','140','sq ft')}</div><div><span class="lbl">Floor<small>optional</small></span>${inp('floor','3')}</div></div></div>`+
+   grp('View',`<div class="chips">${one('view',['Street','Courtyard','Lake','Garden'].map(v=>[v,v]))}</div>`,'optional')},
+ {q:'Who lives there?',h:'Roommates, if any, and how the home runs.',body:()=>
+   grp('Roommates',`<div class="opts two">${opt(S.hasRoommates==='no','Just them','','data-set="hasRoommates:no"')}${opt(S.hasRoommates==='yes','Yes, roommates','','data-set="hasRoommates:yes"')}</div>`)+
+   (S.hasRoommates==='yes'?`<div class="grp"><div class="row2"><div><span class="lbl">How many</span>${inp('rmN','2')}</div><div><span class="lbl">Who</span>${inp('rmWho','Grad students')}</div></div></div>`+grp('Gender',`<div class="chips">${one('gender',GENDER.map(g=>[g,g]))}</div>`)+grp('Schedule and habits',`<div class="chips">${multi('habits',['Early risers','Quiet weeknights','Cook most nights','Non-smoking','Guests on weekends'])}</div>`)+grp('Anything else',ta('rmNote','','Two grad students, quiet weeknights.'),'optional'):'')},
+ {q:'Getting to campus',h:'Does the school shuttle cover this address?',body:()=>grp('Shuttle',`<div class="opts">${opt(S.shuttle==='covered','Yes, covered','','data-set="shuttle:covered"')}${opt(S.shuttle==='not_covered','Not covered','','data-set="shuttle:not_covered"')}${opt(S.shuttle==='unknown','Not sure','We’ll say “not confirmed” on the listing','data-set="shuttle:unknown"')}</div>`)+(S.shuttle==='covered'?grp('Route',`<div class="chips">${one('route',ROUTES.map(r=>[r,r]))}</div>`):'')},
+ {q:'In the building',h:'Pick at least one.',body:()=>grp('Amenities',`<div class="chips">${multi('amen',AMEN)}</div>`)},
+ {q:'What stays?',h:'Furniture that will be there, and on what terms.',body:()=>
+   grp('Furnished',`<div class="chips">${one('furn',[['full','Fully'],['part','Partly'],['none','Not furnished']])}</div>`)+
+   (S.furn==='none'?'':`<div class="grp"><span class="lbl">Items</span>${FURN.map(([g,items],gi)=>`<p class="sub" style="margin-top:${gi?12:0}px">${g}</p><div class="chips">${multi('items',items)}</div>`).join('')}</div>`+
+   grp('Terms',`<div class="opts two">${opt(terms()==='use','Use during the stay','Left as found','data-set="terms:use"')}${opt(terms()==='gift','Theirs to keep','Usual for takeovers','data-set="terms:gift"')}</div>`))+
+   grp('Also staying, or please note',ta('furnNote','A monitor and a desk mat. The monitor stays on the desk.'),'optional')},
+ {q:'House rules',h:'What you ask of the person moving in.',body:()=>PREFS.map(([g,items])=>grp(g,`<div class="chips">${items.map(t=>chip(t,S.prefs[g]===t,`data-pref="${g}:${t}"`)).join('')}</div>`)).join('')+grp('Anything else',ta('ruleNote','','Quiet after 10 pm, please.'),'optional')},
+ {q:'Photos',h:'At least 2 of the bedroom and 1 of each other area. Phone photos in daylight are fine.',body:()=>`<div class="grp">${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?S.video:'Optional · up to 60 seconds'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk"><input type="file" accept="video/*" data-video hidden>Add</label>`}</div></div><p class="note">${areasDone()} of ${AREAS.length} areas done. Photos are checked before the listing goes live.</p>`},
+ {q:'Prove it’s yours',h:'Checked by a person within 24 hours. A badge shows it was checked; it is not a guarantee.',body:()=>`<div class="opts" style="margin-top:28px">${opt(S.proof==='student','Student verification','Verified Oct 12 · Northwestern','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>`},
+ {q:'Check and publish',h:'This is how it will look. Edit anything, any time.',body:()=>`<div class="grp">${card()}</div>
+   <dl class="review grp">${[
+     ['Where',`${val('building','Evanston Place')} · ${S.map?'exact spot on the map':'area only on the map'}`,1],
+     ['Dates',WhenPicker.label(S.start,S.end),2],
+     ['Money',`${money(S.rent)} / mo · was ${money(S.orig)} · ${depLine()} · ~$${val('extra','60')} other costs`,3],
+     ['Room',`${unitName()} · ${S.layout} · ${S.bath} bath${val('sqft','140')?` · ${val('sqft','140')} sq ft`:''}`,4],
+     ['Roommates',S.hasRoommates==='no'?'Just them':`${val('rmN','2')} ${val('rmWho','Grad students').toLowerCase()} · ${S.gender.toLowerCase()}`,5],
+     ['What stays',S.furn==='none'?'Not furnished':`${S.furn==='full'?'Fully':'Partly'} furnished · ${S.multi.items.length} items · ${terms()==='gift'?'theirs to keep':'use during the stay'}`,8],
+     ['Rules',Object.values(S.prefs).filter(Boolean).join(' · ')||'None set',9],
+     ['Photos',`${photoCount()} photos · ${areasDone()} of ${AREAS.length} areas${S.video?' · video':''}`,10],
+     ['Verification',S.proof==='student'?'Student ✓ · lease proof pending':'Lease proof · student pending',11]
+   ].map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
+   ${grp('A note for the listing',ta('note','I’m away for winter quarter. Small but very efficient room with a proper desk nook. Five minutes to the train.'),'optional · shows as a quote')}
+   <p class="note">Reviewed within 24 hours, then live with a listing number. Up to 3 listings at a time.</p>`}];
+
+const page=()=>{const n=STEPS.length,i=Math.min(S.step,n-1),s=STEPS[i];
+  if(S.done)return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Sent for review</h2><p class="hint">A person checks it within 24 hours. You’ll get the listing number when it’s live, and you can edit it any time.</p><div class="grp" style="text-align:left">${card()}</div><div class="acts"><button class="btn sec" data-edit>Edit the listing</button><a class="btn" href="index.html">Back to home</a></div></div></div>`;
+  return `${header('<button type="button" class="save" data-save>Save and exit</button>')}<div class="a-top"><i style="width:${(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">Step ${i+1} of ${n}</p><h2 class="q">${s.q}</h2><p class="hint">${s.h}</p>${s.body()}</div></div>
+  <div class="a-foot"><div class="wrap"><button class="btn lnk" data-back ${i===0?'disabled':''}>Back</button><div class="a-steps">${STEPS.map((x,k)=>`<button data-go="${k}" class="${k===i?'on':k<i?'done':''}" title="${x.q}">${k+1}</button>`).join('')}</div><button class="btn" data-next>${i===n-1?'Publish':'Next'}</button></div></div>`};
+
+function render(){
+  if(window.BudgetPicker)BudgetPicker.close();
+  const st=$('#stage');st.innerHTML=page();
+  /* the dates step carries the homepage calendar itself; a pick updates the two fields and the chips in place */
+  calApi=null;st.querySelectorAll('[data-cal]').forEach(m=>{calApi=WhenPicker.mount({mount:m,start:S.start,end:S.end,act:S.act,onChange:(s,e,act)=>{S.act=act;if(s&&e&&e>s){S.start=s;S.end=e}syncDates(s,e)}})});
+  /* the campus field is the homepage's city → campus list */
+  document.querySelectorAll('.ws-pop').forEach(p=>p.remove());
+  st.querySelectorAll('[data-wform]').forEach(f=>{f.addEventListener('submit',e=>e.preventDefault());
+    WhereSearch.attach({form:f,seg:f.querySelector('[data-wseg]'),valueEl:f.querySelector('[data-wval]'),current:S.campus,onCampus:(v,name)=>{S.campusId=v;S.campus=name;render()}})})}
+const draft=()=>{try{const {photos,...rest}=S;sessionStorage.setItem('cs-post-draft',JSON.stringify(rest))}catch(_){}}; /* photos are files; they are not kept in the draft */
+
+document.addEventListener('click',e=>{const t=e.target;
+  if(t.closest('[data-next]')){if(S.step>=STEPS.length-1){S.done=true;try{sessionStorage.removeItem('cs-post-draft')}catch(_){}}else S.step++;render();window.scrollTo(0,0);return}
+  if(t.closest('[data-back]')){S.step=Math.max(0,S.step-1);render();return}
+  if(t.closest('[data-edit]')){S.done=false;S.step=STEPS.length-1;render();return}
+  if(t.closest('[data-save]')){draft();location.href='index.html';return}
+  const g=t.closest('[data-go]');if(g){S.step=+g.dataset.go;render();return}
+  const set=t.closest('[data-set]');if(set){const [k,v]=set.dataset.set.split(':');S[k]=v;render();return}
+  const o1=t.closest('[data-one]');if(o1){const [k,v]=o1.dataset.one.split(':');S[k]=v;render();return}
+  const pr=t.closest('[data-pref]');if(pr){const [k,v]=pr.dataset.pref.split(':');S.prefs[k]=S.prefs[k]===v?'':v;render();return}
+  const m=t.closest('[data-multi]');if(m){const [g,v]=m.dataset.multi.split(':'),a=S.multi[g],i=a.indexOf(v);
+    if(i>=0)a.splice(i,1);else{if(g==='fees'){if(v==='Nothing extra')a.length=0;else{const j=a.indexOf('Nothing extra');if(j>=0)a.splice(j,1)}}a.push(v)}render();return}
+  const dd=t.closest('[data-dates]');if(dd){[S.start,S.end]=dd.dataset.dates.split(':');S.act='in';if(calApi)calApi.set(S.start,S.end);syncDates(S.start,S.end);return}
+  const sd=t.closest('[data-side]');if(sd){S.act=sd.dataset.side;if(calApi)calApi.setAct(S.act);syncDates(S.start,S.end);return}
+  const rm=t.closest('[data-rm]');if(rm){const [k,i]=rm.dataset.rm.split(':');S.photos[k].splice(+i,1);render();return}
+  if(t.closest('[data-video-rm]')){S.video=null;render();return}
+  const w=t.closest('[data-sw]')||(t.closest('.tog')&&t.closest('.tog').querySelector('[data-sw]'));if(w&&!t.closest('.lk,label,input')){S[w.dataset.sw]=!S[w.dataset.sw];render();return} /* the whole row toggles its switch */
+  /* the homepage price picker, in its rent mode, opened from the two rent fields */
+  const p=t.closest('[data-pk]');if(p){const k=p.dataset.pk;
+    return BudgetPicker.open({anchor:p,mode:'rent',value:S[k],prices:PRICES,title:k==='orig'?'What you pay now':'Your rent a month',note:k==='orig'?'Shown struck through next to your rent.':'You can change it any time.',onDone:v=>{S[k]=v;render()}})}});
+/* typed text survives every redraw */
+document.addEventListener('input',e=>{const k=e.target.dataset.f;if(k)S.f[k]=e.target.value});
+/* photos and the video come from real files */
+document.addEventListener('change',e=>{const el=e.target,file=el.files&&el.files[0];if(!file)return;
+  if(el.dataset.area){const a=el.dataset.area,fr=new FileReader();fr.onload=()=>{S.photos[a].push(fr.result);render()};fr.readAsDataURL(file)}
+  else if('video' in el.dataset){S.video=file.name;render()}});
+render();
+</script>
+</body>
+</html>

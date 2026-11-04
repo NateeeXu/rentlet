@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Post a request · Rentlet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+/* Post a request: the seeker's side of post.html. Same shell and controls, one question per screen. */
+:root{--canvas:#f7f7f7;--soft:#f2f2f4;--ink:#222;--ink2:#484848;--muted:#717171;--line:#dddddd;--hair:#e8e8e8;--err:#c13515;--serif:"Newsreader",Georgia,serif;--ctl:52px}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--canvas);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+img{display:block}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.stage{container-type:inline-size;height:100vh;height:100dvh;display:flex;flex-direction:column;background:var(--canvas)}
+.hd{flex:none;background:#fff;border-bottom:1px solid var(--hair)}
+.hd .wrap{height:64px;display:flex;align-items:center;gap:16px}
+.hd img{height:26px}
+.hd .r{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:14px;font-weight:600}
+.hd .r .save{color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;min-height:44px}
+.hd .me{width:36px;height:36px;border-radius:50%;background:#222;color:#fff;display:grid;place-items:center;font-weight:700;text-decoration:none}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px;width:100%}
+
+/* one set of controls: the same height, font and radius everywhere (from post.html) */
+h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5px;line-height:1.15;margin:0}
+.hint{margin:8px 0 0;font-size:15px;color:var(--muted);line-height:1.5}
+.grp{margin-top:28px}
+.grp+.grp{margin-top:22px}
+.lbl{display:block;font-size:14px;font-weight:650;color:var(--ink);margin-bottom:8px}
+.lbl small{font-weight:500;font-size:12px;color:var(--muted);margin-left:6px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.in{height:var(--ctl);border:1px solid var(--line);border-radius:12px;background:#fff;display:flex;align-items:center;padding:0 14px;font-size:16px;gap:8px;min-width:0;margin:0}
+.in input{border:0;outline:0;flex:1;min-width:0;background:none;font-size:16px;padding:0}
+.in .u{color:var(--muted);font-size:14px;white-space:nowrap}
+.in.ta{height:auto;padding:12px 14px;align-items:flex-start}
+.in.ta textarea{border:0;outline:0;flex:1;resize:none;font-size:16px;line-height:1.5;background:none;min-width:0;padding:0}
+.in:focus-within,.in.ws-on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.in.bad{border-color:var(--err);box-shadow:inset 0 0 0 1px var(--err)}
+.in.pk{width:100%;text-align:left;cursor:pointer;justify-content:space-between;font-variant-numeric:tabular-nums}
+.in.pk:hover,.in.ws:hover{border-color:#b8b8bd}
+.in.pk[aria-expanded=true],.in.pk.act{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.in.pk .pkph{color:var(--muted)}
+.in.ws{cursor:pointer;justify-content:space-between}
+.in.ws [data-wval]{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.in svg.ch{width:16px;height:16px;flex:none;color:var(--muted)}
+.cal{margin-top:16px}
+.in.ro{cursor:default;font-variant-numeric:tabular-nums}
+.opts{display:grid;gap:10px}
+.opt{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--ctl);padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:#fff;text-align:left;width:100%;margin:0}
+.opt:hover{border-color:#b8b8bd}
+.opt b{display:block;font-size:15px;font-weight:600}
+.opt span{display:block;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4}
+.opt.on,.opt.on:hover{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.opt .tk{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);flex:none;display:grid;place-items:center;font-size:11px;color:#fff;margin:0}
+.opt.on .tk{background:var(--ink);border-color:var(--ink)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none;white-space:nowrap}
+.chip:hover{border-color:#b8b8bd}
+.chip.on,.chip.on:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:var(--ctl);padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.tog b{display:block;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.tog span{display:block;font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4}
+.tog .lk,.lk{font-size:14px;font-weight:600;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;cursor:pointer;white-space:nowrap;min-height:44px}
+.sw{width:44px;height:26px;border-radius:99px;background:var(--ink);position:relative;flex:none;border:0;padding:0;cursor:pointer}
+.sw::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff}
+.sw.off{background:#cfcfd4}.sw.off::after{right:auto;left:3px}
+.note{margin:12px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
+.note .lk{font-size:13px;min-height:0}
+.err{margin:8px 0 0;font-size:13px;color:var(--err)}
+.cnt{display:block;text-align:right;font-size:12px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.vrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+.vrow .btn{height:var(--ctl)}
+.btn{height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--ink);color:#fff;font-weight:650;font-size:15px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap;margin:0}
+.btn.lnk{background:none;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:0;height:auto;min-height:44px}
+.btn.lnk:disabled{opacity:.35;cursor:default}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.sec:hover{border-color:var(--ink)}
+
+.a-top{height:3px;background:var(--hair);position:relative;flex:none}
+.a-top i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);transition:width .4s cubic-bezier(.22,1,.36,1)}
+.a-scroll{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}
+.a-q{width:min(600px,100%);margin:auto;padding:40px 24px} /* margin:auto centres a short step; a long one scrolls */
+.a-step{font-size:13px;color:var(--muted);margin:0 0 8px}
+.a-foot{flex:none;background:#fff;border-top:1px solid var(--hair)}
+.a-foot .wrap{height:76px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.a-steps{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;flex:1}
+.a-steps button{width:32px;height:32px;border-radius:50%;border:1px solid var(--hair);background:#fff;font-size:12px;color:var(--muted);padding:0}
+.a-steps button.on{border-color:var(--ink);color:var(--ink);font-weight:650}
+.a-steps button.done{background:var(--soft);border-color:var(--soft);color:var(--ink2)}
+.review{display:grid;margin:8px 0 0}
+.rrow{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:14px;padding:12px 0;border-top:1px solid var(--hair);font-size:14px;align-items:start}
+.rrow:first-child{border-top:0}
+.rrow dt{color:var(--muted)}
+.rrow dd{margin:0;font-weight:600;line-height:1.4;overflow-wrap:anywhere}
+.rrow .edit{font-size:13px;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;min-height:24px}
+.done{text-align:center}
+.done .ok{width:56px;height:56px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;margin:0 auto 18px;font-size:22px}
+.done .acts{display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.done .acts .btn{flex:none}
+
+/* the request card: the same look as the requests page */
+.qc{border:1px solid var(--hair);border-radius:16px;background:#fff;padding:18px;display:flex;flex-direction:column;gap:10px;min-width:0;text-align:left}
+.qt{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:12px;align-items:center}
+.qc .av{width:48px;height:48px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700;font-size:17px}
+.qc h3{margin:0;font-size:16px;font-weight:650;line-height:1.3;overflow-wrap:anywhere}
+.qs{margin:2px 0 0;font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 10px;align-items:center}
+.vf{display:inline-flex;align-items:center;gap:4px;color:var(--ink2);font-weight:600}
+.vf svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.qneed{margin:2px 0 0;font-size:15px;font-weight:600;line-height:1.4}
+.qneed .nw{white-space:nowrap}
+.qb{margin:0;font-size:14px;color:var(--muted)}
+.qb .pr{font-family:var(--serif);font-size:22px;font-weight:500;color:var(--ink)}
+.qtag{font-size:12px;font-weight:650;border:1px solid var(--ink);border-radius:999px;padding:4px 10px;white-space:nowrap;align-self:start}
+.qq{margin:0;font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.45;color:var(--ink2);overflow-wrap:anywhere}
+
+@container (max-width:700px){
+  .hd .wrap{height:56px}
+  .wrap{padding:0 16px}
+  h2.q{font-size:26px}
+  .a-q{padding:24px 16px 28px}
+  .row2{grid-template-columns:minmax(0,1fr)}
+  .a-foot .wrap{height:auto;padding:10px 16px calc(10px + env(safe-area-inset-bottom))}
+  .a-steps{display:none}
+  .rrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px}
+  .rrow dt{grid-column:1/-1}
+  .done .acts{flex-direction:column;align-items:stretch}
+  .done .acts .btn{white-space:normal;height:auto;min-height:48px;padding:12px 20px;text-align:center}
+}
+@container (max-width:360px){
+  .qc{padding:16px}
+  .qt{grid-template-columns:40px minmax(0,1fr) auto;gap:10px}
+  .qc .av{width:40px;height:40px;font-size:15px}
+}
+</style>
+<link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style id="rentlet-base">
+/* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
+.rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
+html,body{background:#f7f7f7}
+:root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
+a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
+</style>
+</head>
+<body>
+<div class="stage" id="stage"></div>
+<script src="where-search.js?v=a680f16a"></script>
+<script src="when-picker.js?v=7860cfd6"></script>
+<script src="budget-picker.js?v=552d4e21"></script>
+<script>
+const $=s=>document.querySelector(s);
+const QS=new URLSearchParams(location.search);
+const iso=d=>new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())).toISOString().slice(0,10);
+const TODAY=iso(new Date());
+const DEF_LINE='Grad student, quiet and tidy. I’m in the lab most days.';
+/* everything the form knows, so a click anywhere can redraw the screen without losing anything */
+const S={step:0,done:false,f:{},err:'',
+  campus:'Northwestern · Evanston',campusId:'nu-evn',near:'any',
+  start:'2027-01-03',end:'2027-04-30',act:'in',flex:'exact',
+  budget:1500,util:false,
+  kind:'room',furn:'any',bath:false,mates:'yes',
+  role:'student',orgMode:'campus',contact:'wechat',ver:'verified',verOn:'2026-10-12',verKey:'',verEmail:'',
+  multi:{life:['Quiet','Non-smoker']}};
+/* the campus and dates the visitor searched on the homepage, the budget they set there, then a saved draft */
+try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&WhereSearch.SCHOOLS.find(x=>x[0]===p.school);if(row){S.campusId=row[0];S.campus=row[1]}
+  if(p.start&&p.end&&p.start>=TODAY&&p.end>p.start){S.start=p.start;S.end=p.end}}catch(_){}
+S.budget=BudgetPicker.load(1500);
+/* the sample account is verified with the school email of the campus it starts on */
+const DOMAIN={'nu-evn':'u.northwestern.edu','nu-chi':'u.northwestern.edu'};
+S.verKey=S.campusId;S.verEmail='sam@'+(DOMAIN[S.campusId]||'u.northwestern.edu');
+const restore=d=>{if(!d)return false;if(d.budget==null)d.budget=Infinity;Object.assign(S,d,{done:false,err:''});return true};
+let restored=false;
+try{restored=restore(JSON.parse(sessionStorage.getItem('cs-request-draft')||'null'))}catch(_){}
+/* "Edit" on the requests page reopens the posted request at the review screen (or at room details) */
+if(!restored&&QS.get('edit')){try{if(restore(JSON.parse(sessionStorage.getItem('cs-request-form')||'null')))S.step=QS.get('edit')==='room'?3:99}catch(_){}}
+
+const money=v=>'$'+v.toLocaleString('en-US');
+const val=(k,d)=>k in S.f?S.f[k]:d;
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const md=s=>`${MO[+s.slice(5,7)-1]} ${+s.slice(8)}`;
+/* what rooms near this campus ask, for the budget picker's histogram (the real site uses the live listings) */
+const PRICES=[950,1050,1100,1150,1180,1200,1200,1250,1280,1300,1300,1320,1350,1380,1400,1400,1420,1450,1450,1480,1500,1500,1520,1550,1580,1600,1600,1650,1700,1700,1750,1800,1850,1900,1950,2000,2100,2200,2400,2800];
+const CHEV=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>`;
+const TICK=`<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-6.5"/></svg>`;
+
+const NEAR=[['any','Anywhere near campus'],['walk','Walkable to campus'],['shuttle','On the shuttle line']];
+const FLEX=[['exact','Exact dates'],['3d','± 3 days'],['1w','± 1 week']];
+const FURN=[['full','Furnished'],['part','Partly'],['any','Doesn’t matter']];
+const MATES=[['yes','Yes'],['no','No'],['depends','Depends']];
+const ROLES=[['student','Student'],['intern','Intern'],['newhire','New hire'],['researcher','Visiting researcher'],['other','Other']];
+const LIFE=['Quiet','Early riser','Night owl','Cooks often','Non-smoker','Has a pet','Works from home'];
+const KIND={room:'Private room',whole:'Whole place',either:'Room or whole place'};
+const PRESETS=[['Winter quarter','2027-01-03','2027-03-20'],['Winter + spring','2027-01-03','2027-06-12'],['Summer','2027-06-14','2027-09-11']];
+const name=(list,k)=>(list.find(x=>x[0]===k)||['',''])[1];
+const school=()=>S.campus.split(' · ')[0];
+const roleName=()=>name(ROLES,S.role);
+const orgVal=()=>S.role==='student'||S.orgMode==='campus'?school():val('org','').trim();
+const emailLabel=()=>S.role==='student'?`${school()} email`:'Work email';
+/* verification belongs to one school (students) or to work; changing either sends it back to Add */
+const verKey=()=>S.role==='student'?S.campusId:'work';
+const dom=()=>DOMAIN[S.campusId]||'school.edu';
+function syncVer(){if(S.ver!=='add'&&S.verKey!==verKey()){S.ver='add';S.verEmail='';delete S.f.email;delete S.f.code}}
+const isVer=()=>S.ver==='verified'&&S.verKey===verKey();
+const verWhat=()=>S.verKey==='work'?'work email':school();
+function checkEmail(em){if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em))return 'Enter an email address.';
+  if(S.role==='student'){const d=dom().toLowerCase(),e=em.toLowerCase();return e.endsWith('@'+d)||e.endsWith('.'+d)?'':`Use your ${school()} address.`}
+  return /@(gmail|outlook|hotmail|qq|163|yahoo)\./i.test(em)?'Use your work address, not a personal one.':''}
+const need=k=>({'Private room':'a private room','Whole place':'a whole place','Room or whole place':'a room or a whole place'}[k]||String(k).toLowerCase());
+const budText=()=>S.budget===Infinity?'Any price':`${BudgetPicker.label(S.budget)} / mo`;
+
+/* the public card: first name, role, school, dates, budget, kind of room and the quote. Nothing else. */
+const record=()=>({id:'mine',who:(val('name','Sam').trim()||'Your name'),role:roleName(),kind:KIND[S.kind],start:S.start,end:S.end,
+  budget:S.budget===Infinity?null:S.budget,note:val('line',DEF_LINE).trim(),school:S.campus,campusId:S.campusId,verified:isVer(),live:false});
+const qcard=(r,tag)=>`<article class="qc"><div class="qt"><span class="av" aria-hidden="true">${esc((r.who||'?')[0])}</span><div><h3>${esc(r.who)} · ${esc(r.role)}</h3><p class="qs"><span>${esc(r.school)}</span>${r.verified?`<span class="vf">${TICK}Verified</span>`:''}</p></div>${tag?`<span class="qtag">${tag}</span>`:''}</div>
+  <p class="qneed">Needs ${need(r.kind)} · <span class="nw">${WhenPicker.label(r.start,r.end)}</span></p>
+  <p class="qb">${r.budget==null?'<span class="pr">Any price</span>':`Up to <span class="pr">${money(r.budget)}</span> / mo`}</p>
+  ${r.note?`<blockquote class="qq">“${esc(r.note)}”</blockquote>`:''}</article>`;
+
+const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}<a class="me" href="profile.html" aria-label="Your profile">Y</a></div></div></header>`;
+const opt=(on,b,s,attrs='')=>`<button type="button" class="opt ${on?'on':''}" aria-pressed="${on}" ${attrs}><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div><span class="tk">${on?'✓':''}</span></button>`;
+const chip=(t,on,attrs='')=>`<button type="button" class="chip ${on?'on':''}" aria-pressed="${on}" ${attrs}>${t}</button>`;
+const one=(key,list)=>list.map(([v,t])=>chip(t,S[key]===v,`data-one="${key}:${v}"`)).join('');
+const multi=(g,list)=>list.map(t=>chip(t,S.multi[g].includes(t),`data-multi="${g}:${t}"`)).join('');
+const grp=(label,inner,small='')=>`<div class="grp">${label?`<span class="lbl">${label}${small?`<small>${small}</small>`:''}</span>`:''}${inner}</div>`;
+const errP=k=>S.err===k?`<p class="err" data-err="${k}">${{name:'Add your first name.',email:S.errMsg||'Enter an email address.',code:'Enter the 6-digit code.'}[k]}</p>`:'';
+const inp=(k,d,ph='',type='text')=>`<label class="in ${S.err===k?'bad':''}"><input type="${type}" value="${esc(val(k,d))}" placeholder="${esc(ph)}" data-f="${k}" aria-label="${esc(ph||k)}"></label>`;
+const sw=(k,label)=>`<button type="button" class="sw ${S[k]?'':'off'}" data-sw="${k}" role="switch" aria-checked="${S[k]}" aria-label="${label}"></button>`;
+const fullDay=s=>{const d=WhenPicker.day(s);return d.includes(',')?d:`${d}, ${s.slice(0,4)}`};
+const side=(k,s)=>`<button type="button" class="in pk ${S.act===k?'act':''}" data-side="${k}"><span data-side-t="${k}">${s?fullDay(s):'<span class="pkph">Pick a day</span>'}</span></button>`;
+let calApi=null;
+function syncDates(s,e){document.querySelectorAll('[data-side-t=in]').forEach(x=>x.innerHTML=s?fullDay(s):'<span class="pkph">Pick a day</span>');document.querySelectorAll('[data-side-t=out]').forEach(x=>x.innerHTML=e?fullDay(e):'<span class="pkph">Pick a day</span>');
+  document.querySelectorAll('[data-side]').forEach(b=>b.classList.toggle('act',b.dataset.side===S.act));document.querySelectorAll('[data-dates]').forEach(c=>{const on=c.dataset.dates===`${S.start}:${S.end}`;c.classList.toggle('on',on);c.setAttribute('aria-pressed',on)});live()}
+
+/* the screens' bodies */
+const campusField=()=>`<form data-wform><div class="in ws" data-wseg><span data-wval>${esc(S.campus)}</span>${CHEV}</div></form>`;
+const tog=(b,s,ctl)=>`<div class="tog"><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div>${ctl}</div>`;
+const lineBox=()=>{const v=val('line',DEF_LINE);return `<label class="in ta"><textarea rows="3" maxlength="160" placeholder="What a host should know" data-f="line" aria-label="One line about you">${esc(v)}</textarea></label><span class="cnt" data-cnt>${v.length} / 160</span>`};
+/* school is a pick from the campus list (the same campus as step 1); others may type a company instead */
+const orgField=()=>S.role==='student'?grp('School',campusField()):
+  grp('Company or school',`<div class="chips">${chip('Campus',S.orgMode==='campus','data-one="orgMode:campus"')}${chip('Other',S.orgMode==='other','data-one="orgMode:other"')}</div><div style="margin-top:10px">${S.orgMode==='other'?inp('org','','Company or school name'):campusField()}</div>`,S.role==='other'?'optional':'');
+const B={
+  where:()=>grp('Campus',campusField())+grp('How close',`<div class="chips">${one('near',NEAR)}</div>`),
+  whenCore:()=>`<div class="grp"><div class="row2"><div><span class="lbl">Move in</span>${side('in',S.start)}</div><div><span class="lbl">Move out</span>${side('out',S.end)}</div></div></div><div class="grp"><div class="chips">${PRESETS.map(([t,s,e])=>chip(t,S.start===s&&S.end===e,`data-dates="${s}:${e}"`)).join('')}</div><div class="cal" data-cal></div></div>`,
+  when:()=>B.whenCore()+grp('How flexible',`<div class="chips">${one('flex',FLEX)}</div>`),
+  budgetCore:()=>`<div class="grp"><span class="lbl">Budget</span><div class="in ro"><span data-budget-t>${BudgetPicker.label(S.budget)}</span></div><div class="cal" data-budget></div></div>`,
+  budget:()=>B.budgetCore()+`<div class="grp">${tog('Utilities included matters to me','',sw('util','Utilities included matters to me'))}</div><p class="note">You pay the host directly. Rentlet never holds money.</p>`,
+  room:()=>grp('Looking for',`<div class="opts">${opt(S.kind==='room','A private room','In a shared place','data-set="kind:room"')}${opt(S.kind==='whole','The whole place','Studio or apartment','data-set="kind:whole"')}${opt(S.kind==='either','Either','','data-set="kind:either"')}</div>`)+
+    grp('Furnished',`<div class="chips">${one('furn',FURN)}</div>`)+
+    `<div class="grp">${tog('Private bathroom matters','',sw('bath','Private bathroom matters'))}</div>`+
+    grp('Fine with roommates',`<div class="chips">${one('mates',MATES)}</div>`),
+  about:()=>grp('First name',inp('name','Sam','First name')+errP('name'))+
+    grp('I’m a',`<div class="chips">${one('role',ROLES)}</div>`)+
+    orgField()+grp('Lifestyle',`<div class="chips">${multi('life',LIFE)}</div>`)+
+    grp('One line about you',lineBox()),
+  verify:()=>{
+    const em=S.verEmail;let inner;
+    if(S.ver==='verified')inner=tog(esc(em),`Verified · ${esc(verWhat())}`,`<button type="button" class="lk" data-ver="add">Change</button>`);
+    else if(S.ver==='pending')inner=tog(esc(em),'Pending · code sent',`<button type="button" class="lk" data-ver="add">Change</button>`)+`<div class="vrow" style="margin-top:10px">${inp('code','','6-digit code','text')}<button type="button" class="btn sec" data-ver="verified">Verify</button></div>${errP('code')}<p class="note"><button type="button" class="lk" data-resend>Resend the code</button></p>`;
+    else inner=`<div class="vrow">${inp('email','',S.role==='student'?'name@'+dom():'name@company.com','email')}<button type="button" class="btn sec" data-ver="pending">Send code</button></div>${errP('email')}`;
+    return grp(emailLabel(),inner,S.ver==='verified'?'Verified':S.ver==='pending'?'Pending':'Add')+
+      `<div class="grp">${tog('Contact stays private','Shared in messages after you both reply 3 times. Instagram handle or email, never phone.','')}</div>`+
+      grp('Share later by',`<div class="chips">${one('contact',[['wechat','Instagram'],['email','Email']])}</div>`)},
+  review:()=>{
+    const rows=[
+      ['Where',`${S.campus} · ${name(NEAR,S.near).toLowerCase()}`,0],
+      ['Dates',`${WhenPicker.label(S.start,S.end)} · ${name(FLEX,S.flex).toLowerCase()}`,1],
+      ['Budget',`${budText()}${S.util?' · utilities included':''}`,2],
+      ['Room',`${KIND[S.kind]} · ${S.furn==='any'?'furnished or not':name(FURN,S.furn).toLowerCase()+(S.furn==='part'?' furnished':'')}${S.bath?' · private bathroom':''} · roommates: ${name(MATES,S.mates).toLowerCase()}`,3],
+      ['About you',`${esc(val('name','Sam'))} · ${roleName()}${orgVal()?` · ${esc(orgVal())}`:''}${S.multi.life.length?` · ${S.multi.life.join(', ').toLowerCase()}`:''}`,4],
+      ['Verification',`${S.ver==='verified'?'Verified · '+esc(verWhat()):S.ver==='pending'?'Pending':'Not yet'} · contact by ${S.contact==='wechat'?'Instagram':'email'}, in messages`,5]];
+    return `<div class="grp">${qcard(record())}</div><dl class="review grp">${rows.map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
+      <p class="note">Reviewed within 24 hours, then live until your move-in date.</p>`}
+};
+const STEPS=[
+  {q:'Where do you need a room?',h:'',body:B.where},
+  {q:'When do you need it?',h:'',body:B.when},
+  {q:'What’s your budget?',h:'',body:B.budget},
+  {q:'What kind of place?',h:'',body:B.room},
+  {q:'About you',h:'Hosts see only your first name, role, school and your line.',body:B.about,name:1},
+  {q:'Verify your email',h:'A badge shows it was checked. It is not a guarantee.',body:B.verify},
+  {q:'Check and post',h:'',body:B.review}];
+const doneScreen=()=>`${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Sent for review</h2><p class="hint">A person checks it within 24 hours. Hosts can message you once it’s live.</p><div class="grp">${qcard(record(),'In review')}</div><div class="acts"><a class="btn sec" href="requests.html?campus=${S.campusId}">See requests near ${esc(S.campus)}</a><a class="btn" href="index.html">Back to home</a></div></div></div>`;
+const page=()=>{
+  if(S.done)return doneScreen();
+  const save='<button type="button" class="save" data-save>Save and exit</button>';
+  const n=STEPS.length,i=Math.min(S.step,n-1),s=STEPS[i];
+  return `${header(save)}<div class="a-top"><i style="width:${(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">Step ${i+1} of ${n}</p><h2 class="q">${s.q}</h2>${s.h?`<p class="hint">${s.h}</p>`:''}${s.body()}</div></div>
+  <div class="a-foot"><div class="wrap"><button type="button" class="btn lnk" data-back ${i===0?'disabled':''}>Back</button><div class="a-steps">${STEPS.map((x,k)=>`<button type="button" data-go="${k}" class="${k===i?'on':k<i?'done':''}" aria-label="Step ${k+1}: ${x.q}">${k+1}</button>`).join('')}</div><button type="button" class="btn" data-next>${i===n-1?'Post':'Next'}</button></div></div>`};
+
+function live(){}
+function render(){
+  if(window.BudgetPicker)BudgetPicker.close();
+  if(window.WhenPicker)WhenPicker.close();
+  if(!S.done)S.step=Math.min(S.step,STEPS.length-1);
+  syncVer();
+  const sc=document.getElementById('ascroll'),top=sc?sc.scrollTop:0;
+  const st=$('#stage');st.innerHTML=page();
+  /* the budget step carries the homepage price picker itself, laid into the page like the calendar */
+  st.querySelectorAll('[data-budget]').forEach(m=>BudgetPicker.mount({mount:m,value:S.budget,prices:PRICES,onChange:v=>{S.budget=v;BudgetPicker.save(v);document.querySelectorAll('[data-budget-t]').forEach(x=>x.textContent=BudgetPicker.label(v));live()}}));
+  calApi=null;st.querySelectorAll('[data-cal]').forEach(m=>{calApi=WhenPicker.mount({mount:m,start:S.start,end:S.end,act:S.act,onChange:(s,e,act)=>{S.act=act;if(s&&e&&e>s){S.start=s;S.end=e}syncDates(s,e)}})});
+  document.querySelectorAll('.ws-pop').forEach(p=>p.remove());
+  st.querySelectorAll('[data-wform]').forEach(f=>{f.addEventListener('submit',e=>e.preventDefault());
+    WhereSearch.attach({form:f,seg:f.querySelector('[data-wseg]'),valueEl:f.querySelector('[data-wval]'),current:S.campus,onCampus:(v,nm)=>{S.campusId=v;S.campus=nm;render()}})});
+  if(S.err){const el=st.querySelector(`[data-f="${S.err}"]`);if(el){el.focus({preventScroll:true});el.closest('.grp').scrollIntoView({block:'center'})}}}
+const state=()=>{const {done,err,...rest}=S;return rest};
+const draft=()=>{try{sessionStorage.setItem('cs-request-draft',JSON.stringify(state()))}catch(_){}};
+const nameMissing=()=>!val('name','Sam').trim();
+function post(){
+  if(nameMissing()){S.err='name';S.step=STEPS.findIndex(x=>x.name);render();return}
+  try{sessionStorage.setItem('cs-my-request',JSON.stringify(record()));sessionStorage.setItem('cs-request-form',JSON.stringify({...state(),step:0}));sessionStorage.removeItem('cs-request-draft')}catch(_){}
+  S.done=true;render()}
+
+document.addEventListener('click',e=>{const t=e.target;
+  if(t.closest('[data-next]')){
+    if(S.step>=STEPS.length-1)return post();
+    if(STEPS[S.step].name&&nameMissing()){S.err='name';render();return}
+    S.err='';S.step++;render();const sc=document.getElementById('ascroll');if(sc)sc.scrollTop=0;return}
+  if(t.closest('[data-back]')){S.err='';S.step=Math.max(0,S.step-1);render();return}
+  if(t.closest('[data-save]')){draft();location.href='index.html';return}
+  const g=t.closest('[data-go]');if(g){S.err='';S.step=+g.dataset.go;render();return}
+  const set=t.closest('[data-set]');if(set){const [k,v]=set.dataset.set.split(':');S[k]=v;render();return}
+  const o1=t.closest('[data-one]');if(o1){const [k,v]=o1.dataset.one.split(':');S[k]=v;render();return}
+  const m=t.closest('[data-multi]');if(m){const [g2,v]=m.dataset.multi.split(':'),a=S.multi[g2],i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);render();return}
+  const dd=t.closest('[data-dates]');if(dd){[S.start,S.end]=dd.dataset.dates.split(':');S.act='in';if(calApi)calApi.set(S.start,S.end);syncDates(S.start,S.end);return}
+  const sd=t.closest('[data-side]');if(sd){S.act=sd.dataset.side;if(calApi)calApi.setAct(S.act);syncDates(S.start,S.end);return}
+  const w=t.closest('[data-sw]');if(w){S[w.dataset.sw]=!S[w.dataset.sw];render();return}
+  /* verification: add an email, a code is sent, the code verifies it */
+  const vr=t.closest('[data-ver]');if(vr){const to=vr.dataset.ver;
+    if(to==='pending'){const em=val('email','').trim(),m=checkEmail(em);if(m){S.err='email';S.errMsg=m;render();return}S.verEmail=em}
+    if(to==='verified'&&!/^\d{6}$/.test(val('code','').trim())){S.err='code';render();return}
+    if(to==='verified')S.verOn=TODAY;if(to==='pending')S.verKey=verKey();if(to==='add'){delete S.f.code;delete S.f.email}
+    S.err='';S.ver=to;render();return}
+  if(t.closest('[data-resend]')){const b=t.closest('[data-resend]');b.textContent='Sent again';b.disabled=true;return}
+});
+/* typed text survives every redraw */
+document.addEventListener('input',e=>{const k=e.target.dataset.f;if(!k)return;S.f[k]=e.target.value;
+  if(S.err===k){S.err='';e.target.closest('.in').classList.remove('bad');const er=document.querySelector(`[data-err="${k}"]`);if(er)er.remove()}
+  if(k==='line'){const c=document.querySelector('[data-cnt]');if(c)c.textContent=`${e.target.value.length} / 160`}
+  live()});
+render();
+</script>
+</body>
+</html>

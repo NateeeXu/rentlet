@@ -1,0 +1,151 @@
+rules_version = '2';
+
+// Rentlet access rules. Anyone may browse active listings and open requests; only signed-in
+// Northwestern accounts (verified @u.northwestern.edu or @northwestern.edu Google accounts) may
+// write, and every write is limited to the writer's own documents or conversations.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isNU() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower().matches('.*@(u[.])?northwestern[.]edu');
+    }
+
+    function me() {
+      return request.auth.uid;
+    }
+
+    // timestamps must come from serverTimestamp()
+    function isNow(t) {
+      return t == request.time;
+    }
+
+    function isDate(s) {
+      return s is string && s.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
+    }
+
+    // ---------- public profiles ----------
+    match /users/{uid} {
+      allow read: if true;
+      allow create, update: if isNU() && me() == uid
+        && request.resource.data.keys().hasOnly(['name', 'photoURL', 'nu', 'joinedAt', 'updatedAt', 'bio', 'year'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 60;
+      allow delete: if signedIn() && me() == uid;
+
+      // contact details, saved rooms, notification settings: only the owner
+      match /private/{doc} {
+        allow read, write: if signedIn() && me() == uid;
+      }
+      match /saves/{listingId} {
+        allow read, write: if signedIn() && me() == uid;
+      }
+    }
+
+    // ---------- listings ----------
+    function validListing(d) {
+      return d.ownerId is string
+        && d.kind in ['sublet', 'takeover']
+        && d.campus in ['evanston', 'chicago']
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 120
+        && d.price is int && d.price > 0 && d.price <= 20000
+        && isDate(d.start) && isDate(d.end) && d.start < d.end
+        && d.status in ['active', 'taken', 'hidden']
+        && d.photos is list && d.photos.size() <= 20
+        && (!('description' in d) || (d.description is string && d.description.size() <= 4000));
+    }
+
+    match /listings/{id} {
+      allow read: if resource.data.status == 'active'
+        || (signedIn() && resource.data.ownerId == me());
+      allow create: if isNU()
+        && request.resource.data.ownerId == me()
+        && request.resource.data.status == 'active'
+        && isNow(request.resource.data.createdAt)
+        && validListing(request.resource.data);
+      allow update: if isNU()
+        && resource.data.ownerId == me()
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validListing(request.resource.data);
+      allow delete: if signedIn() && resource.data.ownerId == me();
+    }
+
+    // ---------- requests (people looking for a place) ----------
+    function validRequest(d) {
+      return d.ownerId is string
+        && d.campus in ['evanston', 'chicago']
+        && isDate(d.start) && isDate(d.end) && d.start < d.end
+        && d.budget is int && d.budget > 0 && d.budget <= 20000
+        && d.status in ['open', 'closed']
+        && (!('note' in d) || (d.note is string && d.note.size() <= 2000));
+    }
+
+    match /requests/{id} {
+      allow read: if resource.data.status == 'open'
+        || (signedIn() && resource.data.ownerId == me());
+      allow create: if isNU()
+        && request.resource.data.ownerId == me()
+        && request.resource.data.status == 'open'
+        && isNow(request.resource.data.createdAt)
+        && validRequest(request.resource.data);
+      allow update: if isNU()
+        && resource.data.ownerId == me()
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validRequest(request.resource.data);
+      allow delete: if signedIn() && resource.data.ownerId == me();
+    }
+
+    // ---------- conversations ----------
+    // One conversation per (listing, guest): id = listingId + '_' + guestId.
+    function convo(cid) {
+      return get(/databases/$(database)/documents/conversations/$(cid)).data;
+    }
+
+    match /conversations/{cid} {
+      allow read: if signedIn() && me() in resource.data.participants;
+      allow create: if isNU()
+        && request.resource.data.guestId == me()
+        && request.resource.data.hostId != me()
+        && cid == request.resource.data.listingId + '_' + me()
+        && request.resource.data.participants.size() == 2
+        && request.resource.data.participants.hasAll([request.resource.data.guestId, request.resource.data.hostId])
+        && get(/databases/$(database)/documents/listings/$(request.resource.data.listingId)).data.ownerId == request.resource.data.hostId;
+      // either side can update shared state (last message, read marks, agreement checklist,
+      // shared contact) but never who is in it or what it is about
+      allow update: if isNU()
+        && me() in resource.data.participants
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.listingId == resource.data.listingId
+        && request.resource.data.hostId == resource.data.hostId
+        && request.resource.data.guestId == resource.data.guestId;
+      allow delete: if false;
+
+      match /messages/{mid} {
+        allow read: if signedIn() && me() in convo(cid).participants;
+        allow create: if isNU()
+          && me() in convo(cid).participants
+          && request.resource.data.senderId == me()
+          && isNow(request.resource.data.createdAt)
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000;
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------- reports ----------
+    match /reports/{id} {
+      allow create: if isNU()
+        && request.resource.data.reporterId == me()
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() <= 1000;
+      allow read, update, delete: if false;
+    }
+  }
+}

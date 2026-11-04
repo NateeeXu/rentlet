@@ -118,6 +118,10 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 .fc.mine{border-color:var(--ink)}
 .fc>span{display:block}
 .fh2{font-size:22px;font-weight:650;line-height:1.2;letter-spacing:-.3px;color:var(--ink)}
+/* the request's dates sit to the right of what they need, above the budget; on narrow cards they drop below */
+.fc .ftop{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px}
+.fc .ftop .fh2{min-width:0}
+.fc .ftop .fdt{margin-top:0;margin-left:auto;text-align:right;white-space:nowrap}
 .fdt{margin-top:4px;font-size:18px;font-weight:500;line-height:1.3;color:var(--ink);font-variant-numeric:tabular-nums}
 .fq{margin:12px 0 16px;font-family:var(--serif);font-size:16px;line-height:1.45;color:var(--ink2);display:-webkit-box!important;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .fm{font-size:15px;overflow-wrap:anywhere}.fm b{font-weight:650}.fm .rl{color:var(--ink2)}
@@ -331,7 +335,7 @@ const mrow=m=>{const q=m.q;return `<article class="mr" data-mid="${esc(q.id)}"><
   <div class="mx"><span class="tier ${m.tier.toLowerCase()}">${m.tier}</span><a class="btn btn-secondary" href="${mhref(m.L.code,q.uid)}">${ic('chat','sm')}<span class="bl">Message ${esc(q.who)}</span></a></div></article>`};
 const fav=q=>`<span class="fav" aria-hidden="true" style="overflow:hidden">${face(q)}</span>`;
 const fcard=(q,isMine)=>`<button type="button" class="fc ${isMine?'mine':''}" data-fc="${isMine?'mine':esc(q.id)}" aria-label="${esc(q.who)}, ${esc(q.role)}. ${esc(q.kind)}, ${wl(q.start,q.end)}">${isMine?`<span class="qtag">${myTag()}</span>`:''}
-  <span class="fh2">${esc(q.kind)}${(q.layouts||[]).length?` · ${q.layouts.join(' / ')}`:''}</span><span class="fdt">${wl(q.start,q.end)}</span>${q.note?`<span class="fq">${esc(q.note)}</span>`:''}
+  <span class="ftop"><span class="fh2">${esc(q.kind)}${(q.layouts||[]).length?` · ${q.layouts.join(' / ')}`:''}</span><span class="fdt">${wl(q.start,q.end)}</span></span>${q.note?`<span class="fq">${esc(q.note)}</span>`:''}
   <span class="frow">${fav(q)}<span class="fm"><b>${esc(q.who)}</b><span class="rl"> · ${esc(q.role)}</span>${tick(q.verified)}</span><span class="fb">${budTxt(q.budget)}</span></span></button>`;
 
 const header=()=>{const BADGE=badge();return `<header class="hdr"><div class="wrap">

@@ -27,26 +27,14 @@ img{display:block}
 .hdr .wrap{display:flex;align-items:center;gap:16px;height:72px;position:relative}
 .logo{display:flex;align-items:center;min-height:44px}
 .logo img{height:30px;display:block}
-.nav{display:flex;gap:2px}
-.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:44px;display:flex;align-items:center;border-radius:999px;text-decoration:none;white-space:nowrap}
-.nav a:hover{background:var(--soft);color:var(--ink)}
-.nav a[aria-current]{color:var(--ink);text-decoration:underline;text-underline-offset:6px}
-.badge{min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;display:inline-grid;place-items:center;margin-left:6px;text-decoration:none}
+/* the right end: Saved and Messages (signed in), then the menu (rentlet-boot.js draws all three) */
 .hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
-.me{width:44px;height:44px;overflow:hidden;border-radius:50%;background:#222;color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;text-decoration:none;flex:none}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 16px;border-radius:999px;border:1px solid transparent;font-size:14px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;text-decoration:none;color:var(--ink)}
 .btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
 .btn{max-width:100%}.btn .bl{min-width:0;overflow:hidden;text-overflow:ellipsis} /* a long first name never pushes a button out of its row */
 .btn-secondary{background:#fff;border-color:var(--line)}
 .btn-secondary:hover{border-color:var(--ink)}
 .btn-lg{height:48px;padding:0 22px;font-size:15px}
-.icon-btn{width:44px;height:44px;padding:0;border-radius:999px;border:0;background:none;display:none;align-items:center;justify-content:center}
-.icon-btn:hover,.icon-btn[aria-expanded=true]{background:var(--soft)}
-.hmenu{position:absolute;right:16px;top:calc(100% + 8px);z-index:40;min-width:220px;display:flex;flex-direction:column;padding:8px;border-radius:16px;background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.16),0 2px 6px rgba(30,25,40,.06)}
-.hmenu[hidden]{display:none}
-.hmenu a{display:flex;align-items:center;height:44px;padding:0 14px;border-radius:10px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none}
-.hmenu a:hover{background:rgba(0,0,0,.05)}
-.hmenu hr{border:0;border-top:1px solid var(--hair);margin:6px 8px}
 .lnk{font-size:14px;font-weight:650;color:var(--ink);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;display:inline-flex;align-items:center;min-height:44px}
 
 /* title and filters */
@@ -187,9 +175,7 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 .fcols .brand img{height:28px}
 .fcols .brand p{font-size:13px;color:var(--muted);line-height:1.6;margin:10px 0 0}
 
-@container (max-width:1060px){.hide-m{display:none}.icon-btn{display:inline-flex}}
 @container (max-width:860px){
-  .nav{display:none}
   .fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.fcols .brand{grid-column:1/-1}
   .dd .seg button{padding:0 9px}
   .dbar .f-camp{width:220px}
@@ -226,14 +212,13 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
-.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=5ad688a5"></script>
+<script src="/rentlet-boot.js?v=670e83eb"></script>
 </head>
 <body>
 <div class="site" id="site"></div>
@@ -243,7 +228,6 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
 const $=(s,r=document)=>r.querySelector(s);
 const QS=new URLSearchParams(location.search);
 const ICONS={
-  menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
   chat:'<path d="M5 6.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-8l-4.5 3v-3H5A1.5 1.5 0 0 1 3.5 16V8A1.5 1.5 0 0 1 5 6.5z"/>',
   pin:'<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
   cal:'<rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
@@ -315,7 +299,7 @@ function score(q,L){
   return ti<3?{q,L,total,tier:TIERS[ti],reasons,caution}:null}
 const TR={Strong:0,Good:1,Possible:2};
 const matchesFor=L=>others().map(q=>score(q,L)).filter(Boolean).sort((a,b)=>TR[a.tier]-TR[b.tier]||b.total-a.total||T(b.q.posted)-T(a.q.posted));
-/* the header badge: people who are a strong or good match for any of your listings */
+/* the count beside Requests in the header menu: people who are a strong or good match for any of your listings */
 const badge=()=>new Set(LS().flatMap(L=>matchesFor(L).filter(m=>m.tier!=='Possible').map(m=>m.q.id))).size;
 /* which of your listings a message to this person is about: the best match, else one at their campus, else your newest */
 function listingFor(q){let best=null;
@@ -381,12 +365,15 @@ const fcard=(q,isMine)=>`<article class="fc${isMine?' mine':''}"><button type="b
   <div class="fli">${ic('cal')}<span class="num">${wl(q.start,q.end)}</span></div>
   <div class="fli">${ic('wallet')}<span>${budLine(q.budget)}</span></div>${q.note?`<p class="fq">${esc(q.note)}</p>`:''}</div></article>`;
 
-const header=()=>{const BADGE=badge();return `<header class="hdr"><div class="wrap">
+/* the header: the logo, then Saved and Messages (signed in) and the menu, which holds posting, the pages and
+   the account. rentlet-boot.js draws and runs all of it. */
+const header=()=>`<header class="hdr"><div class="wrap">
   <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
-  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html" aria-current="page">Requests${BADGE?`<span class="badge" aria-label="${BADGE} matches for your listing">${BADGE}</span>`:''}</a><a href="shuttle.html">Shuttle</a></nav>
-  <div class="hdr-right"><a class="btn btn-secondary hide-m" href="post.html">Post a listing</a><a class="btn btn-secondary hide-m" href="request.html">Post a request</a>
-    <button class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu>${ic('menu')}</button>${RL.authed?`${RL.msgs?RL.msgs():''}<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn btn-secondary" data-rl-signin>Sign in</button>`}</div>
-  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html" aria-current="page">Requests${BADGE?`<span class="badge">${BADGE}</span>`:''}</a><a href="shuttle.html">Shuttle</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav></div></header>`};
+  <div class="hdr-right">${RL.msgs?RL.msgs():''}${RL.menu?RL.menu({requests:badge()}):''}</div></div></header>`;
+/* every redraw draws the header again; when it came out the same, the one on screen stays, so an open menu
+   stays open and keeps its focus */
+function keepHeader(old,html,focused){const h=$('#site>.hdr');if(!h)return;h._html=html;
+  if(old&&old._html===html){h.replaceWith(old);if(focused&&old.contains(focused))focused.focus({preventScroll:true})}}
 const footer=()=>`<footer class="foot"><div class="wrap"><div class="fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
   <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></div>
@@ -443,7 +430,9 @@ function render(){
   else if(!list.length&&!my)body=`<div class="empty"><h3>No requests match</h3><div class="acts"><button type="button" class="btn btn-secondary" data-reset>Clear filters</button></div></div>`;
   else body=`<div class="feed" data-feed></div><p class="fend">That’s everyone near ${esc(campus())}</p>`;
   const nudge=n?`<section class="nudge"><div class="wrap"><p><span>Leaving a room near ${esc(campus())}? <b>${n} ${n===1?'person':'people'}</b> above need${n===1?'s':''} one.</span><a class="btn btn-secondary btn-lg" href="post.html">Post a listing</a></p></div></section>`:'';
-  $('#site').innerHTML=`${header()}<main class="main"><div class="wrap">${top}${matches}${bar}${body}</div></main>${nudge}${footer()}${sheet(list,my)}`;
+  const oh=$('#site>.hdr'),hf=oh&&oh.contains(document.activeElement)?document.activeElement:null,hd=header();
+  $('#site').innerHTML=`${hd}<main class="main"><div class="wrap">${top}${matches}${bar}${body}</div></main>${nudge}${footer()}${sheet(list,my)}`;
+  keepHeader(oh,hd,hf);
   document.body.style.overflow=R.sheet?'hidden':'';
   layoutFeed();
   const fc=$('[data-fcal]');if(fc)WhenPicker.mount({mount:fc,start:R.start,end:R.end,act:'in',onChange:(s,e)=>{if(s&&e&&e>s){R.start=s;R.end=e;render()}}});
@@ -468,9 +457,6 @@ window.RL_onMine=m=>{ME=m;refresh()};
 window.RL_onAuth=()=>{if(!RL.authed)ME=null;refresh()};
 
 document.addEventListener('click',e=>{const t=e.target;
-  const hb=t.closest('[data-hmenu]'),hm=$('#hmenu');
-  if(hb){const open=hm.hidden;hm.hidden=!open;hb.setAttribute('aria-expanded',String(open));return}
-  if(hm&&!hm.hidden&&!hm.contains(t)){hm.hidden=true;$('[data-hmenu]').setAttribute('aria-expanded','false')}
   const fc=t.closest('[data-fc]');if(fc){R.sheet={t:'req',id:fc.dataset.fc};render();$('.gs .x').focus();return}
   if(t.closest('[data-fsheet]')){R.sheet={t:'f'};render();$('.gs .x').focus();return}
   if(t.closest('[data-close]')||t.matches('.gscrim')){R.sheet=null;render();return}
@@ -488,7 +474,7 @@ document.addEventListener('click',e=>{const t=e.target;
   if(t.closest('[data-reset]')){R.start=R.end=null;R.layout='any';render();return}
   const c=t.closest('[data-campus]');if(c){R.campusId=c.dataset.campus;R.auto=false;render();return}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&R.sortOpen){R.sortOpen=false;render();const b=document.querySelector('[data-sortbtn]');if(b)b.focus()}});
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(R.sheet){R.sheet=null;render();return}const hm=$('#hmenu');if(hm&&!hm.hidden){hm.hidden=true;$('[data-hmenu]').focus()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&R.sheet){R.sheet=null;render()}});
 render();
 </script>
 <script type="module" src="/src/rentlet.ts"></script>

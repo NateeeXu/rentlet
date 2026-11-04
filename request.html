@@ -20,9 +20,8 @@ img{display:block}
 .hd{flex:none;background:#fff;border-bottom:1px solid var(--hair)}
 .hd .wrap{height:64px;display:flex;align-items:center;gap:16px}
 .hd img{height:26px}
-.hd .r{margin-left:auto;display:flex;align-items:center;gap:16px;font-size:14px;font-weight:600}
-.hd .r .save{color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;min-height:44px}
-.hd .me{width:44px;height:44px;overflow:hidden;border-radius:50%;background:#222;color:#fff;display:grid;place-items:center;font-weight:700;text-decoration:none}
+.hd .r{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.hd .r .save{color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0;min-height:44px;white-space:nowrap}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px;width:100%}
 
 /* one set of controls: the same height, font and radius everywhere (from post.html) */
@@ -135,6 +134,12 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
   .done .acts{flex-direction:column;align-items:stretch}
   .done .acts .btn{white-space:normal;height:auto;min-height:48px;padding:12px 20px;text-align:center}
 }
+/* small phones: Save and exit stays (the form's own way out); the chat icon steps aside, Messages stays in the menu */
+@container (max-width:380px){
+  .hd .wrap{gap:12px}
+  .hd .r .save{font-size:13px}
+  .hd .r .save~.rl-msgs{display:none}
+}
 @container (max-width:360px){
   .qc{padding:16px}
   .qt{grid-template-columns:40px minmax(0,1fr) auto;gap:10px}
@@ -143,14 +148,13 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
-.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=5ad688a5"></script>
+<script src="/rentlet-boot.js?v=670e83eb"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -225,7 +229,7 @@ const qcard=(r,tag)=>`<article class="qc"><div class="qt"><span class="av" aria-
   <p class="qb">${r.budget==null?'<span class="pr">Any price</span>':`Up to <span class="pr">${money(r.budget)}</span> / mo`}</p>
   ${r.note?`<blockquote class="qq">“${esc(r.note)}”</blockquote>`:''}</article>`;
 
-const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}${RL.authed?`${RL.msgs?RL.msgs():''}<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn sec" data-rl-signin>Sign in</button>`}</div></div></header>`;
+const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div></header>`;
 const opt=(on,b,s,attrs='')=>`<button type="button" class="opt ${on?'on':''}" aria-pressed="${on}" ${attrs}><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div><span class="tk">${on?'✓':''}</span></button>`;
 const chip=(t,on,attrs='')=>`<button type="button" class="chip ${on?'on':''}" aria-pressed="${on}" ${attrs}>${t}</button>`;
 const one=(key,list)=>list.map(([v,t])=>chip(t,S[key]===v,`data-one="${key}:${v}"`)).join('');

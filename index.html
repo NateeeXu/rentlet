@@ -56,21 +56,7 @@ button{cursor:pointer}
 .hdr .wrap{display:flex;align-items:center;gap:20px;height:72px}
 .logo{display:flex;align-items:center;min-height:44px}
 .logo img{height:30px;display:block}
-.nav{display:flex;gap:2px}
-.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:40px;display:flex;align-items:center;border-radius:999px;text-decoration:none}
-.nav a:hover{background:var(--soft);color:var(--ink)}
 .hdr .wrap{position:relative}
-.nav{transition:opacity .2s}
-.hdr.compact .nav{opacity:0;pointer-events:none}
-/* the menu: everything the header hides when it gets tight or turns into the compact search bar */
-.icon-btn.menu[aria-expanded=true]{background:var(--soft)}
-.hdr.compact .icon-btn.menu{display:inline-flex}
-.hmenu{position:absolute;right:16px;top:calc(100% + 8px);z-index:40;min-width:220px;display:flex;flex-direction:column;padding:8px;border-radius:16px;background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.16),0 2px 6px rgba(30,25,40,.06)}
-.hmenu[hidden]{display:none}
-.hmenu a,.hmenu button{display:flex;align-items:center;height:44px;width:100%!important;margin:0;padding:0 14px;border:0;border-radius:10px;background:none;font:inherit;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none;text-align:left;cursor:pointer}
-.hmenu a:hover,.hmenu button:hover,.hmenu a:focus-visible,.hmenu button:focus-visible{background:rgba(0,0,0,.05)}
-.hmenu hr{border:0;border-top:1px solid var(--hair);margin:6px 8px}
-.hmenu .hm-in{display:none}
 /* jump targets land below the sticky header instead of under it */
 #res,#cxAlerts{scroll-margin-top:96px}
 /* the compact search bar in the header (A4) */
@@ -89,25 +75,29 @@ button{cursor:pointer}
 .mini4 .m-go{background:#222;color:#fff}
 .mini4 .m-go .ic{width:17px;height:17px}
 .mini4 .mw-s{display:none}
-/* in the compact header, Post a listing lives in the menu so the search bar never runs into them */
-.hdr.compact .hdr-right .hide-s{display:none}
-@container (max-width:860px){
-  .icon-btn.menu{display:inline-flex}
-  .mini4{left:150px;right:76px;max-width:none;transform:translateY(-50%) scale(.98)}
-  .hdr.compact .mini4{transform:translateY(-50%)}
-  .mini4 .m-where{flex:1 1 auto;max-width:none}
-  .hdr.compact .hdr-right>.btn{display:none}
-  .hdr.compact .hmenu .hm-in{display:flex}
-}
-/* phones: a floating bar under the header; one summary button (where, then dates and budget) opens the full search */
-@container (max-width:640px){
-  .mini4{left:12px;right:12px;top:calc(100% + 8px);height:56px;transform:translateY(-8px) scale(.98);padding-left:4px}
+/* as the bar narrows, Budget steps out first so the campus name stays readable */
+@container (max-width:1020px){.mini4 .m-bud,.mini4 .m-i2{display:none}}
+/* narrower: the compact bar fills the room between the logo and the right-end group (in the flow, so it can
+   never run into Saved, Messages or the menu, signed in or out) */
+@container (max-width:900px){
+  .mini4{position:relative;left:auto;top:auto;order:1;flex:1 1 0;min-width:0;max-width:none;transform:scale(.98)}
   .hdr.compact .mini4{transform:none}
+  .hdr-right{order:2}
+  .mini4 .m-where{flex:1 1 auto;max-width:none}
+}
+/* tablets and phones: one summary button (where, then dates and budget) opens the full search */
+@container (max-width:800px){
+  .mini4{height:56px;padding-left:4px}
   .mini4 .m-where{height:46px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;text-align:left}
   .mini4 .mw-t,.mini4 .mw-s{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .mini4 .mw-s{font-size:13px;font-weight:500;color:var(--muted)}
   .mini4 .m-when,.mini4 .m-bud,.mini4>i{display:none}
   .mini4 .m-ai,.mini4 .m-go{width:44px;height:44px}
+}
+/* phones: the bar floats under the header */
+@container (max-width:640px){
+  .mini4{position:absolute;left:12px;right:12px;top:calc(100% + 8px);transform:translateY(-8px) scale(.98)}
+  .hdr.compact .mini4{transform:none}
   #res,#cxAlerts{scroll-margin-top:140px}
 }
 @media (prefers-reduced-motion:reduce){.mini4{transition:opacity .15s}}
@@ -124,7 +114,6 @@ button{cursor:pointer}
 .btn-lg{height:48px;padding:0 22px;font-size:15px}
 .icon-btn{width:44px;height:44px;padding:0;border-radius:999px;border:0;background:none;display:inline-flex;align-items:center;justify-content:center}
 .icon-btn:hover{background:var(--soft)}
-.icon-btn.menu{display:none}
 .link{color:var(--brand);font-weight:600;background:none;border:0;padding:0;font-size:inherit}
 .link:hover{text-decoration:underline}
 
@@ -366,7 +355,6 @@ button{cursor:pointer}
   .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @container (max-width:860px){
-  .nav{display:none}
   .dt-grid{grid-template-columns:minmax(0,1fr)}
   .dt-ph{aspect-ratio:4/3.4}
   .h-reel{min-height:0}
@@ -387,7 +375,6 @@ button{cursor:pointer}
   .hdr .wrap{height:60px;gap:8px}
   .logo img{height:24px}
   .hide-s{display:none}
-  .icon-btn.menu{display:inline-flex}
   .h-reel{padding-top:28px}
   .display{font-size:40px;letter-spacing:-1.2px}
   .h1{font-size:32px;letter-spacing:-.6px}
@@ -431,13 +418,6 @@ button{cursor:pointer}
 @keyframes spinic{to{transform:rotate(360deg)}}
 .h-a4{padding-top:118px}
 .h-a4 .reel-track{animation-name:drift3}
-@container (min-width:1001px){
-.h-a4 .reel{left:0;right:0;top:0;bottom:0;height:auto;perspective:1700px;perspective-origin:50% 40%;-webkit-mask-image:none;mask-image:none}
-/* on desktops the reel dissolves before it reaches the headline, so the text never sits on a photo;
-   the fade runs across the search bar's band, which is glass anyway */
-@container (min-width:861px){.h-a4 .reel{-webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 96px,#000 200px);mask-image:linear-gradient(180deg,transparent 0,transparent 96px,#000 200px)}}
-.h-a4 .reel-plane{left:-6%;top:50%;transform-origin:0 50%;transform:rotateX(16deg) rotateY(8deg) rotateZ(-15deg)}
-}
 @keyframes drift3{to{transform:translateX(-33.3333%)}}
 .fly4{position:absolute;inset:0;z-index:40;display:none}
 .sq .pm{position:absolute;width:0;height:0;pointer-events:none}
@@ -486,19 +466,20 @@ button{cursor:pointer}
 @media (prefers-reduced-motion:reduce){.nk-btn .beam,.nk-tag svg,.nk-btn .st b{animation:none}}
 
 @container (max-width:700px){.r4body{grid-template-columns:minmax(0,1fr)}.fly4-card{border-radius:28px}.fly4-card .rk,.fly4-card .tg{display:none}}
-.h-a4 .reel-track{align-items:center}
-.h-a4 .sq.m0{width:272px;height:272px}
-.h-a4 .sq.m1{width:200px;height:250px;margin-top:-90px}
-.h-a4 .sq.m2{width:220px;height:220px;margin-top:84px}
-.h-a4 .sq.m0 .sq-chip{font-size:15px;font-weight:650;padding:8px 14px}
-.h-a4 .sq.m1 .sq-chip,.h-a4 .sq.m2 .sq-chip{font-size:13px;font-weight:650;padding:7px 12px}
-.h-a4 .sq{border-radius:38px}
+/* the reel: a flat, horizontal strip of rooms under the search bar (Founder, Nov 4: no tilt).
+   Every card has the same height; the widths take turns (square, portrait, landscape). */
+.h-a4 .sq{height:300px;margin-top:0;border-radius:28px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 10px 28px rgba(0,0,0,.12)}
+.h-a4 .sq.m0{width:300px}
+.h-a4 .sq.m1{width:236px}
+.h-a4 .sq.m2{width:420px}
+.h-a4 .sq:hover{transform:translateY(-6px)}
+.h-a4 .sq .sq-chip{font-size:14px;font-weight:650;padding:7px 13px}
 @container (max-width:1000px){.h-a4{padding-top:56px}}
 @media (prefers-reduced-motion:reduce){.t3,.t3in{transition:none!important}.x3.press{animation:none}}
 
 /* ---------- A4 search bar, four materials ---------- */
 .h-a4{padding-top:28px}
-.h-a4{min-height:max(720px,calc(100vh - 120px))}
+.h-a4{padding-bottom:12px}
 /* first screen: a serif headline and one line of plain words above the search bar (Founder, Oct 30: A) */
 .h-head{position:relative;z-index:8;max-width:940px;margin:22px auto 0;padding:0 8px}
 .h-head h1{font-family:var(--serif);font-size:44px;font-weight:500;line-height:1.08;letter-spacing:-.8px;margin:0;max-width:720px;color:var(--ink);white-space:nowrap} /* one line everywhere; fitHead() shrinks the size on narrow phones */
@@ -524,7 +505,17 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .find4{padding:0 22px;background:#222;color:#fff}
 .ai4:active,.find4:active{transform:scale(.97)}
 .spec{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1}
-.h-a4 .reel{z-index:1}
+.h-a4 .reel{z-index:1;position:relative;left:auto;right:auto;top:auto;bottom:auto;width:auto;height:auto;margin:40px calc(50% - 50vw) 0;padding:14px 0 34px;perspective:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 64px,#000 calc(100% - 64px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 64px,#000 calc(100% - 64px),transparent)}
+.h-a4 .reel-plane{position:relative;left:0;top:0;transform:none;transform-style:flat}
+.h-a4 .reel-track{align-items:stretch;gap:20px;transform-style:flat;padding-left:32px}
+@container (max-width:860px){
+  /* phones: smaller cards; the pause button sits under the strip, not on a card */
+  .h-a4 .reel{margin-top:28px;padding:10px 0 72px}
+  .h-a4 .reel-track{padding-left:16px;gap:14px}
+  .h-a4 .sq{height:230px;border-radius:24px}
+  .h-a4 .sq.m0{width:230px}.h-a4 .sq.m1{width:180px}.h-a4 .sq.m2{width:320px}
+}
 /* 2 · frosted glass: the reel shows through, blurred */
 .bar4[data-skin=glass]{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.14),0 2px 6px rgba(30,25,40,.06)}
 .bar4[data-skin=glass] .seg4:hover{background:rgba(255,255,255,.55)}
@@ -761,14 +752,13 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 <style id="rentlet-base">
 /* AI pick is taken down for now (Founder, Nov 4): its buttons stay in the code but are not shown */
 .ai4,.m-ai{display:none!important}
-.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=5ad688a5"></script>
+<script src="/rentlet-boot.js?v=670e83eb"></script>
 </head>
 <body>
 
@@ -913,20 +903,11 @@ function load(el,html,skel,ms=520){el.innerHTML=skel;clearTimeout(el._t);el._t=s
 function wire(root){$$('.ph img',root).forEach(img=>{const done=()=>{img.classList.add('in');img.parentElement.classList.add('done')};img.complete&&img.naturalWidth?done():img.addEventListener('load',done)})}
 
 /* ---------- shared page ---------- */
-function closeMenu(focus){const m=document.getElementById('hmenu'),b=document.querySelector('[data-hmenu]');if(!m||m.hidden)return;m.hidden=true;if(b){b.setAttribute('aria-expanded','false');if(focus)b.focus()}}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-hmenu]'),m=document.getElementById('hmenu');if(!m)return;
-  if(b){const open=m.hidden;m.hidden=!open;b.setAttribute('aria-expanded',String(open));if(open)m.querySelector('a,button').focus({preventScroll:true});return}
-  if(!m.hidden&&(!m.contains(e.target)||e.target.closest('a,button')))closeMenu(false)});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu(true)});
+/* the header's right end is the same on every page: Saved and Messages (signed in), then the menu, which holds
+   posting, the site's pages and the account (rentlet-boot.js draws both and runs the menu) */
 const header=()=>`<header class="hdr"><div class="wrap">
   <a class="logo" href="#" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
-  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></nav>
-  <div class="hdr-right">
-    <button class="btn btn-secondary hide-s" onclick="location.href='post.html'">Post a listing</button>
-    ${RL.authed?`${RL.msgs?RL.msgs():''}<a class="rl-me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button class="btn btn-ghost" data-rl-signin>Sign in</button>`}
-    <button class="icon-btn menu" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu>${ic('menu')}</button>
-  </div>
-  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a><hr><button type="button" onclick="location.href='post.html'">Post a listing</button>${RL.authed?`<a href="profile.html">Your page</a>`:`<button type="button" class="hm-in" data-rl-signin>Sign in</button>`}</nav></div></header>`;
+  <div class="hdr-right">${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div></header>`;
 /* dates carry over to the room page (and back) through the same session key the room page uses */
 const savePlan=(s,e)=>{try{sessionStorage.setItem('cs-plan',JSON.stringify({start:s,end:e,school:plan.school}))}catch(_){}};
 const storedPlan=()=>{try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'null');if(!(p&&p.start&&p.end))return{};const o={start:p.start,end:p.end};if(p.school&&SCHOOLS.some(g=>g.items.some(i=>i[0]===p.school)))o.school=p.school;return o}catch(_){return{}}};

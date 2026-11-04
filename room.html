@@ -42,10 +42,12 @@ button{cursor:pointer}
 .site{container-type:inline-size;background:var(--canvas);position:relative;overflow-x:clip;min-height:100vh}
 .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
 .hdr{background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:30;height:76px}
-/* logo | search | actions: the search sits in the true centre whatever the two sides hold */
-.hdr .wrap{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:20px;height:76px}
+/* logo | search | actions: the search sits in the true centre while there is room; when it gets tight it moves
+   off centre instead of closer to the right-end group, so the gap to Saved, Messages and the menu never drops below 20px */
+.hdr .wrap{display:grid;grid-template-columns:minmax(max-content,1fr) auto minmax(max-content,1fr);align-items:center;gap:20px;height:76px}
 .hdr .wrap>a:first-child{justify-self:start}
 .hdr .hdr-r{justify-self:end}
+@container (max-width:640px){.hdr .wrap{gap:8px}}
 .msearch{display:flex;align-items:center;height:56px;padding:6px 6px 6px 8px;border:1px solid var(--line);border-radius:999px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.05),0 8px 22px rgba(0,0,0,.06);transition:box-shadow .25s}
 .msearch:hover{box-shadow:0 2px 6px rgba(0,0,0,.06),0 12px 28px rgba(0,0,0,.1)}
 .msearch>i{width:1px;height:24px;background:var(--hair);flex:none}
@@ -95,8 +97,7 @@ button{cursor:pointer}
 .st-link{width:auto!important;margin:0;padding:0;border:0;background:none;font-size:14px;font-weight:650;color:#542992;text-decoration:none;cursor:pointer}
 .st-link:hover{text-decoration:underline}
 /* dates you can change */
-/* header account and sign-in sheet */
-.me{width:40px!important;height:40px;min-width:0;margin:0;padding:0;border:0;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;cursor:pointer}
+/* sign-in sheet */
 .lgsheet{position:relative;width:min(420px,100%)}
 .lg-top{display:flex;gap:12px;align-items:flex-start;padding-right:28px}
 .lg-ic{width:40px;height:40px;border-radius:12px;flex:none;display:grid;place-items:center;background:linear-gradient(135deg,#f1ebff,#ffeef3)}
@@ -204,7 +205,7 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .mini-search span{color:var(--muted);font-weight:500}
 .mini-search i{width:1px;height:20px;background:var(--hair)}
 .mini-search .go{width:32px;height:32px;border-radius:99px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center}
-.hdr-r{display:flex;gap:8px}
+.hdr-r{display:flex;gap:8px;align-items:center}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:44px;padding:0 18px;border-radius:999px;border:1px solid transparent;font-size:15px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;transition:transform .18s,background .18s,border-color .18s}
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--ink);color:#fff}
@@ -712,7 +713,7 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
   .facts4 img,.facts4 .ic{margin-bottom:8px}
 }
 @container (max-width:1120px){.msearch .seg-b,.msearch i.b{display:none}}
-@container (max-width:980px){.hdr-r .hide-s{display:none}.msearch .seg .ic{display:none}.msearch .seg{padding:0 12px}}
+@container (max-width:980px){.msearch .seg .ic{display:none}.msearch .seg{padding:0 12px}}
 @container (max-width:860px){.msrch{display:grid!important}.scard{top:calc(100% + 6px)}.msearch{display:none}.hdr .wrap{grid-template-columns:auto 1fr}.dock{display:block}.aipk.ai-m{display:inline-flex;width:44px;padding:0;justify-content:center;gap:0}.aipk.ai-m .t{display:none}.ai-gp{right:14px}}
 @container (max-width:360px){.aipk.ai-m{display:none}}
 @container (max-width:640px){
@@ -745,14 +746,13 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .nb-lf{position:absolute;inset:0;z-index:0}.nb-map .nb-cap{z-index:500}.nb-h p a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 /* AI pick is taken down for now (Founder, Nov 4): its buttons stay in the code but are not shown */
 .aipk{display:none!important}
-.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=5ad688a5"></script>
+<script src="/rentlet-boot.js?v=670e83eb"></script>
 </head>
 <body>
 <div class="rv" hidden><span id="roomTabs"></span><span id="stTabs"></span></div>
@@ -977,9 +977,11 @@ function drawSearch(){const q=$('#sQ').value,r=searchRooms(q),L=$('#sList');sRes
 function markSel(){$$('#sList .sitem').forEach((a,i)=>{a.classList.toggle('on',i===sSel);a.setAttribute('aria-selected',i===sSel)})}
 function openSearch(){closeAi();const c=$('#sCard');c.hidden=false;$('.hdr').classList.add('flat');$$('[data-sopen]').forEach(b=>b.setAttribute('aria-expanded','true'));requestAnimationFrame(()=>c.classList.add('on'));drawSearch();setTimeout(()=>$('#sQ').focus(),30)}
 function closeSearch(){const c=$('#sCard');if(!c||c.hidden)return;c.classList.remove('on');$('.hdr').classList.remove('flat');$$('[data-sopen]').forEach(b=>b.setAttribute('aria-expanded','false'));setTimeout(()=>{if(!c.classList.contains('on'))c.hidden=true},reduced?0:220)}
+/* the header menu opening closes the search and AI cards, so two panels never overlap */
+addEventListener('rentlet:menu',()=>{closeAi();closeSearch()});
 const head=()=>`<header class="hdr"><div class="wrap"><a href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="msearch" role="search" aria-label="Search rooms"><button type="button" class="seg seg-w" aria-label="Change campus">${ic2('pin')}<span><small>Where</small><em data-where>Northwestern · Evanston</em></span></button><i></i><button type="button" class="seg" data-wopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your dates">${ic('cal','sm')}<span><small>When</small><em data-when>${WhenPicker.label(plan.start,plan.end)}</em></span></button><i class="b"></i><button type="button" class="seg seg-b" data-bopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your budget"><b class="usd">$</b><span><small>Budget</small><em data-bud>${BudgetPicker.label(BUDGET)}</em></span></button>
   <button type="button" class="aipk" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button>
-  <button type="button" class="go" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button></div><div class="hdr-r"><button type="button" class="aipk ai-m" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button><button type="button" class="msrch" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button><button class="btn btn-ghost hide-s">Post a listing</button>${AUTH?`${RL.msgs?RL.msgs():''}<button type="button" class="me" data-me aria-label="Your account">${RL.me()}</button>`:`<button class="btn btn-secondary" data-signin>Sign in</button>`}</div></div><button type="button" class="ai-scrim" id="aiScrim" data-aiclose aria-label="Close AI picks" tabindex="-1" hidden></button><div class="ai-gp" id="aiCard" role="dialog" aria-label="AI picks" hidden></div><div class="aicard scard" id="sCard" role="dialog" aria-label="Search listings" hidden><label class="sfield">${ic('search','sm')}<span class="sr">Search</span><input id="sQ" type="search" placeholder="Search an area, layout or listing #" autocomplete="off" spellcheck="false" aria-controls="sList"><kbd>Esc</kbd></label><div class="slist" id="sList" role="listbox"></div></div></header>`;
+  <button type="button" class="go" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button></div><div class="hdr-r"><button type="button" class="aipk ai-m" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button><button type="button" class="msrch" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button>${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div><button type="button" class="ai-scrim" id="aiScrim" data-aiclose aria-label="Close AI picks" tabindex="-1" hidden></button><div class="ai-gp" id="aiCard" role="dialog" aria-label="AI picks" hidden></div><div class="aicard scard" id="sCard" role="dialog" aria-label="Search listings" hidden><label class="sfield">${ic('search','sm')}<span class="sr">Search</span><input id="sQ" type="search" placeholder="Search an area, layout or listing #" autocomplete="off" spellcheck="false" aria-controls="sList"><kbd>Esc</kbd></label><div class="slist" id="sList" role="listbox"></div></div></header>`;
 /* "Sam, junior at Weinberg" from the role "Junior, Weinberg" */
 const byline=()=>{const [a,b]=ROOM.role.split(', ');return b?`${ROOM.who}, ${/^.[a-z]/.test(a)?a[0].toLowerCase()+a.slice(1):a} at ${b}`:`${ROOM.who}, ${ROOM.role}`};
 /* Save: only on a real listing (8-digit number). The boot script owns the click; src/rentlet.ts signs the visitor in,
@@ -1032,13 +1034,12 @@ function boot(){setVh();
   site.innerHTML=loadingView();clearTimeout(boot.t);boot.t=setTimeout(render,reduced?0:650)}
 /* sign-in gate: messaging, quick questions, saving and reporting need an account */
 const GATE={get message(){return[`Sign in to message ${ROOM.who}`,'Messages stay in Rentlet. Contact details are shared only when you both agree.']},
-  report:['Sign in to report this listing','We may need to reach you about what you found.'],
-  signin:['Sign in to Rentlet','Message hosts, save rooms, and get alerts when rooms open on your dates.']};
+  report:['Sign in to report this listing','We may need to reach you about what you found.']};
 let pending=null;
 function gate(kind,fn){if(AUTH)return fn();pending=fn;$('#loginT').textContent=GATE[kind][0];$('#loginR').textContent=GATE[kind][1];$('#login').classList.add('on');setTimeout(()=>$('[data-login="google"]').focus(),60)}
 function signIn(){RL.signIn().then(ok=>{if(!ok)return;AUTH=true;$('#login').classList.remove('on');
-  const h=$('.hdr');if(h)h.outerHTML=head();const f=pending;pending=null;if(f)setTimeout(f,120);else toast('You’re signed in.')})}
-window.RL_onAuth=u=>{AUTH=!!u;const h=$('.hdr');if(h)h.outerHTML=head()};
+  const h=$('.hdr');if(h){h.outerHTML=head();attachWhere()}const f=pending;pending=null;if(f)setTimeout(f,120);else toast('You’re signed in.')})}
+window.RL_onAuth=u=>{AUTH=!!u;const h=$('.hdr');if(h){h.outerHTML=head();attachWhere()}};
 const site=$('#site');
 function setVh(){site.style.setProperty('--vh',($('#stage').classList.contains('phone')?844:innerHeight)+'px')}
 document.addEventListener('input',e=>{if(e.target.id==='sQ')drawSearch()});
@@ -1061,8 +1062,6 @@ let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('sh
 document.addEventListener('click',e=>{const t=e.target;
   const fl=t.closest('[data-flip]');if(fl){if(fl.classList.contains('on')){fl.classList.add('out');setTimeout(()=>fl.classList.remove('on','out'),reduced?0:330)}else fl.classList.add('on');return}
   if(t.closest('[data-login]')){signIn();return}
-  if(t.closest('[data-signin]')){gate('signin',()=>toast('You’re signed in.'));return}
-  if(t.closest('[data-me]')){location.href='profile.html';return}
   if(t.closest('[data-retry]')){STATE='loading';boot();setTimeout(()=>setState('ok'),reduced?0:900);return}
   const dy=t.closest('[data-wopen]');if(dy){pickDates(dy);return}
   const bo=t.closest('[data-bopen]');if(bo){pickBudget(bo);return}

@@ -24,10 +24,6 @@ img{display:block}
 .hdr .wrap{display:flex;align-items:center;gap:20px;height:72px;position:relative}
 .logo{display:flex;align-items:center;min-height:44px}
 .logo img{height:30px}
-.nav{display:flex;gap:2px}
-.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:44px;display:flex;align-items:center;border-radius:999px;text-decoration:none;white-space:nowrap}
-.nav a:hover{background:var(--soft);color:var(--ink)}
-.nav a[aria-current]{color:var(--ink);background:var(--soft)}
 .hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;border:1px solid transparent;font-size:15px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;text-decoration:none;color:var(--ink);transition:border-color .15s,background .15s}
 .btn-primary{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -36,14 +32,6 @@ img{display:block}
 .btn-secondary:hover{border-color:var(--ink)}
 .btn-ghost{padding:0 14px}
 .btn-ghost:hover{background:var(--soft)}
-.hdr .btn{font-size:14px}
-.icon-btn{width:44px;height:44px;padding:0;border-radius:999px;border:0;background:none;display:none;align-items:center;justify-content:center}
-.icon-btn:hover,.icon-btn[aria-expanded=true]{background:var(--soft)}
-.hmenu{position:absolute;right:16px;top:calc(100% + 8px);z-index:40;min-width:220px;display:flex;flex-direction:column;padding:8px;border-radius:16px;background:#fff;border:1px solid var(--hair)}
-.hmenu[hidden]{display:none}
-.hmenu a{display:flex;align-items:center;height:44px;padding:0 14px;border-radius:10px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none}
-.hmenu a:hover,.hmenu a[aria-current]{background:var(--soft)}
-.hmenu hr{border:0;border-top:1px solid var(--hair);margin:6px 8px}
 
 /* content */
 .hero{padding:56px 0 32px}
@@ -108,10 +96,6 @@ img{display:block}
 .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:#fff;font-size:14px;padding:12px 18px;border-radius:12px;opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 
-@container (max-width:1000px){
-  .nav,.hdr-right .hide-s{display:none}
-  .icon-btn{display:inline-flex}
-}
 @container (max-width:900px){
   .grid{grid-template-columns:minmax(0,1fr);gap:0;padding-top:16px}
   .toc{display:none}
@@ -140,27 +124,21 @@ img{display:block}
 }
 </style>
 <style id="rentlet-base">
-.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=5ad688a5"></script>
+<script src="/rentlet-boot.js?v=670e83eb"></script>
 </head>
 <body>
 <div class="site">
 <header class="hdr"><div class="wrap">
   <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
-  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></nav>
   <div class="hdr-right">
-    <a class="btn btn-ghost hide-s" href="request.html">Post a request</a>
-    <a class="btn btn-secondary hide-s" href="post.html">Post a listing</a>
-    <span id="rlAuth" style="display:contents"></span><script>document.getElementById("rlAuth").innerHTML=RL.authed?`${RL.msgs?RL.msgs():''}<a class="rl-me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button type="button" class="btn btn-ghost" data-rl-signin>Sign in</button>`</script>
-    <button type="button" class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <span id="rlAuth" style="display:contents"></span><script>document.getElementById("rlAuth").innerHTML=`${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}`</script>
   </div>
-  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav>
 </div></header>
 
 <main>
@@ -216,13 +194,9 @@ function spy(){const lim=offset()+24;let cur=SECS[0];
 addEventListener('scroll',spy,{passive:true});addEventListener('resize',spy);spy();
 /* opened at a section (privacy.html#delete): land below the sticky header */
 if(location.hash&&SECS.includes(location.hash.slice(1)))addEventListener('load',()=>goTo(location.hash.slice(1)),{once:true});
-function closeMenu(focus){const m=$('#hmenu'),b=$('[data-hmenu]');if(m.hidden)return;m.hidden=true;b.setAttribute('aria-expanded','false');if(focus)b.focus()}
 document.addEventListener('click',e=>{
-  const hb=e.target.closest('[data-hmenu]');if(hb){const m=$('#hmenu'),open=m.hidden;m.hidden=!open;hb.setAttribute('aria-expanded',String(open));if(open)$('a',m).focus({preventScroll:true});return}
-  const m=$('#hmenu');if(!m.hidden&&(!m.contains(e.target)||e.target.closest('a')))closeMenu(false);
   const a=e.target.closest('a[href^="#"]');if(a){e.preventDefault();goTo(a.getAttribute('href').slice(1));return}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu(true)});
 </script>
 <script type="module" src="/src/rentlet.ts"></script>
 </body>

@@ -31,11 +31,10 @@ input::placeholder,textarea::placeholder{color:var(--muted)}
 .hdr .wrap{display:flex;align-items:center;gap:20px;height:64px}
 .logo{display:flex;align-items:center;min-height:44px}
 .logo img{height:26px}
-.nav{display:flex;gap:2px}
-.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:44px;display:flex;align-items:center;border-radius:999px;text-decoration:none}
-.nav a:hover{background:var(--soft);color:var(--ink)}
-.hdr-r{margin-left:auto;display:flex;gap:10px;align-items:center}
-.me{text-decoration:none;width:44px!important;height:44px;overflow:hidden;min-width:0;margin:0;padding:0;border:0;border-radius:50%;background:var(--ink);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center;flex:none}
+/* the right end: Saved and Messages (signed in), then the menu (rentlet-boot.js draws all three) */
+.hdr-r{margin-left:auto;display:flex;gap:8px;align-items:center}
+/* signed out, the header stays usable above the sign-in gate, so its menu still opens */
+.site.locked .hdr{z-index:61}
 
 /* ---------- controls (post.html) ---------- */
 .btn{height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-weight:650;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap;width:auto!important;flex:0 0 auto;margin:0}
@@ -249,7 +248,7 @@ button.in.ws{text-align:left;font-size:16px}
 
 /* ---------- Rentlet: real profile data ---------- */
 .av{overflow:hidden}
-.av img,.me img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .lk:disabled{opacity:.4;cursor:default}
 .lk[hidden]{display:none}
 .csave{font-size:13px;color:var(--muted);line-height:1.4;padding-top:4px;max-width:100%;overflow-wrap:anywhere}
@@ -264,7 +263,6 @@ button.in.ws{text-align:left;font-size:16px}
   .pa{grid-template-columns:176px minmax(0,1fr);gap:28px}
 }
 @container (max-width:860px){
-  .nav{display:none}
   .cx-fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.cx-fcols .brand{grid-column:1/-1}
 }
 @container (max-width:700px){
@@ -307,14 +305,13 @@ button.in.ws{text-align:left;font-size:16px}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
-.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=5ad688a5"></script>
+<script src="/rentlet-boot.js?v=670e83eb"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -456,9 +453,14 @@ const csaveEl=()=>`<span class="csave ${S.csaveErr?'err':''}" data-csave role="s
 const sec=k=>panel(k,SECS.find(s=>s[0]===k)[1],SUBS[k],S.authed?BODY[k]():'<p class="note" style="margin-top:0">Sign in to see this.</p>',k==='contact'&&S.authed?csaveEl():'');
 
 /* ---------- page chrome ---------- */
+/* the header: the logo, then Saved and Messages (signed in) and the menu, which holds posting, the pages and
+   the account. rentlet-boot.js draws and runs all of it. */
 const header=()=>`<header class="hdr"><div class="wrap"><a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
-  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></nav>
-  <div class="hdr-r"><a class="btn sec hide-s" href="post.html">Post a listing</a>${S.authed?`${RL.msgs?RL.msgs():''}<a class="me" href="profile.html" data-act="top" aria-current="page" aria-label="Your page">${avatar()}</a>`:`<button type="button" class="btn sec" data-act="gatefocus">Sign in</button>`}</div></div></header>`;
+  <div class="hdr-r">${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div></header>`;
+/* every redraw draws the header again; when it came out the same, the one on screen stays, so an open menu
+   stays open and keeps its focus */
+function keepHeader(old,html,focused){const h=$('#site>.hdr');if(!h)return;h._html=html;
+  if(old&&old._html===html){h.replaceWith(old);if(focused&&old.contains(focused))focused.focus({preventScroll:true})}}
 const footer=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
   <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></div>
@@ -498,7 +500,9 @@ function render(keepScroll=true){
   /* live updates redraw the page; whoever is typing keeps their field and caret */
   const ae=document.activeElement,fk=ae&&ae.dataset&&ae.dataset.f;let sel=null;try{if(fk&&ae.selectionStart!=null)sel=[ae.selectionStart,ae.selectionEnd]}catch(_){}
   const tWas=$('#toast'),tOn=tWas&&tWas.classList.contains('on'),tMsg=tOn?tWas.querySelector('span').textContent:'';
-  st.innerHTML=`<div class="site ${a?'':'locked'}" id="site">${header()}${page()}${footer()}</div>${a?sheetHtml():gateHtml()}<div class="toast ${tOn?'on':''} ${tOn&&undoFn?'u':''}" id="toast" role="status"><span>${esc(tMsg)}</span><button type="button" data-act="undo">Undo</button></div>`;
+  const oh=old&&$('.hdr',old),hd=header();
+  st.innerHTML=`<div class="site ${a?'':'locked'}" id="site">${hd}${page()}${footer()}</div>${a?sheetHtml():gateHtml()}<div class="toast ${tOn?'on':''} ${tOn&&undoFn?'u':''}" id="toast" role="status"><span>${esc(tMsg)}</span><button type="button" data-act="undo">Undo</button></div>`;
+  keepHeader(oh,hd,ae);
   const site=$('#site');site.scrollTop=a?top:0;const ncr=$('.chiprow',site);if(ncr)ncr.scrollLeft=left;
   site.addEventListener('scroll',spy,{passive:true});
   if(S.editName&&S.tmp.focusName){S.tmp.focusName=false;const i=$('[data-f=name]',st);if(i)setTimeout(()=>{i.focus({preventScroll:true});i.select()},30)}
@@ -568,14 +572,12 @@ const LOCKED=['deleting','reauth'];
 document.addEventListener('click',e=>{const t=e.target;
   if(t.matches('[data-scrim]')){S.sheet=null;render();return}
   const j=t.closest('[data-jump]');if(j){e.preventDefault();jump(j.dataset.jump);return}
-  /* a link to a section of this page (the header's heart is profile.html#saved): scroll there, no reload */
+  /* a link to a section of this page (the header's heart and the menu's Saved are profile.html#saved): scroll there, no reload */
   const a=t.closest('a[href*="#"]');
   if(a&&!(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)){const u=new URL(a.href,location.href),k=secOf(u.hash);
     if(k&&u.origin===location.origin&&/\/profile(\.html)?$/.test(u.pathname)){e.preventDefault();if(location.hash!=='#'+k)history.replaceState(history.state,'','#'+k);goTo(k);return}}
   const b=t.closest('[data-act]');if(!b)return;const act=b.dataset.act,id=b.dataset.id;
   switch(act){
-    case 'top':e.preventDefault();jump('you');return;
-    case 'gatefocus':{const g=$('.gate .lg-g');if(g)g.focus();return}
     case 'signin':RL.signIn();return;
     case 'retry':{const P=api();if(P)P.retry();return}
     case 'editName':S.editName=true;S.tmp.name=nm();S.tmp.focusName=true;render();return;

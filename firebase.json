@@ -50,6 +50,13 @@
           "functionId": "mapTile",
           "region": "us-central1"
         }
+      },
+      {
+        "source": "/r/**",
+        "function": {
+          "functionId": "sharePreview",
+          "region": "us-central1"
+        }
       }
     ]
   },

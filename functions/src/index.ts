@@ -165,3 +165,5 @@ export const nearby = onCall(OPTIONS, async (req): Promise<NearbyPlace[]> => {
 // Northwestern shuttle live positions and the HERE base map tiles (agent 5)
 export { shuttleLive } from './shuttle.js';
 export { mapTile } from './tiles.js';
+// link previews for shared rooms (GET /r/{code})
+export { sharePreview } from './share.js';

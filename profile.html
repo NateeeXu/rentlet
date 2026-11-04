@@ -400,7 +400,7 @@ const sec=k=>panel(k,SECS.find(s=>s[0]===k)[1],SUBS[k],S.authed?BODY[k]():'<p cl
 /* ---------- page chrome ---------- */
 const header=()=>`<header class="hdr"><div class="wrap"><a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
   <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></nav>
-  <div class="hdr-r"><a class="btn sec hide-s" href="post.html">Post a listing</a>${S.authed?`<a class="me" href="profile.html" data-act="top" aria-current="page" aria-label="Your page">${avatar()}</a>`:`<button type="button" class="btn sec" data-act="gatefocus">Sign in</button>`}</div></div></header>`;
+  <div class="hdr-r"><a class="btn sec hide-s" href="post.html">Post a listing</a>${S.authed?`${RL.msgs()}<a class="me" href="profile.html" data-act="top" aria-current="page" aria-label="Your page">${avatar()}</a>`:`<button type="button" class="btn sec" data-act="gatefocus">Sign in</button>`}</div></div></header>`;
 const footer=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
   <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></div>

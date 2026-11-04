@@ -53,9 +53,12 @@ export interface RequestForm {
   mates: string;
   role: string;
   orgMode: string;
-  multi: { life: string[] };
+  multi: { life: string[]; layouts?: string[] };
   f: Record<string, string>;
 }
+
+// Layouts a person looking can choose (the same codes listings use); none chosen means any.
+export const LAYOUTS = ['Studio', '1B1B', '2B1B', '2B2B', '3B2B'] as const;
 
 // requests/{id} in Firestore. Everything here is public: first name and Google photo, never email.
 export interface RequestDoc {
@@ -80,6 +83,7 @@ export interface RequestDoc {
   org?: string;
   life: string[];
   note?: string;
+  layouts?: string[];
 }
 
 export type BuildError = 'name' | 'dates' | 'campus';
@@ -120,6 +124,7 @@ export function buildRequest(form: RequestForm, owner: { uid: string; photo: str
     mates: pick(MATES, form.mates, 'yes'),
     role,
     life: LIFE.filter((x) => (form.multi?.life || []).includes(x)),
+    layouts: LAYOUTS.filter((x) => (form.multi?.layouts || []).includes(x)),
   };
   if (org) doc.org = org;
   if (note) doc.note = note;
@@ -143,7 +148,7 @@ export function formFromRequest(d: RequestDoc) {
     mates: d.mates,
     role: d.role,
     orgMode: d.org ? 'other' : 'campus',
-    multi: { life: [...(d.life || [])] },
+    multi: { life: [...(d.life || [])], layouts: [...(d.layouts || [])] },
     f: { name: d.ownerName || '', line: d.note || '', ...(d.org ? { org: d.org } : {}) },
   };
 }
@@ -176,6 +181,7 @@ export interface RequestRow {
   posted: string;
   active: string;
   createdAtMs: number;
+  layouts: string[];
 }
 
 export function toRow(id: string, d: RequestDoc, createdAtMs: number, updatedAtMs: number = createdAtMs): RequestRow {
@@ -187,6 +193,7 @@ export function toRow(id: string, d: RequestDoc, createdAtMs: number, updatedAtM
     photo: d.ownerPhoto || '',
     role: ROLE_LABEL[d.role] ?? 'Student',
     kind: KIND_LABEL[d.kind] ?? KIND_LABEL.room,
+    layouts: (d.layouts || []).filter((x) => (LAYOUTS as readonly string[]).includes(x)),
     start: d.start,
     end: d.end,
     budget: d.anyPrice ? null : d.budget,

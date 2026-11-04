@@ -9,11 +9,27 @@
   if (!authed) user = null;
   var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
   var initial = user && user.name ? user.name.trim().charAt(0).toUpperCase() : 'Y';
+  var unread = 0;
+  try { unread = Math.max(0, parseInt(sessionStorage.getItem('rl-unread') || '0', 10) || 0); } catch (_) { unread = 0; }
+  /* the messages button in every header (signed in only); src/rentlet.ts keeps the count live */
+  var MSG_CSS = '.rl-msgs{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;flex:none;border-radius:50%;color:#222;text-decoration:none}'
+    + '.rl-msgs:hover{background:#f2f2f4}.rl-msgs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}'
+    + '.rl-msgs-n{position:absolute;top:4px;right:3px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#4E2A84;color:#fff;font:600 11px/18px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:center;box-shadow:0 0 0 2px #fff;box-sizing:border-box}'
+    + '.rl-msgs-n[hidden]{display:none}';
+  try { var st = document.createElement('style'); st.id = 'rl-msgs-css'; st.textContent = MSG_CSS; document.head.appendChild(st); } catch (_) {}
+  var MSG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5h15a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3.5V17h-1A1.5 1.5 0 0 1 3 15.5v-9A1.5 1.5 0 0 1 4.5 5z"/></svg>';
 
   window.RL = {
     authed: authed,
     user: user,
     initial: initial,
+    unread: unread,
+    msgs: function (current) {
+      if (!window.RL.authed) return '';
+      var n = window.RL.unread || 0;
+      return '<a class="rl-msgs" href="messages.html" data-rl-msgs aria-label="' + (n ? 'Messages, ' + n + ' unread' : 'Messages') + '"' + (current ? ' aria-current="page"' : '') + '>'
+        + MSG_ICON + '<span class="rl-msgs-n"' + (n ? '' : ' hidden') + '>' + (n > 9 ? '9+' : n) + '</span></a>';
+    },
     /* inside the round account button: the Google photo when there is one, else the first initial */
     me: function () {
       return user && user.photo

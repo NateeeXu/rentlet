@@ -58,14 +58,20 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 .fld.ws-on,.fld:focus-within{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .fld .ic{color:var(--ink2)}
 .fld.ws{cursor:pointer}
-.fld [data-wval],.fld .fdt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.f-camp{width:280px;min-width:0;flex:none}
+.fld [data-wval],.fld .fdl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.f-camp{width:280px;min-width:160px;flex:0 1 280px}
 .f-camp .fld{width:100%}
-.f-date{padding:0}
+.f-date{padding:0;flex:none}
+/* the date label never shortens; the campus field gives way first */
+.f-date .fdl{overflow:visible}
 .f-date .fd{height:calc(100% + 2px);margin:-1px 0;border:0;background:none;display:flex;align-items:center;gap:8px;padding:0 14px;font-weight:600;font-size:14px;min-width:0;flex:1;border-radius:999px;text-align:left;font-variant-numeric:tabular-nums}
 .f-date .fx{width:32px;height:32px;margin-right:6px;border-radius:50%;border:0;background:var(--soft);font-size:16px;line-height:1;flex:none;display:grid;place-items:center;padding:0}
 .f-sort{margin-left:auto;cursor:pointer}
-.f-sort select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;font-size:16px}
+.f-sort .fd{display:flex;align-items:center;gap:8px;height:42px;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap}
+.sort-pop{position:absolute;top:calc(100% + 8px);right:0;z-index:60;min-width:220px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.12)}
+.sort-pop button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;white-space:nowrap}
+.sort-pop button:hover,.sort-pop button[aria-selected=true]{background:var(--soft,#f2f2f4)}
+.sort-pop .sp-gap{display:inline-block;width:16px;flex:none}
 .chev{width:14px;height:14px;color:var(--muted)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;margin:0}
@@ -153,8 +159,12 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 @container (max-width:860px){
   .nav{display:none}
   .fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.fcols .brand{grid-column:1/-1}
-  .dd .seg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr)}
+  .dd .seg button{padding:0 9px}
   .dbar .f-camp{width:220px}
+}
+/* when the layouts no longer fit beside dates and sort, they move into the Filters sheet */
+@container (max-width:940px){
+  .dd .seg{display:none}.fpill{display:inline-flex}
 }
 @container (max-width:760px){
   .dbar .f-camp{width:auto;flex:1 1 auto}.dd{display:none}.fpill{display:inline-flex}
@@ -243,6 +253,7 @@ function score(q,L){
   if(ov<30||ov<term/2)return null;
   if(q.budget!=null&&L.rent>q.budget*1.05)return null;
   if(!(q.kind==='Room or whole place'||(L.unit==='room'?q.kind==='Private room':q.kind==='Whole place')))return null;
+  if((q.layouts||[]).length&&!q.layouts.includes(L.layout))return null;
   if(!(T(q.start)>T(TODAY)))return null;
   const s={},R=[],C=[];
   const share=Math.min(1,ov/term);s.dates=share>=1?35:Math.round(35*share*share);
@@ -279,7 +290,7 @@ function listingFor(q){let best=null;
   return here.find(L=>L.start<q.end&&q.start<L.end)||here[0]||LS()[0]||null}
 
 /* filters. The campus starts from ?campus=, else your own request's, your listing's, or the homepage's */
-const R={campusId:SCH[0][0],start:null,end:null,kind:'either',sort:'soon',sheet:null,auto:true};
+const R={campusId:SCH[0][0],start:null,end:null,layout:'any',sort:'soon',sheet:null,auto:true,sortOpen:false};
 let PLAN={};try{PLAN=JSON.parse(sessionStorage.getItem('cs-plan')||'{}')}catch(_){}
 const known=x=>x&&SCH.some(s=>s[0]===x);
 {const want=QS.get('campus');if(known(want)){R.campusId=want;R.auto=false}else if(known(PLAN.school))R.campusId=PLAN.school}
@@ -288,23 +299,25 @@ function autoCampus(){if(!R.auto)return;const my=myHere(true),L=LS()[0];
   if(REQ&&(!RL.authed||ME))R.auto=false} /* settled once everything has loaded */
 const campus=()=>(SCH.find(s=>s[0]===R.campusId)||SCH[0])[1];
 const campusOf=id=>(SCH.find(s=>s[0]===id)||SCH[0])[1];
-const KINDS=[['room','Room'],['whole','Whole place'],['either','Either']],SORTS=[['soon','Soonest move-in'],['budget','Highest budget']];
+const LAYOUTS=[['any','Any'],['Studio','Studio'],['1B1B','1B1B'],['2B1B','2B1B'],['2B2B','2B2B'],['3B2B','3B2B']],SORTS=[['soon','Soonest move-in'],['budget','Highest budget']];
 const inCampus=()=>others().filter(q=>q.campusId===R.campusId);
 function shown(){
   let l=inCampus();
   if(R.start&&R.end)l=l.filter(q=>Math.min(T(q.end),T(R.end))-Math.max(T(q.start),T(R.start))>0);
-  if(R.kind==='room')l=l.filter(q=>q.kind!=='Whole place');
-  if(R.kind==='whole')l=l.filter(q=>q.kind!=='Private room');
+  /* a request with no layouts picked takes any layout */
+  if(R.layout!=='any')l=l.filter(q=>!(q.layouts||[]).length||q.layouts.includes(R.layout));
   const b=q=>q.budget==null?Infinity:q.budget;
   return l.sort(R.sort==='budget'?(x,y)=>b(y)-b(x)||T(x.start)-T(y.start):(x,y)=>T(x.start)-T(y.start)||b(y)-b(x))}
 /* your own request, shown first at its campus */
 function myHere(any){const u=myUid();const my=u&&REQ?REQ.find(q=>q.uid===u):null;return my&&(any||my.campusId===R.campusId)?my:null}
 const chip=(t,on,attrs)=>`<button type="button" class="chip ${on?'on':''}" aria-pressed="${on}" ${attrs}>${t}</button>`;
-const seg=()=>`<div class="seg" role="group" aria-label="Room">${KINDS.map(([v,t])=>`<button type="button" class="${R.kind===v?'on':''}" aria-pressed="${R.kind===v}" data-one="kind:${v}">${t}</button>`).join('')}</div>`;
+const seg=()=>`<div class="seg" role="group" aria-label="Layout">${LAYOUTS.map(([v,t])=>`<button type="button" class="${R.layout===v?'on':''}" aria-pressed="${R.layout===v}" data-one="layout:${v}">${t}</button>`).join('')}</div>`;
 const campusFld=()=>`<form class="f-camp" data-wform><div class="fld ws" data-wseg aria-label="Campus">${ic('pin','sm pin')}<span data-wval>${esc(campus())}</span>${ic('down','chev')}</div></form>`;
-const dateFld=()=>`<div class="fld f-date"><button type="button" class="fd" data-when aria-haspopup="dialog" aria-expanded="false" aria-label="Dates">${ic('cal','sm')}<span class="fdt">${R.start?wl(R.start,R.end):'Any dates'}</span></button>${R.start?'<button type="button" class="fx" data-clear aria-label="Clear dates">×</button>':''}</div>`;
-const sortFld=()=>`<label class="fld f-sort">${ic('sort','sm')}<span class="st">${SORTS.find(s=>s[0]===R.sort)[1]}</span>${ic('down','chev')}<select data-sort aria-label="Sort">${SORTS.map(([v,t])=>`<option value="${v}" ${R.sort===v?'selected':''}>${t}</option>`).join('')}</select></label>`;
-const nf=()=>(R.start?1:0)+(R.kind!=='either'?1:0);
+const dateFld=()=>`<div class="fld f-date"><button type="button" class="fd" data-when aria-haspopup="dialog" aria-expanded="false" aria-label="Dates">${ic('cal','sm')}<span class="fdl">${R.start?wl(R.start,R.end):'Any dates'}</span></button>${R.start?'<button type="button" class="fx" data-clear aria-label="Clear dates">×</button>':''}</div>`;
+/* sort: a button whose options open in a small menu right below it */
+const sortFld=()=>`<div class="fld f-sort${R.sortOpen?' open':''}"><button type="button" class="fd" data-sortbtn aria-haspopup="listbox" aria-expanded="${R.sortOpen}" aria-label="Sort: ${SORTS.find(s=>s[0]===R.sort)[1]}">${ic('sort','sm')}<span class="st">${SORTS.find(s=>s[0]===R.sort)[1]}</span>${ic('down','chev')}</button>`
+  +(R.sortOpen?`<div class="sort-pop" role="listbox" aria-label="Sort">${SORTS.map(([v,t])=>`<button type="button" role="option" aria-selected="${R.sort===v}" data-one="sort:${v}">${R.sort===v?ic('check','sm'):'<span class="sp-gap"></span>'}${t}</button>`).join('')}</div>`:'')+`</div>`;
+const nf=()=>(R.start?1:0)+(R.layout!=='any'?1:0);
 
 /* pieces */
 const tick=v=>v?`<span class="tk" title="Verified" role="img" aria-label="Verified">${ic('check')}</span>`:'';
@@ -318,14 +331,14 @@ const mrow=m=>{const q=m.q;return `<article class="mr" data-mid="${esc(q.id)}"><
   <div class="mx"><span class="tier ${m.tier.toLowerCase()}">${m.tier}</span><a class="btn btn-secondary" href="${mhref(m.L.code,q.uid)}">${ic('chat','sm')}<span class="bl">Message ${esc(q.who)}</span></a></div></article>`};
 const fav=q=>`<span class="fav" aria-hidden="true" style="overflow:hidden">${face(q)}</span>`;
 const fcard=(q,isMine)=>`<button type="button" class="fc ${isMine?'mine':''}" data-fc="${isMine?'mine':esc(q.id)}" aria-label="${esc(q.who)}, ${esc(q.role)}. ${esc(q.kind)}, ${wl(q.start,q.end)}">${isMine?`<span class="qtag">${myTag()}</span>`:''}
-  <span class="fh2">${esc(q.kind)}</span><span class="fdt">${wl(q.start,q.end)}</span>${q.note?`<span class="fq">${esc(q.note)}</span>`:''}
+  <span class="fh2">${esc(q.kind)}${(q.layouts||[]).length?` · ${q.layouts.join(' / ')}`:''}</span><span class="fdt">${wl(q.start,q.end)}</span>${q.note?`<span class="fq">${esc(q.note)}</span>`:''}
   <span class="frow">${fav(q)}<span class="fm"><b>${esc(q.who)}</b><span class="rl"> · ${esc(q.role)}</span>${tick(q.verified)}</span><span class="fb">${budTxt(q.budget)}</span></span></button>`;
 
 const header=()=>{const BADGE=badge();return `<header class="hdr"><div class="wrap">
   <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
   <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html" aria-current="page">Requests${BADGE?`<span class="badge" aria-label="${BADGE} matches for your listing">${BADGE}</span>`:''}</a><a href="shuttle.html">Shuttle</a></nav>
   <div class="hdr-right"><a class="btn btn-secondary hide-m" href="post.html">Post a listing</a><a class="btn btn-secondary hide-m" href="request.html">Post a request</a>
-    <button class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu>${ic('menu')}</button>${RL.authed?`<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn btn-secondary" data-rl-signin>Sign in</button>`}</div>
+    <button class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu>${ic('menu')}</button>${RL.authed?`${RL.msgs()}<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn btn-secondary" data-rl-signin>Sign in</button>`}</div>
   <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html" aria-current="page">Requests${BADGE?`<span class="badge">${BADGE}</span>`:''}</a><a href="shuttle.html">Shuttle</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav></div></header>`};
 const footer=()=>`<footer class="foot"><div class="wrap"><div class="fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
@@ -353,12 +366,12 @@ function sheet(list,my){
   if(!R.sheet)return '';
   if(R.sheet.t==='f')return `<div class="gscrim"><div class="gs" role="dialog" aria-modal="true" aria-label="Filters"><button type="button" class="x" data-close aria-label="Close">×</button><div class="gh">Filters</div>
     <span class="lbl">Dates</span><div data-fcal></div>${R.start?'<button type="button" class="lnk" data-clear>Clear dates</button>':''}
-    <span class="lbl">Room</span>${seg()}<span class="lbl">Sort</span><div class="chips">${SORTS.map(([v,t])=>chip(t,R.sort===v,`data-one="sort:${v}"`)).join('')}</div>
+    <span class="lbl">Layout</span>${seg()}<span class="lbl">Sort</span><div class="chips">${SORTS.map(([v,t])=>chip(t,R.sort===v,`data-one="sort:${v}"`)).join('')}</div>
     <button type="button" class="btn btn-primary full" data-close>Show ${list.length+(my?1:0)}</button></div></div>`;
   const isMine=R.sheet.id==='mine',q=isMine?my:others().find(x=>x.id===R.sheet.id);if(!q)return '';
   return `<div class="gscrim"><div class="gs" role="dialog" aria-modal="true" aria-label="${esc(q.who)}’s request"><button type="button" class="x" data-close aria-label="Close">×</button>
     ${isMine?`<span class="qtag" style="display:inline-block;margin-bottom:10px">${myTag()}</span>`:''}${q.note?`<p class="gq">${esc(q.note)}</p>`:''}<p class="fm"><b>${esc(q.who)}</b><span class="rl"> · ${esc(q.role)}</span>${tick(q.verified)}</p>
-    <dl class="gd"><dt>Room</dt><dd>${esc(q.kind)}</dd><dt>Dates</dt><dd>${wl(q.start,q.end)} · ${WhenPicker.nights(q.start,q.end)} nights</dd><dt>Budget</dt><dd>${budTxt(q.budget)}</dd></dl>
+    <dl class="gd"><dt>Room</dt><dd>${esc(q.kind)}</dd><dt>Layouts</dt><dd>${(q.layouts||[]).length?q.layouts.join(', '):'Any'}</dd><dt>Dates</dt><dd>${wl(q.start,q.end)} · ${WhenPicker.nights(q.start,q.end)} nights</dd><dt>Budget</dt><dd>${budTxt(q.budget)}</dd></dl>
     ${isMine?mineActs(q):msgAction(q)}</div></div>`}
 
 function render(){
@@ -410,12 +423,14 @@ document.addEventListener('click',e=>{const t=e.target;
   if(t.closest('[data-keep]')){R.sheet.confirm=false;render();return}
   const cr=t.closest('[data-close-req]');if(cr){cr.disabled=true;cr.textContent='Taking it down…';
     RentletRequests.closeRequest(cr.dataset.closeReq).then(()=>{R.sheet=null;render();Rentlet.toast('Your request is down.');RentletRequests.refreshMine()},()=>{Rentlet.toast('Couldn’t take it down. Check your connection and try again.');render()});return}
-  const o=t.closest('[data-one]');if(o){const [k,v]=o.dataset.one.split(':');R[k]=v;render();return}
+  if(t.closest('[data-sortbtn]')){R.sortOpen=!R.sortOpen;render();return}
+  const o=t.closest('[data-one]');if(o){const [k,v]=o.dataset.one.split(':');R[k]=v;R.sortOpen=false;render();return}
+  if(R.sortOpen&&!t.closest('.f-sort')){R.sortOpen=false;render()}
   const w=t.closest('[data-when]');if(w){const L=LS().find(x=>x.campusId===R.campusId);return WhenPicker.open({anchor:w,mode:'leave',start:R.start||(L&&L.start),end:R.end||(L&&L.end),onDone:(s,e2)=>{R.start=s;R.end=e2;render()}})}
   if(t.closest('[data-clear]')){R.start=R.end=null;render();return}
-  if(t.closest('[data-reset]')){R.start=R.end=null;R.kind='either';render();return}
+  if(t.closest('[data-reset]')){R.start=R.end=null;R.layout='any';render();return}
   const c=t.closest('[data-campus]');if(c){R.campusId=c.dataset.campus;R.auto=false;render();return}});
-document.addEventListener('change',e=>{if(e.target.matches('[data-sort]')){R.sort=e.target.value;render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&R.sortOpen){R.sortOpen=false;render();const b=document.querySelector('[data-sortbtn]');if(b)b.focus()}});
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(R.sheet){R.sheet=null;render();return}const hm=$('#hmenu');if(hm&&!hm.hidden){hm.hidden=true;$('[data-hmenu]').focus()}});
 render();
 </script>

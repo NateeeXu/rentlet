@@ -912,7 +912,7 @@ const header=()=>`<header class="hdr"><div class="wrap">
   <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></nav>
   <div class="hdr-right">
     <button class="btn btn-secondary hide-s" onclick="location.href='post.html'">Post a listing</button>
-    ${RL.authed?`<a class="rl-me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button class="btn btn-ghost" data-rl-signin>Sign in</button>`}
+    ${RL.authed?`${RL.msgs()}<a class="rl-me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button class="btn btn-ghost" data-rl-signin>Sign in</button>`}
     <button class="icon-btn menu" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu>${ic('menu')}</button>
   </div>
   <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a><hr><button type="button" onclick="location.href='post.html'">Post a listing</button>${RL.authed?`<a href="profile.html">Your page</a>`:`<button type="button" class="hm-in" data-rl-signin>Sign in</button>`}</nav></div></header>`;
@@ -1386,7 +1386,8 @@ function show(k,keep){
   current=k;cancelAnimationFrame(window.__orbRAF);
   $$('[data-opt]').forEach(b=>b.setAttribute('aria-selected',b.dataset.opt===k));
   $('#note').innerHTML=NOTES[k].map(t=>`<p>${t}</p>`).join('');
-  history.replaceState(null,'','?opt='+k);try{localStorage.setItem('cs-home-opt',k)}catch(_){}
+  /* the homepage has one version now: no ?opt= in the address, and an old ?opt= link is cleaned up */
+  if(/[?&]opt=/.test(location.search))history.replaceState(null,'',location.pathname+location.hash);
   if(k==='c5'){site.innerHTML=`<iframe class="c5frame" src="combo.html?embed=1" title="C5 homepage"></iframe>`;return}
   site.innerHTML=header()+`<main>${HEROES[k][0]()}<section class="results cx"><div class="wrap" id="res"></div></section><div id="cxJustBox"></div>${Q.length?cxPeople():''}${cxPost()}${cxFaq()}</main>${cxFooter()}`;
   HEROES[k][1]();bindSearch();results();wire(site);attachWhere();if(!keep)site.scrollTop=0;

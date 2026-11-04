@@ -7,7 +7,7 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
-import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where, type Timestamp, type Unsubscribe } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { firstName, isNorthwesternEmail } from './lib/nu';
 import * as listings from './listings';
@@ -22,7 +22,7 @@ export interface RentletUser {
 
 declare global {
   interface Window {
-    RL: { authed: boolean; user: RentletUser | null; initial: string; me(): string };
+    RL: { authed: boolean; user: RentletUser | null; initial: string; me(): string; unread: number; msgs(current?: boolean): string };
     RL_onAuth?: (user: RentletUser | null) => void;
     RL_onListings?: (list: ListingDoc[] | null) => void;
     RentletListings: typeof listings;
@@ -186,12 +186,53 @@ window.Rentlet = {
   report,
 };
 
+// Unread conversations for the header's messages button: the other person wrote last, after I last opened it.
+let stopUnread: Unsubscribe | null = null;
+
+function showUnread(n: number) {
+  try {
+    sessionStorage.setItem('rl-unread', String(n));
+  } catch {
+    /* private mode */
+  }
+  window.RL.unread = n;
+  document.querySelectorAll<HTMLElement>('[data-rl-msgs]').forEach((el) => {
+    const badge = el.querySelector<HTMLElement>('.rl-msgs-n');
+    if (badge) {
+      badge.textContent = n > 9 ? '9+' : String(n);
+      badge.hidden = !n;
+    }
+    el.setAttribute('aria-label', n ? `Messages, ${n} unread` : 'Messages');
+  });
+}
+
+function watchUnread(uid: string | null) {
+  stopUnread?.();
+  stopUnread = null;
+  if (!uid) return showUnread(0);
+  stopUnread = onSnapshot(
+    query(collection(db, 'conversations'), where('participants', 'array-contains', uid)),
+    (snap) => {
+      let n = 0;
+      snap.forEach((d) => {
+        const c = d.data();
+        const updated = (c.updatedAt as Timestamp | undefined)?.toMillis() ?? 0;
+        const read = (c.read?.[uid] as Timestamp | undefined)?.toMillis() ?? 0;
+        if (c.lastSender && c.lastSender !== uid && updated > read) n++;
+      });
+      showUnread(n);
+    },
+    () => undefined,
+  );
+}
+
 onAuthStateChanged(auth, async (u) => {
   if (u && (!isNorthwesternEmail(u.email) || !u.emailVerified)) {
     await firebaseSignOut(auth);
     return; // the sign-out fires this listener again with null
   }
   apply(u ? toUser(u) : null);
+  watchUnread(u ? u.uid : null);
 });
 
 window.RentletListings = listings;

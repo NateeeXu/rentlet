@@ -151,7 +151,7 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
   <div class="hdr-right">
     <a class="btn btn-ghost hide-s" href="request.html">Post a request</a>
     <a class="btn btn-secondary hide-s" href="post.html">Post a listing</a>
-    <span id="rlAuth" style="display:contents"></span><script>document.getElementById("rlAuth").innerHTML=RL.authed?`<a class="rl-me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button type="button" class="btn btn-ghost" data-rl-signin>Sign in</button>`</script>
+    <span id="rlAuth" style="display:contents"></span><script>document.getElementById("rlAuth").innerHTML=RL.authed?`${RL.msgs()}<a class="rl-me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button type="button" class="btn btn-ghost" data-rl-signin>Sign in</button>`</script>
     <button type="button" class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   </div>
   <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="shuttle.html" aria-current="page">Shuttle</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav>

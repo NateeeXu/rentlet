@@ -170,12 +170,12 @@ const S={step:0,done:false,f:{},err:'',
   budget:1500,util:false,
   kind:'room',furn:'any',bath:false,mates:'yes',
   role:'student',orgMode:'campus',
-  multi:{life:[]}};
+  multi:{life:[],layouts:[]}};
 /* the campus and dates the visitor searched on the homepage, the budget they set there, then a saved draft */
 try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&WhereSearch.SCHOOLS.find(x=>x[0]===p.school);if(row){S.campusId=row[0];S.campus=row[1]}
   if(p.start&&p.end&&p.start>=TODAY&&p.end>p.start){S.start=p.start;S.end=p.end}}catch(_){}
 S.budget=BudgetPicker.load(1500);
-const restore=d=>{if(!d)return false;if(d.budget==null)d.budget=Infinity;Object.assign(S,d,{done:false,err:''});S.multi={life:(d.multi&&d.multi.life)||[]};return true};
+const restore=d=>{if(!d)return false;if(d.budget==null)d.budget=Infinity;Object.assign(S,d,{done:false,err:''});S.multi={life:(d.multi&&d.multi.life)||[],layouts:(d.multi&&d.multi.layouts)||[]};return true};
 let restored=false;
 try{restored=restore(JSON.parse(sessionStorage.getItem('cs-request-draft')||'null'))}catch(_){}
 /* signed in with Google: start the name from the first name on the account */
@@ -225,7 +225,7 @@ const qcard=(r,tag)=>`<article class="qc"><div class="qt"><span class="av" aria-
   <p class="qb">${r.budget==null?'<span class="pr">Any price</span>':`Up to <span class="pr">${money(r.budget)}</span> / mo`}</p>
   ${r.note?`<blockquote class="qq">“${esc(r.note)}”</blockquote>`:''}</article>`;
 
-const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}${RL.authed?`<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn sec" data-rl-signin>Sign in</button>`}</div></div></header>`;
+const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}${RL.authed?`${RL.msgs()}<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn sec" data-rl-signin>Sign in</button>`}</div></div></header>`;
 const opt=(on,b,s,attrs='')=>`<button type="button" class="opt ${on?'on':''}" aria-pressed="${on}" ${attrs}><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div><span class="tk">${on?'✓':''}</span></button>`;
 const chip=(t,on,attrs='')=>`<button type="button" class="chip ${on?'on':''}" aria-pressed="${on}" ${attrs}>${t}</button>`;
 const one=(key,list)=>list.map(([v,t])=>chip(t,S[key]===v,`data-one="${key}:${v}"`)).join('');
@@ -259,6 +259,7 @@ const B={
   budgetCore:()=>`<div class="grp"><span class="lbl">Budget</span><div class="in ro"><span data-budget-t>${BudgetPicker.label(S.budget)}</span></div><div class="cal" data-budget></div></div>`,
   budget:()=>B.budgetCore()+`<div class="grp">${tog('Utilities included matters to me','',sw('util','Utilities included matters to me'))}</div><p class="note">You pay the host directly. Rentlet never holds money.</p>`,
   room:()=>grp('Looking for',`<div class="opts">${opt(S.kind==='room','A private room','In a shared place','data-set="kind:room"')}${opt(S.kind==='whole','The whole place','Studio or apartment','data-set="kind:whole"')}${opt(S.kind==='either','Either','','data-set="kind:either"')}</div>`)+
+    grp('Layouts that work',`<div class="chips">${multi('layouts',['Studio','1B1B','2B1B','2B2B','3B2B'])}</div><p class="note">Pick any that work. None picked means any layout.</p>`,'optional')+
     grp('Furnished',`<div class="chips">${one('furn',FURN)}</div>`)+
     `<div class="grp">${tog('Private bathroom matters','',sw('bath','Private bathroom matters'))}</div>`+
     grp('Fine with roommates',`<div class="chips">${one('mates',MATES)}</div>`),

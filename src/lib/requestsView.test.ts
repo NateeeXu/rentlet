@@ -176,3 +176,20 @@ describe('listings for messages and matches', () => {
     });
   });
 });
+
+describe('layouts a person looking can live with', () => {
+  it('keeps only known layouts and carries them to the row and back to the form', () => {
+    const r = buildRequest(form({ multi: { life: [], layouts: ['1B1B', 'Castle', 'Studio'] } }), owner, TODAY);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.doc.layouts).toEqual(['Studio', '1B1B']);
+    expect(toRow('a', r.doc, 0).layouts).toEqual(['Studio', '1B1B']);
+    expect(formFromRequest(r.doc).multi.layouts).toEqual(['Studio', '1B1B']);
+  });
+  it('treats an older request without layouts as any', () => {
+    const r = buildRequest(form(), owner, TODAY);
+    if (!r.ok) return;
+    const { layouts: _drop, ...old } = r.doc;
+    expect(toRow('b', old, 0).layouts).toEqual([]);
+  });
+});

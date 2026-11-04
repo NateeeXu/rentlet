@@ -138,16 +138,18 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
+.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
+<script src="/rentlet-boot.js"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
-<script src="where-search.js?v=a680f16a"></script>
+<script src="where-search.js?v=178e1e53"></script>
 <script src="when-picker.js?v=7860cfd6"></script>
 <script src="budget-picker.js?v=552d4e21"></script>
 <script>
@@ -169,7 +171,7 @@ try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&Wh
   if(p.start&&p.end&&p.start>=TODAY&&p.end>p.start){S.start=p.start;S.end=p.end}}catch(_){}
 S.budget=BudgetPicker.load(1500);
 /* the sample account is verified with the school email of the campus it starts on */
-const DOMAIN={'nu-evn':'u.northwestern.edu','nu-chi':'u.northwestern.edu'};
+const DOMAIN={'nu-evn':'u.northwestern.edu','nu-chi':'u.northwestern.edu','chi-dt':'u.northwestern.edu'};
 S.verKey=S.campusId;S.verEmail='sam@'+(DOMAIN[S.campusId]||'u.northwestern.edu');
 const restore=d=>{if(!d)return false;if(d.budget==null)d.budget=Infinity;Object.assign(S,d,{done:false,err:''});return true};
 let restored=false;
@@ -220,7 +222,7 @@ const qcard=(r,tag)=>`<article class="qc"><div class="qt"><span class="av" aria-
   <p class="qb">${r.budget==null?'<span class="pr">Any price</span>':`Up to <span class="pr">${money(r.budget)}</span> / mo`}</p>
   ${r.note?`<blockquote class="qq">“${esc(r.note)}”</blockquote>`:''}</article>`;
 
-const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}<a class="me" href="profile.html" aria-label="Your profile">Y</a></div></div></header>`;
+const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}${RL.authed?`<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn sec" data-rl-signin>Sign in</button>`}</div></div></header>`;
 const opt=(on,b,s,attrs='')=>`<button type="button" class="opt ${on?'on':''}" aria-pressed="${on}" ${attrs}><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div><span class="tk">${on?'✓':''}</span></button>`;
 const chip=(t,on,attrs='')=>`<button type="button" class="chip ${on?'on':''}" aria-pressed="${on}" ${attrs}>${t}</button>`;
 const one=(key,list)=>list.map(([v,t])=>chip(t,S[key]===v,`data-one="${key}:${v}"`)).join('');
@@ -343,5 +345,6 @@ document.addEventListener('input',e=>{const k=e.target.dataset.f;if(!k)return;S.
   live()});
 render();
 </script>
+<script type="module" src="/src/rentlet.ts"></script>
 </body>
 </html>

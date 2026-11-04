@@ -1,6 +1,6 @@
 import type { Timestamp } from 'firebase/firestore';
 
-export type Campus = 'evanston' | 'chicago';
+export type Campus = 'evanston' | 'chicago' | 'downtown';
 export type ListingKind = 'sublet' | 'takeover';
 export type ListingStatus = 'active' | 'taken' | 'hidden';
 
@@ -31,6 +31,7 @@ export interface Listing {
 export const CAMPUS_LABEL: Record<Campus, string> = {
   evanston: 'Northwestern · Evanston',
   chicago: 'Northwestern · Chicago',
+  downtown: 'Downtown Chicago',
 };
 
 export const KIND_LABEL: Record<ListingKind, string> = {

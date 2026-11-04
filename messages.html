@@ -324,12 +324,14 @@ a.rcard:hover h3{text-decoration:underline;text-underline-offset:3px}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
+.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
+<script src="/rentlet-boot.js"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -443,7 +445,7 @@ let site,stage;const isPhone=()=>site&&site.clientWidth<=900;
 
 /* ---------- render: shell ---------- */
 function shell(){
-  stage.innerHTML=`<div class="site" id="site"><header class="hdr"><div class="wrap"><a class="logo" href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><nav aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="how-it-works.html">How it works</a><span aria-current="page">Messages</span></nav><div class="hdr-r"><a class="btn btn-secondary post" href="post.html">Post a listing</a><a class="me-link" href="profile.html" aria-label="Your profile"><span class="me-av" aria-hidden="true">Y</span></a></div></div></header>
+  stage.innerHTML=`<div class="site" id="site"><header class="hdr"><div class="wrap"><a class="logo" href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><nav aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a></nav><div class="hdr-r"><a class="btn btn-secondary post" href="post.html">Post a listing</a><a class="me-link" href="profile.html" aria-label="Your profile"><span class="me-av" aria-hidden="true">Y</span></a></div></div></header>
   <div class="body"><aside class="inbox" id="inbox" aria-label="Conversations"><div class="inbox-h"><h1>Messages</h1><div class="tabs" role="tablist" id="tabs"></div></div><label class="search">${ic('search','sm')}<span class="sr">Search conversations</span><input id="q" type="search" placeholder="Search people or rooms" autocomplete="off"></label><div id="undo"></div><div class="convs" id="convs"></div></aside>
   <section class="thread" id="thread" aria-label="Conversation"></section><aside class="side" id="side" aria-label="This room"></aside><section class="pp" id="pp" aria-label="Profile"></section></div>
   <div class="scrim" id="scrim"></div><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shT"></div><div class="toast" id="toast" role="status"></div></div>`;
@@ -695,5 +697,6 @@ shell();if(CUR&&TH[CUR].unread){TH[CUR].unread=false;renderList()}
 if(fm&&CUR===W)setTimeout(()=>send(fm),400);
 let lastPhone=isPhone();addEventListener('resize',()=>{const p=isPhone();if(p!==lastPhone){lastPhone=p;if(!p&&!CUR){const f=inTab(TAB)[0];if(f)openThread(f.id)}closeRail();closeProfile();siteClass();renderRail()}});
 </script>
+<script type="module" src="/src/rentlet.ts"></script>
 </body>
 </html>

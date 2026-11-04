@@ -13,9 +13,7 @@
   ].map(([key, code, title, area, layout, price, img, flip]) => ({ key, code, title, area, layout, price, img, flip }));
   /* the same two levels as the mini program: city / metro area first, then a campus in it */
   const CITIES = [
-    ['Chicago area', [['nu-evn', 'Northwestern · Evanston'], ['nu-chi', 'Northwestern · Chicago'], ['uchi', 'UChicago']]],
-    ['Bay Area', [['ucb', 'UC Berkeley']]],
-    ['New Haven', [['yale', 'Yale']]]
+    ['Chicago area', [['nu-evn', 'Northwestern · Evanston'], ['nu-chi', 'Northwestern · Chicago'], ['chi-dt', 'Downtown Chicago']]]
   ];
   const SCHOOLS = CITIES.flatMap(([city, list]) => list.map(([v, name]) => [v, name, city]));
   const cityOf = name => (SCHOOLS.find(s => s[1] === name) || [])[2];
@@ -114,10 +112,13 @@
       const cityRow = ([city, list], i) => row(`<span class="ws-ic">${ICON.city}</span><span class="ws-tx"><b>${esc(city)}</b><span>${city === cityOf(campus) ? esc(campus) : `${list.length} campus${list.length > 1 ? 'es' : ''}`}</span></span><span class="ws-go">${ICON.r}</span>`, i, `data-city="${esc(city)}"`);
       items = []; let html;
       /* pick a city, then a campus in it */
-      if (!step) html = `<p class="ws-lab">Choose a city</p>` + CITIES.map(c => cityRow(c, items.push({ city: c[0] }) - 1)).join('');
+      /* with a single city (Rentlet: Chicago area) the city step is skipped and there is no way back to it */
+      if (!step && CITIES.length > 1) html = `<p class="ws-lab">Choose a city</p>` + CITIES.map(c => cityRow(c, items.push({ city: c[0] }) - 1)).join('');
       else {
+        step = step || CITIES[0][0];
         const list = SCHOOLS.filter(x => x[2] === step);
-        html = `<div class="ws-it ws-back${sel === 0 ? ' on' : ''}" role="option" data-i="${items.push({ back: 1 }) - 1}">${ICON.l}All cities</div><p class="ws-lab">${esc(step)}</p>` + list.map(x => schoolRow(x, items.push({ school: x }) - 1)).join('');
+        const back = CITIES.length > 1 ? `<div class="ws-it ws-back${sel === 0 ? ' on' : ''}" role="option" data-i="${items.push({ back: 1 }) - 1}">${ICON.l}All cities</div>` : '';
+        html = back + `<p class="ws-lab">${esc(step)}</p>` + list.map(x => schoolRow(x, items.push({ school: x }) - 1)).join('');
       }
       if (sel >= items.length) sel = items.length - 1;
       pop.innerHTML = `<div class="ws-list">${html}</div>`;

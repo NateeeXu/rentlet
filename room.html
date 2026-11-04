@@ -735,12 +735,14 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
+.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
+<script src="/rentlet-boot.js"></script>
 </head>
 <body>
 <div class="rv" hidden><span id="roomTabs"></span><span id="stTabs"></span></div>
@@ -764,7 +766,7 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
 <div class="toast" id="toast" role="status"></div>
 <script>/* overlays live inside the stage so the phone preview shows them inside the frame */
 ["msg","lb","rep","login","toast"].forEach(id=>{const e=document.getElementById(id);if(e)document.getElementById("stage").appendChild(e)})</script>
-<script src="where-search.js?v=a680f16a"></script>
+<script src="where-search.js?v=178e1e53"></script>
 <script src="when-picker.js?v=7860cfd6"></script>
 <script src="budget-picker.js?v=552d4e21"></script>
 <script>
@@ -853,7 +855,7 @@ const KEY=ROOMS[new URLSearchParams(location.search).get('room')]?new URLSearchP
 const ROOM=ROOMS[KEY];
 const allIn=()=>ROOM.price+ROOM.util+ROOM.deposit;
 let plan={start:'2027-01-03',end:'2027-04-30'};try{const sp=JSON.parse(sessionStorage.getItem('cs-plan')||'null');if(sp&&sp.start&&sp.end)plan=sp}catch(_){}
-let AUTH=false;try{AUTH=localStorage.getItem('cs-web-auth')==='in'}catch(_){}
+let AUTH=RL.authed;
 
 /* existing matching rule: overlap of at least 30 nights and half the stay, rent within budget + 5% */
 function fitOf(R){const need=nightsBetween(plan.start,plan.end),ov=Math.max(0,Math.round((Math.min(T(R.end),T(plan.end))-Math.max(T(R.start),T(plan.start)))/864e5)),whole=T(R.start)<=T(plan.start)&&T(R.end)>=T(plan.end);
@@ -1039,7 +1041,7 @@ function openSearch(){closeAi();const c=$('#sCard');c.hidden=false;$('.hdr').cla
 function closeSearch(){const c=$('#sCard');if(!c||c.hidden)return;c.classList.remove('on');$('.hdr').classList.remove('flat');$$('[data-sopen]').forEach(b=>b.setAttribute('aria-expanded','false'));setTimeout(()=>{if(!c.classList.contains('on'))c.hidden=true},reduced?0:220)}
 const head=()=>`<header class="hdr"><div class="wrap"><a href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="msearch" role="search" aria-label="Search rooms"><button type="button" class="seg seg-w" aria-label="Change campus">${ic2('pin')}<span><small>Where</small><em data-where>Northwestern · Evanston</em></span></button><i></i><button type="button" class="seg" data-wopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your dates">${ic('cal','sm')}<span><small>When</small><em data-when>${WhenPicker.label(plan.start,plan.end)}</em></span></button><i class="b"></i><button type="button" class="seg seg-b" data-bopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your budget"><b class="usd">$</b><span><small>Budget</small><em data-bud>${BudgetPicker.label(BUDGET)}</em></span></button>
   <button type="button" class="aipk" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button>
-  <button type="button" class="go" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button></div><div class="hdr-r"><button type="button" class="aipk ai-m" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button><button type="button" class="msrch" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button><button class="btn btn-ghost hide-s">Post a listing</button>${AUTH?`<button type="button" class="me" data-me aria-label="Your account">Y</button>`:`<button class="btn btn-secondary" data-signin>Sign in</button>`}</div></div><button type="button" class="ai-scrim" id="aiScrim" data-aiclose aria-label="Close AI picks" tabindex="-1" hidden></button><div class="ai-gp" id="aiCard" role="dialog" aria-label="AI picks" hidden></div><div class="aicard scard" id="sCard" role="dialog" aria-label="Search listings" hidden><label class="sfield">${ic('search','sm')}<span class="sr">Search</span><input id="sQ" type="search" placeholder="Search an area, layout or listing #" autocomplete="off" spellcheck="false" aria-controls="sList"><kbd>Esc</kbd></label><div class="slist" id="sList" role="listbox"></div></div></header>`;
+  <button type="button" class="go" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button></div><div class="hdr-r"><button type="button" class="aipk ai-m" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button><button type="button" class="msrch" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button><button class="btn btn-ghost hide-s">Post a listing</button>${AUTH?`<button type="button" class="me" data-me aria-label="Your account">${RL.me()}</button>`:`<button class="btn btn-secondary" data-signin>Sign in</button>`}</div></div><button type="button" class="ai-scrim" id="aiScrim" data-aiclose aria-label="Close AI picks" tabindex="-1" hidden></button><div class="ai-gp" id="aiCard" role="dialog" aria-label="AI picks" hidden></div><div class="aicard scard" id="sCard" role="dialog" aria-label="Search listings" hidden><label class="sfield">${ic('search','sm')}<span class="sr">Search</span><input id="sQ" type="search" placeholder="Search an area, layout or listing #" autocomplete="off" spellcheck="false" aria-controls="sList"><kbd>Esc</kbd></label><div class="slist" id="sList" role="listbox"></div></div></header>`;
 /* "Sam, junior at Weinberg" from the role "Junior, Weinberg" */
 const byline=()=>{const [a,b]=ROOM.role.split(', ');return b?`${ROOM.who}, ${/^.[a-z]/.test(a)?a[0].toLowerCase()+a.slice(1):a} at ${b}`:`${ROOM.who}, ${ROOM.role}`};
 const titlebar=()=>`<div class="titlebar"><div><h1>${ROOM.title}</h1><p class="t-sub"><span>${ROOM.area}</span><span>${ROOM.type}</span>${titleDates()}<button type="button" class="lcode" data-code="${ROOM.code}" aria-label="Copy listing number ${ROOM.code}">Listing #${ROOM.code}${ic2('copy')}</button></p></div><div class="tb-acts"><button class="btn btn-ghost btn-sm" data-share>${ic('share','sm')}<span>Share</span></button><button class="btn btn-ghost btn-sm" data-save aria-pressed="false">${ic('heart','sm')}<span>Save</span></button><button class="btn btn-ghost btn-sm" data-report aria-label="Report this listing">${ic2('flag')}<span>Report</span></button></div></div>`;
@@ -1081,8 +1083,9 @@ const GATE={message:[`Sign in to message ${ROOM.who}`,'Messages stay in Rentlet.
   signin:['Sign in to Rentlet','Message hosts, save rooms, and get alerts when rooms open on your dates.']};
 let pending=null;
 function gate(kind,fn){if(AUTH)return fn();pending=fn;$('#loginT').textContent=GATE[kind][0];$('#loginR').textContent=GATE[kind][1];$('#login').classList.add('on');setTimeout(()=>$('[data-login="google"]').focus(),60)}
-function signIn(){AUTH=true;try{localStorage.setItem('cs-web-auth','in')}catch(_){}$('#login').classList.remove('on');$$('[data-auth]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.auth==='in'));
-  const h=$('.hdr');if(h)h.outerHTML=head();const f=pending;pending=null;if(f)setTimeout(f,120);else toast('You’re signed in.')}
+function signIn(){RL.signIn().then(ok=>{if(!ok)return;AUTH=true;$('#login').classList.remove('on');
+  const h=$('.hdr');if(h)h.outerHTML=head();const f=pending;pending=null;if(f)setTimeout(f,120);else toast('You’re signed in.')})}
+window.RL_onAuth=u=>{AUTH=!!u;const h=$('.hdr');if(h)h.outerHTML=head()};
 const site=$('#site');
 function setVh(){site.style.setProperty('--vh',($('#stage').classList.contains('phone')?844:innerHeight)+'px')}
 document.addEventListener('input',e=>{if(e.target.id==='sQ')drawSearch()});
@@ -1106,7 +1109,7 @@ document.addEventListener('click',e=>{const t=e.target;
   const fl=t.closest('[data-flip]');if(fl){if(fl.classList.contains('on')){fl.classList.add('out');setTimeout(()=>fl.classList.remove('on','out'),reduced?0:330)}else fl.classList.add('on');return}
   if(t.closest('[data-login]')){signIn();return}
   if(t.closest('[data-signin]')){gate('signin',()=>toast('You’re signed in.'));return}
-  if(t.closest('[data-me]'))return toast('Signed in. Use the review bar to switch back to guest.');
+  if(t.closest('[data-me]')){location.href='profile.html';return}
   if(t.closest('[data-retry]')){STATE='loading';boot();setTimeout(()=>setState('ok'),reduced?0:900);return}
   const dy=t.closest('[data-wopen]');if(dy){pickDates(dy);return}
   const bo=t.closest('[data-bopen]');if(bo){pickBudget(bo);return}
@@ -1148,5 +1151,6 @@ $$('[data-auth]').forEach(b=>{b.setAttribute('aria-pressed',(b.dataset.auth==='i
 addEventListener('resize',setVh);
 boot();
 </script>
+<script type="module" src="/src/rentlet.ts"></script>
 </body>
 </html>

@@ -261,16 +261,18 @@ button.in.ws{text-align:left;font-size:16px}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
+.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
+<script src="/rentlet-boot.js"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
-<script src="where-search.js?v=a680f16a"></script>
+<script src="where-search.js?v=178e1e53"></script>
 <script src="when-picker.js?v=7860cfd6"></script>
 <script>
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -408,8 +410,8 @@ const sec=(k,body)=>panel(k,SECS.find(s=>s[0]===k)[1],SUBS[k],body||BODY[k]());
 
 /* ---------- page chrome ---------- */
 const header=()=>`<header class="hdr"><div class="wrap"><a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
-  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="how-it-works.html">How it works</a><a href="messages.html">Messages</a></nav>
-  <div class="hdr-r"><a class="btn sec hide-s" href="post.html">Post a listing</a>${authed()?`<a class="me" href="profile.html" data-act="top" aria-current="page" aria-label="Your page">${esc(initial())}</a>`:`<button type="button" class="btn sec" data-act="gatefocus">Sign in</button>`}</div></div></header>`;
+  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a></nav>
+  <div class="hdr-r"><a class="btn sec hide-s" href="post.html">Post a listing</a>${authed()?`<a class="me" href="profile.html" data-act="top" aria-current="page" aria-label="Your page">${RL.me()}</a>`:`<button type="button" class="btn sec" data-act="gatefocus">Sign in</button>`}</div></div></header>`;
 const footer=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
   <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a></div>
@@ -478,7 +480,7 @@ document.addEventListener('click',e=>{const t=e.target;
   switch(act){
     case 'top':e.preventDefault();jump('you');return;
     case 'gatefocus':{const g=$('.gate .lg-g');if(g)g.focus();return}
-    case 'signin':ls.set('cs-web-auth','in');render(false);toast('You’re signed in.');return;
+    case 'signin':RL.signIn();return;
     case 'editName':S.editName=true;S.tmp.name=S.name;render();return;
     case 'cancelName':S.editName=false;S.tmp.name=null;render();return;
     case 'saveName':{const n=(S.tmp.name||'').trim();if(!n){toast('First name can’t be empty.');return}S.name=n.split(/\s+/)[0].slice(0,24);S.editName=false;S.tmp.name=null;save();render();toast('Name saved.');return}
@@ -505,7 +507,7 @@ document.addEventListener('click',e=>{const t=e.target;
       toast('Removed from saved.',()=>{S.saved.splice(Math.min(i,S.saved.length),0,k);save();render()});return}
     case 'undo':{const f=undoFn;undoFn=null;$('#toast').classList.remove('on');if(f)f();return}
     case 'signout':S.sheet={kind:'signout'};render();return;
-    case 'confirmSignout':ls.del('cs-web-auth');S.sheet=null;render(false);return;
+    case 'confirmSignout':S.sheet=null;RL.signOut();return;
     case 'del1':S.sheet={kind:'del1'};render();return;
     case 'del2':S.tmp.delconf='';S.sheet={kind:'del2'};render();return;
     case 'confirmDel':S.sheet=null;S.tmp.delconf='';render();toast('Preview only. Nothing was deleted.');return;
@@ -521,5 +523,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'){const k=e.target.dataset&&e.target.dataset.f;if(k==='name'){e.preventDefault();$('[data-act=saveName]').click()}else if(k==='vmail'){e.preventDefault();$('[data-act=sendLink]').click()}else if(k==='delconf'){e.preventDefault();const c=$('[data-act=confirmDel]');if(c&&!c.disabled)c.click()}}});
 render(false);
 </script>
+<script type="module" src="/src/rentlet.ts"></script>
 </body>
 </html>

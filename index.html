@@ -747,12 +747,14 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
+.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
+<script src="/rentlet-boot.js"></script>
 </head>
 <body>
 
@@ -764,7 +766,7 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>document.getElementById("stage").appendChild(document.getElementById("toast"))</script>
 
-<script src="where-search.js?v=a680f16a"></script>
+<script src="where-search.js?v=178e1e53"></script>
 <script src="when-picker.js?v=7860cfd6"></script>
 <script src="budget-picker.js?v=552d4e21"></script>
 <script>
@@ -803,7 +805,7 @@ const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
 
 /* example data — listings only at Northwestern · Evanston */
 const SCHOOLS=[
-  {group:'Northwestern',items:[['nu-evn','Northwestern · Evanston'],['nu-chi','Northwestern · Chicago']]}
+  {group:'Chicago area',items:[['nu-evn','Northwestern · Evanston'],['nu-chi','Northwestern · Chicago'],['chi-dt','Downtown Chicago']]}
 ];
 const schoolName=id=>SCHOOLS.flatMap(g=>g.items).find(i=>i[0]===id)?.[1]||'';
 const schoolSelect=(id,sel)=>`<select id="${id}">${SCHOOLS.map(g=>`<optgroup label="${g.group}">${g.items.map(([v,t])=>`<option value="${v}" ${v===sel?'selected':''}>${t}</option>`).join('')}</optgroup>`).join('')}</select>`;
@@ -900,13 +902,13 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-hmenu]'),m
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu(true)});
 const header=()=>`<header class="hdr"><div class="wrap">
   <a class="logo" href="#" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
-  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="how-it-works.html">How it works</a><a href="messages.html">Messages</a></nav>
+  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a></nav>
   <div class="hdr-right">
     <button class="btn btn-secondary hide-s" onclick="location.href='post.html'">Post a listing</button>
-    <button class="btn btn-ghost" data-toast="Sign in with your Northwestern Google account.">Sign in</button>
+    ${RL.authed?`<a class="rl-me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button class="btn btn-ghost" data-rl-signin>Sign in</button>`}
     <button class="icon-btn menu" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu>${ic('menu')}</button>
   </div>
-  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="how-it-works.html">How it works</a><a href="messages.html">Messages</a><hr><button type="button" onclick="location.href='post.html'">Post a listing</button><button type="button" class="hm-in" data-toast="Sign in with your Northwestern Google account.">Sign in</button></nav></div></header>`;
+  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><hr><button type="button" onclick="location.href='post.html'">Post a listing</button>${RL.authed?`<a href="profile.html">Your page</a>`:`<button type="button" class="hm-in" data-rl-signin>Sign in</button>`}</nav></div></header>`;
 /* dates carry over to the room page (and back) through the same session key the room page uses */
 const savePlan=(s,e)=>{try{sessionStorage.setItem('cs-plan',JSON.stringify({start:s,end:e,school:plan.school}))}catch(_){}};
 const storedPlan=()=>{try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'null');if(!(p&&p.start&&p.end))return{};const o={start:p.start,end:p.end};if(p.school&&SCHOOLS.some(g=>g.items.some(i=>i[0]===p.school)))o.school=p.school;return o}catch(_){return{}}};
@@ -1039,7 +1041,7 @@ const CXFAQ=[['Is Rentlet a broker?','No. Rentlet is a place for Northwestern st
  ['Who can use Rentlet?','Northwestern students and staff. You sign in with your Northwestern Google account, so everyone you talk to is from Northwestern.'],
  ['How are listings checked?','Everyone who posts signs in with a Northwestern account, and anyone can report a listing. Reported listings are reviewed and taken down if they break the rules.'],
  ['When is my contact information shared?','Only when you both agree. Until then you talk inside Rentlet.'],
- ['Which areas do you cover?','Places near Northwestern’s Evanston and Chicago campuses.']];
+ ['Which areas do you cover?','Places near Northwestern’s Evanston and Chicago campuses, and in downtown Chicago.']];
 const cxFaq=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-sh"><div><h2>FAQ</h2></div><button type="button" class="cx-lnk" data-toast="Opens the help center.">Help center</button></div><div class="cx-faq">${CXFAQ.map((f,i)=>`<details ${i?'':'open'}><summary>${f[0]}</summary><p>${f[1]}</p></details>`).join('')}</div></div></section>`;
 const cxFooter=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
@@ -1149,7 +1151,7 @@ const SPARK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6
 /* first screen: one plain headline with the live campus name (Founder, Oct 30); no second line, no full stop.
    The campus word takes its school's official colour; the whole line never wraps, so on narrow phones the size steps down until it fits. */
 const campusShort=()=>schoolName(plan.school).split(' · ')[0];
-const SCHOOL_COLOR={'nu-evn':'#4E2A84','nu-chi':'#4E2A84'};
+const SCHOOL_COLOR={'nu-evn':'#4E2A84','nu-chi':'#4E2A84','chi-dt':'#4E2A84'};
 const fitHead=()=>{const h=$('.h-head h1');if(!h)return;h.style.fontSize='';let fs=parseFloat(getComputedStyle(h).fontSize);while(fs>20&&h.scrollWidth>h.clientWidth){fs-=1;h.style.fontSize=fs+'px'}};
 const headHtml=()=>{requestAnimationFrame(fitHead);return `<h1>Sublets near <span class="camp" style="--sc:${SCHOOL_COLOR[plan.school]||'#222'}">${campusShort()}</span></h1>`};
 window.addEventListener('resize',fitHead);
@@ -1408,9 +1410,11 @@ new ResizeObserver(rvh).observe($('#rv'));
 current='orbit';
 cardStyle=new URLSearchParams(location.search).get('cs')||'chip';$$('[data-cs]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cs===cardStyle));
 const wantAi=new URLSearchParams(location.search).get('ai')==='1';
+window.RL_onAuth=()=>show(current,true);
 if(location.hash)renderRoute();else show(current);
 /* from another page's AI pick button: open A4 and pick right away */
 if(wantAi&&current==='orbit')setTimeout(()=>window.__a4&&window.__a4.spin(),reduced?0:1100);
 </script>
+<script type="module" src="/src/rentlet.ts"></script>
 </body>
 </html>

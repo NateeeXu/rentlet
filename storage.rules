@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// Rentlet file rules. Listing photos and tour videos are public to view; only a signed-in,
+// verified Northwestern Google account can upload, and only into its own folder.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isNU() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower().matches('.*@(u[.])?northwestern[.]edu');
+    }
+
+    function mine(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // listing photos: listings/{uid}/{fileName}
+    match /listings/{uid}/{fileName} {
+      allow read: if true;
+      allow create: if isNU() && mine(uid)
+        && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow delete: if mine(uid);
+      allow update: if false;
+    }
+
+    // video walk-throughs (up to about 60 seconds): videos/{uid}/{fileName}
+    match /videos/{uid}/{fileName} {
+      allow read: if true;
+      allow create: if isNU() && mine(uid)
+        && request.resource.size < 60 * 1024 * 1024
+        && request.resource.contentType.matches('video/(mp4|quicktime|webm)');
+      allow delete: if mine(uid);
+      allow update: if false;
+    }
+
+    match /{everything=**} {
+      allow read, write: if false;
+    }
+  }
+}

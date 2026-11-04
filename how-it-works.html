@@ -139,25 +139,27 @@ img{display:block}
 }
 </style>
 <style id="rentlet-base">
+.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
+<script src="/rentlet-boot.js"></script>
 </head>
 <body>
 <div class="site">
 <header class="hdr"><div class="wrap">
   <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
-  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="how-it-works.html" aria-current="page">How it works</a><a href="messages.html">Messages</a></nav>
+  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a></nav>
   <div class="hdr-right">
     <a class="btn btn-ghost hide-s" href="request.html">Post a request</a>
     <a class="btn btn-secondary hide-s" href="post.html">Post a listing</a>
-    <button type="button" class="btn btn-ghost" data-toast="Sign in with your Northwestern Google account.">Sign in</button>
+    <span id="rlAuth" style="display:contents"></span><script>document.getElementById("rlAuth").innerHTML=RL.authed?`<a class="rl-me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button type="button" class="btn btn-ghost" data-rl-signin>Sign in</button>`</script>
     <button type="button" class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   </div>
-  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><a href="how-it-works.html" aria-current="page">How it works</a><a href="messages.html">Messages</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav>
+  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav>
 </div></header>
 
 <main>
@@ -210,7 +212,7 @@ const FAQ=[
   ['How are listings checked?','Every public listing and request is checked before it goes live.'],
   ['When is my contact information shared?','Only when you both agree. Until then you talk inside Rentlet.'],
   ['Can I use it if I’m not a student?','Yes. Rooms are listed by campus area, so they also suit interns and new hires nearby. You can verify with a work email.'],
-  ['Which areas do you cover?','Places near Northwestern’s Evanston and Chicago campuses.'],
+  ['Which areas do you cover?','Places near Northwestern’s Evanston and Chicago campuses, and in downtown Chicago.'],
   ['How long until my listing is live?','Once it’s checked. You get the listing number when it’s live.'],
   ['What happens after my move-in date?','Rentlet steps out once you’ve agreed. Rent, repairs and the deposit are between you, the host and the landlord. When a listing’s dates pass, its page shows that the sublet has ended.']];
 $('[data-nots]').innerHTML=NOTS.map(x=>`<li><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg><span>${x}</span></li>`).join('');
@@ -243,5 +245,6 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu(true)});
 </script>
+<script type="module" src="/src/rentlet.ts"></script>
 </body>
 </html>

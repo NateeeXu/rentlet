@@ -50,7 +50,7 @@ service cloud.firestore {
     function validListing(d) {
       return d.ownerId is string
         && d.kind in ['sublet', 'takeover']
-        && d.campus in ['evanston', 'chicago']
+        && d.campus in ['evanston', 'chicago', 'downtown']
         && d.title is string && d.title.size() > 0 && d.title.size() <= 120
         && d.price is int && d.price > 0 && d.price <= 20000
         && isDate(d.start) && isDate(d.end) && d.start < d.end
@@ -78,7 +78,7 @@ service cloud.firestore {
     // ---------- requests (people looking for a place) ----------
     function validRequest(d) {
       return d.ownerId is string
-        && d.campus in ['evanston', 'chicago']
+        && d.campus in ['evanston', 'chicago', 'downtown']
         && isDate(d.start) && isDate(d.end) && d.start < d.end
         && d.budget is int && d.budget > 0 && d.budget <= 20000
         && d.status in ['open', 'closed']

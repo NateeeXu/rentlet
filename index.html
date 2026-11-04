@@ -744,6 +744,12 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
   .cx-post h2{font-size:24px}
 }
 @media (prefers-reduced-motion:reduce){.cx-swap>*{animation:none}.cx-seg .ind,.cx-card .cfx{transition:none}}
+
+/* Rentlet: no rooms at this place yet */
+.h-a4 .reel.none,.h-a4 .reel.none~.reel-ctl{visibility:hidden}
+.reel-none{position:relative;z-index:2;max-width:420px;margin:96px auto 0;text-align:center}
+.reel-none p{margin:0 0 16px;font-size:16px;color:var(--ink2)}
+.reel-none[hidden]{display:none}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
@@ -766,7 +772,7 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>document.getElementById("stage").appendChild(document.getElementById("toast"))</script>
 
-<script src="where-search.js?v=178e1e53"></script>
+<script src="where-search.js?v=50645075"></script>
 <script src="when-picker.js?v=7860cfd6"></script>
 <script src="budget-picker.js?v=552d4e21"></script>
 <script>
@@ -809,24 +815,13 @@ const SCHOOLS=[
 ];
 const schoolName=id=>SCHOOLS.flatMap(g=>g.items).find(i=>i[0]===id)?.[1]||'';
 const schoolSelect=(id,sel)=>`<select id="${id}">${SCHOOLS.map(g=>`<optgroup label="${g.group}">${g.items.map(([v,t])=>`<option value="${v}" ${v===sel?'selected':''}>${t}</option>`).join('')}</optgroup>`).join('')}</select>`;
-const L=[
-  {id:1,title:'Private room in a 3-bed',area:'Downtown Evanston',walk:9,price:1390,start:'2027-01-02',end:'2027-04-30',type:'Short sublet',who:'Maya',img:'bedroom'},
-  {id:2,title:'Entire 1-bed apartment',area:'South Evanston',walk:22,price:1540,start:'2027-01-01',end:'2027-06-30',type:'Lease takeover',who:'Leo',img:'living'},
-  {id:3,title:'Private room, shared kitchen',area:'Southeast Evanston',walk:15,price:1250,start:'2027-02-01',end:'2027-06-30',type:'Short sublet',who:'Priya',img:'living',flip:1,pos:'65% 50%'},
-  {id:4,title:'Studio with a desk nook',area:'Downtown Evanston',walk:11,price:1480,start:'2026-12-20',end:'2027-03-15',type:'Short sublet',who:'Sam',img:'bedroom',flip:1,pos:'30% 50%'},
-  {id:5,title:'Private room in a 2-bed',area:'North Evanston',walk:18,price:1180,start:'2027-01-05',end:'2027-05-31',type:'Lease takeover',who:'Ava',img:'kitchen'},
-  {id:6,title:'Private room by the lake',area:'Northeast Evanston',walk:6,price:1620,start:'2027-01-03',end:'2027-04-30',type:'Short sublet',who:'Noah',img:'kitchen',flip:1,pos:'70% 50%'}
-];
-const Q=[
-  {who:'Jordan',role:'Grad student, Kellogg',kind:'Private room',start:'2027-01-05',end:'2027-04-30',budget:1450,note:'Quiet place close to the Kellogg building. Doesn’t smoke.'},
-  {who:'Mei',role:'Software engineer, new job',kind:'Room or studio',start:'2027-01-03',end:'2027-03-20',budget:1500,note:'Starting a job downtown; wants a furnished place for the first three months.'},
-  {who:'Alex',role:'Software intern',kind:'Private room',start:'2027-01-10',end:'2027-03-25',budget:1600,note:'Winter internship. Needs a desk and good Wi-Fi.'},
-  {who:'Sofia',role:'Visiting researcher',kind:'Any place',start:'2027-01-02',end:'2027-06-15',budget:1350,note:'Works in a lab on campus; happy to share a kitchen.'},
-  {who:'Priya',role:'Exchange student',kind:'Private room',start:'2027-03-28',end:'2027-06-12',budget:1300,note:'Here for the spring quarter only.'},
-  {who:'Sam',role:'Analyst, new role in Chicago',kind:'Studio',start:'2027-06-01',end:'2027-08-31',budget:1700,note:'Moving for a new role and open to taking over a lease.'},
-  {who:'Leo',role:'Summer intern',kind:'Private room',start:'2027-06-14',end:'2027-08-20',budget:1400,note:'Summer internship; flexible by about a week.'},
-  {who:'Hana',role:'PhD student',kind:'Private room',start:'2027-01-02',end:'2027-08-31',budget:1250,note:'Needs a room for two quarters and the summer.'}
-];
+/* live listings from Firestore (src/listings.ts toCard rows), newest first; filled by RL_onListings */
+const L=[];let LOADED=false;
+/* a listing photo is a full URL; the bundled images are short names */
+const pic=x=>!x?'data:image/gif;base64,R0lGODlhAQABAAAAACw=':(/[\/:]/.test(x)?x:`img/${x}.jpg`);
+const agoOf=ms=>{const m=Math.max(0,Math.round((Date.now()-ms)/6e4));if(m<2)return 'Posted just now';if(m<60)return `Posted ${m} minutes ago`;const h=Math.round(m/60);if(h<24)return `Posted ${h} hour${h>1?'s':''} ago`;const d=Math.round(h/24);if(d<2)return 'Posted yesterday';if(d<7)return `Posted ${d} days ago`;const w=Math.round(d/7);return w<2?'Posted last week':`Posted ${w} weeks ago`};
+/* requests from people looking (filled when requests are connected) */
+const Q=[];
 /* showcase pairs for the heroes (illustrative, not inventory) */
 const DEFAULT={school:'nu-evn',start:'2027-01-03',end:'2027-04-30',budget:1500};
 const MINE={school:'nu-evn',start:'2027-01-02',end:'2027-04-30',budget:1390};
@@ -861,7 +856,7 @@ const priceTag=l=>`<span class="price"><b>${money(l.price)}</b><span class="unit
 function hcard(l,p,i){
   const [s1,t1]=legStart(l,p),[s2,t2]=legEnd(l,p);
   return `<article class="card rise" style="--i:${Math.min(i,7)}" data-id="${l.id}" tabindex="0" aria-label="${l.title}, ${l.area}, ${money(l.price)} per month">
-    <div class="ph"><img src="img/${l.img}.jpg" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ph-tag">${l.type}</span><button class="save" aria-label="Save ${l.title}" aria-pressed="false">${ic('heart')}</button><span class="walk">${ic('walk','sm')}${l.walk} min to campus</span></div>
+    <div class="ph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ph-tag">${l.type}</span><button class="save" aria-label="Save ${l.title}" aria-pressed="false">${ic('heart')}</button><span class="walk">${ic('walk','sm')}${l.walk} min to campus</span></div>
     <div class="cb">
       <div class="ct"><h3>${l.title}</h3>${priceTag(l)}</div>
       <p class="meta">${l.area} · ${ic('shield','sm')}${l.who}, verified student</p>
@@ -924,8 +919,8 @@ const searchBlock=()=>{
     <div class="field"><label for="sBud">${o.l4}</label><select id="sBud">${opts.map(v=>`<option value="${v}" ${v===p.budget?'selected':''}>${o.pre}${money(v)}</option>`).join('')}</select></div>
     <button class="btn btn-primary" type="submit">${ic('search','sm')}${o.go}</button></form>`;
 };
-const resHead=(h,s)=>`<div class="res-head"><div><h2>${h}</h2><p class="sub">${s}</p></div><span class="example">Example listings · placeholder photos</span></div>`;
-const noPlaces=s=>empty(`No places near ${schoolName(s)} yet`,'Our example places are at Northwestern · Evanston for now. Get an alert when someone posts near your school.',`<button class="link" data-toast="You'll get an email when a place is posted.">Get alerts</button><button class="link" data-reset>See Evanston places</button>`);
+const resHead=(h,s)=>`<div class="res-head"><div><h2>${h}</h2><p class="sub">${s}</p></div></div>`;
+const noPlaces=s=>empty(`No places near ${schoolName(s)} yet`,'Be the first to post a place here.',`<button class="link" onclick="location.href='post.html'">Post a listing</button>`);
 function results(){
   const el=$('#res');
   if(mode==='need'){return cxResults(el);
@@ -975,35 +970,37 @@ const FICONS={walk:ICONS.walk,sofa:'<path d="M4 11.5V9a2 2 0 0 1 2-2h12a2 2 0 0 
 const fic=k=>`<svg class="fi" viewBox="0 0 24 24" aria-hidden="true">${FICONS[k]}</svg>`;
 const ltype=l=>l.title.startsWith('Private room')?'Private room':l.title.startsWith('Entire')?'Entire place':'Studio';
 let CXF='All',CXS='fit',CXALR=null,CXFREQ='instant';const CXSAVED=new Set();
-function cxCard(l,i,sub){const f=LFACTS[l.id]||['','',''];
-  return `<article class="cx-card" role="link" tabindex="0" data-cxhref="room.html?room=l${l.id}" style="--i:${i}" aria-label="${l.title}, ${l.area}, ${money(l.price)} a month. ${l.walk} min walk to campus, ${f.join(', ')}">
-    <div class="cph"><img src="img/${l.img}.jpg" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ctg">${wl(l.start,l.end)}</span>
+const lfacts=l=>[l.furnished?'Furnished':'Not furnished',l.bath==='private'?'Private bath':'Shared bath',l.laundry?'Laundry in building':'Ask about laundry'];
+const walkTx=l=>l.walk!=null?`${l.walk} min walk`:'';
+function cxCard(l,i,sub){const f=lfacts(l);
+  return `<article class="cx-card" role="link" tabindex="0" data-cxhref="room.html?room=${l.key}" style="--i:${i}" aria-label="${l.title}, ${l.area}, ${money(l.price)} a month. ${[walkTx(l)&&walkTx(l)+' to campus',...f].filter(Boolean).join(', ')}">
+    <div class="cph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ctg">${wl(l.start,l.end)}</span>
       <button type="button" class="csv" data-cxsave="${l.id}" aria-pressed="${CXSAVED.has(l.id)}" aria-label="Save ${l.title}">${ic('heart')}</button>
-      <span class="cfx" aria-hidden="true"><span>${fic('walk')}${l.walk} min to campus</span><span>${fic('sofa')}${f[0]}</span><span>${fic('bath')}${f[1]}</span><span>${fic('wash')}${f[2]}</span></span></div>
-    <div class="cbd"><div class="ct"><span>${l.title.replace(/-/g,'\u2011')}</span><b>${money(l.price)}<small> / mo</small></b></div><div class="cm">${l.area}</div><div class="cf">${sub}</div><div class="cf2">${l.walk} min walk · ${f[0]} · ${f[1]}</div></div></article>`}
+      <span class="cfx" aria-hidden="true">${l.walk!=null?`<span>${fic('walk')}${l.walk} min to campus</span>`:''}<span>${fic('sofa')}${f[0]}</span><span>${fic('bath')}${f[1]}</span><span>${fic('wash')}${f[2]}</span></span></div>
+    <div class="cbd"><div class="ct"><span>${l.title.replace(/-/g,'\u2011')}</span><b>${money(l.price)}<small> / mo</small></b></div><div class="cm">${l.area}</div><div class="cf">${sub}</div><div class="cf2">${[walkTx(l),f[0],f[1]].filter(Boolean).join(' · ')}</div></div></article>`}
 const cxEmpty=(t,x,a='')=>`<div class="cx-empty"><h3>${t}</h3><p>${x}</p>${a}</div>`;
 function cxPlaceInd(root=document){$$('.cx-seg',root).forEach(sg=>{const b=$('[aria-selected=true]',sg),i=$('.ind',sg);if(b&&i){i.style.width=b.offsetWidth+'px';i.style.transform=`translateX(${b.offsetLeft}px)`}})}
 /* rooms for the search in the bar */
-function cxResults(el){const p=plan,head=`<div class="cx-sh"><div><h2>Rooms opening when you arrive</h2><p>${schoolName(p.school)} · ${range(p.start,p.end)} · ${budPer(p.budget)}</p></div><div class="cx-acts"><button type="button" class="cx-svs" data-cxsavesearch>${ic('bell','sm')}Save search</button></div></div>`;
+function cxResults(el){const p=plan,head=`<div class="cx-sh"><div><h2>Rooms opening when you arrive</h2><p>${schoolName(p.school)} · ${range(p.start,p.end)} · ${budPer(p.budget)}</p></div></div>`;
   let shown=[];
   if(nights(p.start,p.end)<=0)el.innerHTML=head+cxEmpty('Check your dates','Your move-out date needs to be after your move-in date.');
-  else if(p.school!=='nu-evn')el.innerHTML=head+cxEmpty(`No rooms near ${schoolName(p.school)} yet`,'Example rooms are at Northwestern · Evanston for now. Save this search and we’ll email you when someone posts here.',`<button type="button" class="cx-lnk" data-reset>See Evanston rooms</button>`);
-  else{const all=L.filter(l=>fit(l,p).ok);shown=all.map(l=>l.id);
-    if(!all.length)el.innerHTML=head+cxEmpty('Nothing lines up with these dates yet','Try moving your dates by a week or two, or raise your budget a little. Or save this search below.',`<button type="button" class="cx-lnk" data-reset>Reset to the example</button>`);
+  else if(!LOADED)el.innerHTML=head+`<div class="cx-grid">${skeleton(3)}</div>`;
+  else if(!L.some(l=>l.school===p.school))el.innerHTML=head+cxEmpty(`No rooms near ${schoolName(p.school)} yet`,'Be the first to post a place here. Northwestern students looking nearby will see it right away.',`<button type="button" class="cx-lnk" onclick="location.href='post.html'">Post a listing</button>`);
+  else{const all=L.filter(l=>l.school===p.school&&fit(l,p).ok);shown=all.map(l=>l.id);
+    if(!all.length)el.innerHTML=head+cxEmpty('Nothing lines up with these dates yet','Try moving your dates by a week or two, or raise your budget a little.',`<button type="button" class="cx-lnk" data-reset>Reset the search</button>`);
     else{const types=['All','Private room','Entire place','Studio'].filter(k=>k==='All'||all.some(l=>ltype(l)===k));if(!types.includes(CXF))CXF='All';
       const list=all.filter(l=>CXF==='All'||ltype(l)===CXF).sort((a,b)=>CXS==='price'?a.price-b.price:fit(b,p).score-fit(a,p).score);
-      const over=L.filter(l=>{const r=fit(l,p);return !r.ok&&(r.whole||r.ov>=30)&&l.price>p.budget*1.05}).length;
+      const over=L.filter(l=>{const r=fit(l,p);return l.school===p.school&&!r.ok&&(r.whole||r.ov>=30)&&l.price>p.budget*1.05}).length;
       el.innerHTML=head+`<div class="cx-tbar"><div class="cx-chips">${types.map(k=>`<button type="button" class="cx-chip" data-cxf="${k}" aria-pressed="${CXF===k}">${k}<em>${k==='All'?all.length:all.filter(l=>ltype(l)===k).length}</em></button>`).join('')}</div>
         <div class="cx-seg"><i class="ind"></i><button type="button" data-cxs="fit" aria-selected="${CXS==='fit'}">Best fit</button><button type="button" data-cxs="price" aria-selected="${CXS==='price'}">Lowest price</button></div></div>
         <div class="cx-grid cx-swap">${list.map((l,i)=>{const r=fit(l,p);return cxCard(l,i,r.whole?'Covers your whole stay':`${Math.floor(r.ov/r.need*100)}% fits your dates`)}).join('')}</div>${over?`<p class="more-note">${plural(over,'more room')} ${over===1?'is':'are'} more than 5% over your budget.</p>`:''}`}}
   requestAnimationFrame(()=>cxPlaceInd(el));cxJust(shown);cxCrit()}
 /* newest rooms, whatever the dates; leaves out what is already above, and hides itself when nothing is left */
-const POSTED_ORDER=[6,1,3,5,4,2],POSTED_AGO=['Posted 2 hours ago','Posted today','Posted yesterday','Posted 2 days ago','Posted 3 days ago','Posted last week'];
 /* Just posted: the newest rooms at this campus, leaving out the ones already in the results above.
    It never shows fewer than three: when too few are left, the newest of those above fill it up to three;
    a campus with fewer than three rooms has no Just posted section at all. */
 const JUST_MIN=3;
-function cxJust(shown){const box=$('#cxJustBox');if(!box)return;const all=plan.school==='nu-evn'?POSTED_ORDER.map((id,k)=>[L.find(l=>l.id===id),POSTED_AGO[k]]):[];
+function cxJust(shown){const box=$('#cxJustBox');if(!box)return;const all=L.filter(l=>l.school===plan.school).sort((a,b)=>b.createdAtMs-a.createdAtMs).map(l=>[l,agoOf(l.createdAtMs)]);
   const fresh=all.filter(([l])=>!shown.includes(l.id));let list=fresh.length>=JUST_MIN?fresh:fresh.concat(all.filter(([l])=>shown.includes(l.id))).slice(0,JUST_MIN);if(list.length<JUST_MIN)list=[];
   box.innerHTML=list.length?`<section class="cx-sec"><div class="wrap"><div class="cx-sh"><div><h2>Just posted</h2><p>The newest rooms near ${schoolName(plan.school)}, whatever the dates.</p></div>${list.length>3?`<div class="cx-nav"><button type="button" class="cx-nb" data-cxrail="-1" aria-label="Scroll left">${ic('back')}</button><button type="button" class="cx-nb" data-cxrail="1" aria-label="Scroll right">${ic('arrow')}</button></div>`:''}</div>
     <div class="cx-rail" id="cxRail">${list.map(([l,ago],i)=>cxCard(l,i,ago)).join('')}</div></div></section>`:''}
@@ -1030,11 +1027,11 @@ function cxSheet(i){const q=Q[i],m=document.createElement('div');m.className='cx
 let postMode='line';try{postMode=localStorage.getItem('cs-home-post')||'line'}catch(_){}
 const cxPost=()=>{
   if(postMode==='cut')return '';
-  if(postMode==='line')return `<section class="cx-sec cx-postline"><div class="wrap"><p><span>Leaving a room near <span data-pcamp>${campusShort()}</span>? <b>${Q.length} people</b> above need one for these dates.</span><button type="button" class="btn btn-secondary" onclick="location.href='post.html'">Post a listing</button></p></div></section>`;
+  if(postMode==='line')return `<section class="cx-sec cx-postline"><div class="wrap"><p><span>Leaving a room near <span data-pcamp>${campusShort()}</span>? ${Q.length?`<b>${Q.length} people</b> above need one for these dates.`:'Post it in a few steps. It’s live as soon as you publish.'}</span><button type="button" class="btn btn-secondary" onclick="location.href='post.html'">Post a listing</button></p></div></section>`;
   if(postMode==='strip')return `<section class="cx-sec"><div class="wrap"><div class="cx-post strip"><div><h2>Moving out?</h2><p>Post the room you’re leaving. The people above need these dates near <span data-pcamp>${campusShort()}</span>.</p><button type="button" class="go" onclick="location.href='post.html'">Post a listing</button></div></div></div></section>`;
   return OLD_POST()};
 const OLD_POST=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-post"><div><h2>Leaving early?<br>Someone’s arriving.</h2><p>Moving for a new job, an internship or a semester abroad? Post your room and see people who need those dates.</p>
-  <ul><li>${ic('check','sm')}Post in a few steps; drafts save themselves</li><li>${ic('check','sm')}Reviewed within 24 hours</li><li>${ic('check','sm')}Edit, hide or repost any time</li></ul><button type="button" class="go" onclick="location.href='post.html'">${ic('plus')}Post a listing</button></div>
+  <ul><li>${ic('check','sm')}Post in a few steps; drafts save themselves</li><li>${ic('check','sm')}Live as soon as you publish</li><li>${ic('check','sm')}Edit, hide or repost any time</li></ul><button type="button" class="go" onclick="location.href='post.html'">${ic('plus')}Post a listing</button></div>
   <div class="cx-pimg"><img src="img/living.jpg" alt=""></div></div></div></section>`;
 const CXFAQ=[['Is Rentlet a broker?','No. Rentlet is a place for Northwestern students to post and find sublets and lease takeovers, and to talk to each other. We don’t act as an agent for either side.'],
  ['Do you collect rent or deposits?','No. You pay the other person or the building directly. Before you pay, check the lease, the landlord’s or building’s approval, and who receives the money.'],
@@ -1053,7 +1050,7 @@ const cxFooter=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fco
 
 /* ---------- hero A1: ticket reel ---------- */
 let cardStyle='chip';
-function sqCard(p,dup){const d=`${md(p.start)}${ic('arrow')}<span class="in">${md(p.youIn)}</span>`;return `<a class="sq" href="#/place/${p.key}" data-place="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${p.title}, ${p.school}. ${p.who} leaves ${md(p.start)}, you arrive ${md(p.youIn)}. ${money(p.price)} per month."><img src="img/${p.img}.jpg" alt="" class="${p.flip?'flip':''}" style="object-position:${p.pos||'50% 50%'}"><span class="sq-view">View room${ic('arrow')}</span><span class="sq-chip">${d}</span><span class="sq-info"><span class="d">${d}</span><small><span>${p.school}</span><b>${money(p.price)}</b></small></span></a>`}
+function sqCard(p,dup){const d=`${md(p.start)}${ic('arrow')}<span class="in">${md(p.youIn)}</span>`;return `<a class="sq" href="#/place/${p.key}" data-place="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${p.title}, ${p.school}. ${p.who} leaves ${md(p.start)}, you arrive ${md(p.youIn)}. ${money(p.price)} per month."><img src="${pic(p.img)}" alt="" class="${p.flip?'flip':''}" style="object-position:${p.pos||'50% 50%'}"><span class="sq-view">View room${ic('arrow')}</span><span class="sq-chip">${d}</span><span class="sq-info"><span class="d">${d}</span><small><span>${p.school}</span><b>${money(p.price)}</b></small></span></a>`}
 function heroReel(){
   const t=ROOMS.map(p=>sqCard(p)).join('')+ROOMS.map(p=>sqCard(p,1)).join('');
   return `<section class="hero h-reel"><div class="wrap">
@@ -1085,7 +1082,7 @@ function roomPage(m){
   return `<main class="dt"><div class="wrap">
     <button class="btn btn-ghost back" data-back>${ic('back','sm')}Back to rooms</button>
     <div class="dt-grid">
-      <div class="dt-ph"><img src="img/${m.img}.jpg" alt="${m.title}" class="${m.flip?'flip':''}" style="object-position:${m.pos||'50% 50%'};view-transition-name:hero-photo"><span class="ph-tag">${m.type}</span></div>
+      <div class="dt-ph"><img src="${pic(m.img)}" alt="${m.title}" class="${m.flip?'flip':''}" style="object-position:${m.pos||'50% 50%'};view-transition-name:hero-photo"><span class="ph-tag">${m.type}</span></div>
       <div class="dt-side">
         <p class="dt-school">${m.school}</p>
         <h1>${m.title}</h1>
@@ -1127,24 +1124,15 @@ addEventListener('popstate',()=>transition(renderRoute));
 let barSkin='glass';
 const mdy=s=>`${md(s)}, ${s.slice(0,4)}`;
 /* example rooms per campus; Evanston rooms are the ones with full room pages */
-const CAMPUS_ROOMS={
-  'nu-evn':L.map(l=>({...l,key:'l'+l.id})),
-  'nu-chi':[
-    ['Private room near the lake','Streeterville',8,1690,'2027-01-02','2027-05-15','Short sublet','Grace','kitchen',1],
-    ['Studio with city views','River North',14,1820,'2027-01-01','2027-04-30','Lease takeover','Omar','living'],
-    ['Room in a 2-bed walk-up','Gold Coast',12,1540,'2027-01-05','2027-06-30','Short sublet','Lena','bedroom'],
-    ['Entire 1-bed apartment','Streeterville',6,2150,'2026-12-20','2027-05-31','Lease takeover','Chris','living',1],
-    ['Private room, shared kitchen','River North',16,1460,'2027-01-03','2027-03-31','Short sublet','Zoe','kitchen'],
-    ['Quiet room by the river','Old Town',20,1390,'2027-01-10','2027-04-30','Short sublet','Ben','bedroom',1]]
-};
-for(const k in CAMPUS_ROOMS)if(k!=='nu-evn')CAMPUS_ROOMS[k]=CAMPUS_ROOMS[k].map(([title,area,walk,price,start,end,type,who,img,flip],i)=>({key:`${k}-${i+1}`,title,area,walk,price,start,end,type,who,img,flip}));
+/* reel rooms per place, rebuilt from L whenever listings change */
+const CAMPUS_ROOMS={};
 /* each card takes its cover photo's shape: height follows the size tier, width = height × photo ratio.
    In the product the ratio comes from the uploaded cover (width / height), clamped to 3:4 … 16:9 and cropped beyond that. */
 const RATIO=[16/9,3/4,4/3,1,16/9,3/4,4/3],TIER=[350,320,285];
 const ratioOf=(p,i)=>Math.max(.75,Math.min(16/9,p.ratio||RATIO[i%RATIO.length]));
-const roomsHere=()=>CAMPUS_ROOMS[plan.school]||CAMPUS_ROOMS['nu-evn'];
+const roomsHere=()=>CAMPUS_ROOMS[plan.school]||[];
 function a4Card(p,i,dup){const h=TIER[i%3],w=Math.round(h*ratioOf(p,i));
-  return `<a class="sq m${i%3}" style="width:${w}px;height:${h}px" href="room.html?room=${p.key}" data-a4room="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${p.title}, ${p.area}. ${wl(p.start,p.end)}. ${money(p.price)} per month."><img src="img/${p.img}.jpg" alt="" class="${p.flip?'flip':''}"><span class="sq-chip">${wl(p.start,p.end)}</span></a>`} /* the room's own dates, in the site's one format; the old "their move-out → your move-in" chip is gone with the hand-off motif */
+  return `<a class="sq m${i%3}" style="width:${w}px;height:${h}px" href="room.html?room=${p.key}" data-a4room="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${p.title}, ${p.area}. ${wl(p.start,p.end)}. ${money(p.price)} per month."><img src="${pic(p.img)}" alt="" class="${p.flip?'flip':''}"><span class="sq-chip">${wl(p.start,p.end)}</span></a>`} /* the room's own dates, in the site's one format; the old "their move-out → your move-in" chip is gone with the hand-off motif */
 /* three identical copies so one straight reel can cross the page */
 const a4Track=()=>{const R=roomsHere(),one=dup=>R.map((p,i)=>a4Card(p,i,dup)).join('');return one()+one(1)+one(1)};
 const SPARK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/><path d="M19 15.5c.2 1.8 1.2 2.8 3 3-1.8.2-2.8 1.2-3 3-.2-1.8-1.2-2.8-3-3 1.8-.2 2.8-1.2 3-3z"/></svg>';
@@ -1167,7 +1155,8 @@ function heroOrbit(){
       <div class="go4"><button type="button" class="ai4" id="spin4" aria-label="Let AI pick three rooms"><span class="sheen" aria-hidden="true"></span><span class="ic">${SPARK}</span><span class="t">AI pick</span></button><button type="submit" class="find4" aria-label="Find rooms">${ic('search','sm')}<span class="t">Search</span></button></div>
       <span class="spec" aria-hidden="true"></span>
     </form>
-    <div class="reel" id="reel" data-style="chip" role="region" aria-label="Example rooms"><div class="reel-plane"><div class="reel-track">${a4Track()}</div></div></div>
+    <div class="reel" id="reel" data-style="chip" role="region" aria-label="Rooms near campus"><div class="reel-plane"><div class="reel-track">${a4Track()}</div></div></div>
+    <div class="reel-none" id="reelNone" hidden><p>No rooms near <span data-ncamp>${schoolName(plan.school)}</span> yet.</p><button type="button" class="btn btn-secondary" onclick="location.href='post.html'">Post a listing</button></div>
     <div class="reel-ctl"><button class="icon-btn" id="reelBtn" aria-label="Pause moving cards">${ic('pause')}</button></div>
     <div class="search-wrap" id="searchWrap" hidden>${searchBlock()}</div>
   </div><div class="fly4" id="fly4"></div></section>`;
@@ -1182,7 +1171,7 @@ function bindOrbit(){
 
   /* reel geometry is rebuilt whenever the campus changes */
   let items,half,step;
-  const measure=()=>{items=$$('.sq',track);const n=roomsHere().length;half=items[n].offsetLeft-items[0].offsetLeft;step=half/n};
+  const measure=()=>{items=$$('.sq',track);const n=roomsHere().length;reel.classList.toggle('none',!n);const none=$('#reelNone');if(none){none.hidden=!!n;$('[data-ncamp]',none).textContent=schoolName(plan.school)}if(!n){half=1;step=1;return}half=items[n].offsetLeft-items[0].offsetLeft;step=half/n};
   const wrapX=x=>((x%half)+half)%half-half,place=()=>{track.style.transform=`translateX(${st.x}px)`};
   track.style.animation='none';measure();st.x=-step*.4;place();
   function swapCampus(){redrawHead();savePlan(plan.start,plan.end);if(flying)closeFly(true);reel.classList.remove('reel-swap');void reel.offsetWidth;if(!reduced)reel.classList.add('reel-swap');
@@ -1294,7 +1283,7 @@ function bindOrbit(){
     /* best match in the middle, the other two on either side */
     const order=picks.length===3?[1,0,2]:picks.length===2?[0,1]:[0];
     fly.innerHTML=`<div class="fly4-bg"></div><button class="fly4-x" data-a4back aria-label="Back to all rooms">${ic('close')}</button><button class="fly4-nav" id="f4prev" aria-label="Previous pick">${ic('back')}</button><button class="fly4-nav" id="f4next" aria-label="Next pick">${ic('arrow')}</button><div class="fly4-dots"></div><div class="fly4-pick"></div>`;
-    flying={center:order.indexOf(0),cards:order.map(i=>{const pk=picks[i],el=document.createElement('a');el.className='fly4-card';el.href=`room.html?room=${pk.p.key}`;el.innerHTML=`<img src="img/${pk.p.img}.jpg" alt="${pk.p.title}" class="${pk.p.flip?'flip':''}">`+cardHtml(pk,i);fly.appendChild(el);return{pk,el,src:srcs[i],rank:i}})};
+    flying={center:order.indexOf(0),cards:order.map(i=>{const pk=picks[i],el=document.createElement('a');el.className='fly4-card';el.href=`room.html?room=${pk.p.key}`;el.innerHTML=`<img src="${pic(pk.p.img)}" alt="${pk.p.title}" class="${pk.p.flip?'flip':''}">`+cardHtml(pk,i);fly.appendChild(el);return{pk,el,src:srcs[i],rank:i}})};
     lockReel();fly.classList.add('on');st.picked=true;layout();
     flying.cards.forEach(c=>{const el=c.el;el.onclick=e=>{const i=flying.cards.indexOf(c);if(i!==flying.center){e.preventDefault();flying.center=i;layout()}}});
     $('#f4prev').onclick=()=>{if(flying.center>0){flying.center--;layout()}};$('#f4next').onclick=()=>{if(flying.center<flying.cards.length-1){flying.center++;layout()}};
@@ -1364,13 +1353,13 @@ function show(k,keep){
   $('#note').innerHTML=NOTES[k].map(t=>`<p>${t}</p>`).join('');
   history.replaceState(null,'','?opt='+k);try{localStorage.setItem('cs-home-opt',k)}catch(_){}
   if(k==='c5'){site.innerHTML=`<iframe class="c5frame" src="combo.html?embed=1" title="C5 homepage"></iframe>`;return}
-  site.innerHTML=header()+`<main>${HEROES[k][0]()}<section class="results cx"><div class="wrap" id="res"></div></section><div id="cxJustBox"></div>${cxAlerts()}${cxPeople()}${cxPost()}${cxFaq()}</main>${cxFooter()}`;
+  site.innerHTML=header()+`<main>${HEROES[k][0]()}<section class="results cx"><div class="wrap" id="res"></div></section><div id="cxJustBox"></div>${Q.length?cxPeople():''}${cxPost()}${cxFaq()}</main>${cxFooter()}`;
   HEROES[k][1]();bindSearch();results();wire(site);attachWhere();if(!keep)site.scrollTop=0;
 }
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
 site.addEventListener('click',e=>{
   const t0=e.target;
-  const cs=t0.closest('[data-cxsave]');if(cs){e.preventDefault();e.stopPropagation();const id=+cs.dataset.cxsave,on=!CXSAVED.has(id);on?CXSAVED.add(id):CXSAVED.delete(id);$$(`[data-cxsave="${id}"]`).forEach(b=>b.setAttribute('aria-pressed',on));toast(on?'Saved. Sign in to keep it on every device.':'Removed from saved.');return}
+  const cs=t0.closest('[data-cxsave]');if(cs){e.preventDefault();e.stopPropagation();const id=cs.dataset.cxsave,on=!CXSAVED.has(id);on?CXSAVED.add(id):CXSAVED.delete(id);$$(`[data-cxsave="${id}"]`).forEach(b=>b.setAttribute('aria-pressed',on));toast(on?'Saved. Sign in to keep it on every device.':'Removed from saved.');return}
   const cf=t0.closest('[data-cxf]');if(cf){CXF=cf.dataset.cxf;results();return}
   const cso=t0.closest('[data-cxs]');if(cso){CXS=cso.dataset.cxs;results();return}
   const cr=t0.closest('[data-cxrail]');if(cr){const r=$('#cxRail');r.scrollBy({left:+cr.dataset.cxrail*r.clientWidth*.8,behavior:reduced?'auto':'smooth'});return}
@@ -1411,7 +1400,12 @@ current='orbit';
 cardStyle=new URLSearchParams(location.search).get('cs')||'chip';$$('[data-cs]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.cs===cardStyle));
 const wantAi=new URLSearchParams(location.search).get('ai')==='1';
 window.RL_onAuth=()=>show(current,true);
-if(location.hash)renderRoute();else show(current);
+let booted=false;const boot=()=>{if(booted)return;booted=true;if(location.hash)renderRoute();else show(current)};
+window.RL_onListings=list=>{LOADED=true;if(list)L.splice(0,L.length,...list.map(d=>RentletListings.toCard(d)));
+  for(const k of ['nu-evn','nu-chi','chi-dt'])CAMPUS_ROOMS[k]=L.filter(l=>l.school===k);
+  window.RL_SEARCH_ROOMS=L.map(l=>({key:l.key,code:l.code,title:l.title,area:l.area,layout:l.layout,price:l.price}));
+  if(!booted)boot();else show(current,true)};
+setTimeout(()=>{if(!booted){LOADED=true;boot()}},2500);
 /* from another page's AI pick button: open A4 and pick right away */
 if(wantAi&&current==='orbit')setTimeout(()=>window.__a4&&window.__a4.spin(),reduced?0:1100);
 </script>

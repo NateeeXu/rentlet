@@ -3,14 +3,8 @@
    number (the same rule as the mini program's findListingByCode, also inside pasted share text) or by area
    and layout. Room numbers and fields match room.html. */
 (function () {
-  const ROOMS = [
-    ['l1', '48271936', 'Private room in a 3-bed', 'Downtown Evanston', '3B2B', 1390, 'bedroom', 0],
-    ['l2', '73194052', 'Entire 1-bed apartment', 'South Evanston', '1B1B', 1540, 'living', 0],
-    ['l3', '26508417', 'Private room, shared kitchen', 'Southeast Evanston', '2B1B', 1250, 'living', 1],
-    ['l4', '91736284', 'Studio with a desk nook', 'Downtown Evanston', 'Studio', 1480, 'bedroom', 1],
-    ['l5', '35820679', 'Private room in a 2-bed', 'North Evanston', '2B1B', 1180, 'kitchen', 0],
-    ['l6', '60492815', 'Private room by the lake', 'Northeast Evanston', '3B2B', 1620, 'kitchen', 1]
-  ].map(([key, code, title, area, layout, price, img, flip]) => ({ key, code, title, area, layout, price, img, flip }));
+  /* live listings, when the page has them (window.RL_SEARCH_ROOMS: {key, code, title, area, layout, price}) */
+  const rooms = () => window.RL_SEARCH_ROOMS || [];
   /* the same two levels as the mini program: city / metro area first, then a campus in it */
   const CITIES = [
     ['Chicago area', [['nu-evn', 'Northwestern · Evanston'], ['nu-chi', 'Northwestern · Chicago'], ['chi-dt', 'Downtown Chicago']]]
@@ -63,14 +57,14 @@
 
   function search(q) {
     const m = String(q || '').match(CODE_RE);
-    if (m) { const code = m[0].toUpperCase(); return { code, rooms: ROOMS.filter(r => r.code === code), schools: [] }; }
+    if (m) { const code = m[0].toUpperCase(); return { code, rooms: rooms().filter(r => r.code === code), schools: [] }; }
     const t = String(q || '').trim().toLowerCase();
     if (!t) return { rooms: [], schools: [] };
     const words = t.split(/\s+/);
     const hit = hay => words.every(w => hay.toLowerCase().includes(w));
     return {
       schools: SCHOOLS.filter(([, name, city]) => hit(name + ' ' + city)),
-      rooms: t.length < 2 ? [] : ROOMS.filter(r => hit([r.title, r.area, r.layout, r.code].join(' ')))
+      rooms: t.length < 2 ? [] : rooms().filter(r => hit([r.title, r.area, r.layout, r.code].join(' ')))
     };
   }
 

@@ -10,6 +10,8 @@ import {
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { firstName, isNorthwesternEmail } from './lib/nu';
+import * as listings from './listings';
+import type { ListingDoc } from './lib/listingView';
 
 export interface RentletUser {
   uid: string;
@@ -22,6 +24,8 @@ declare global {
   interface Window {
     RL: { authed: boolean; user: RentletUser | null; initial: string; me(): string };
     RL_onAuth?: (user: RentletUser | null) => void;
+    RL_onListings?: (list: ListingDoc[] | null) => void;
+    RentletListings: typeof listings;
     Rentlet: {
       user: RentletUser | null;
       signIn(): Promise<boolean>;
@@ -169,5 +173,12 @@ onAuthStateChanged(auth, async (u) => {
   }
   apply(u ? toUser(u) : null);
 });
+
+window.RentletListings = listings;
+// pages that show listings register RL_onListings; null means the list could not load
+if (typeof window.RL_onListings === 'function') {
+  const show = window.RL_onListings;
+  listings.subscribeActive(show, () => show(null));
+}
 
 dispatchEvent(new Event('rentlet:ready'));

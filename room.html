@@ -766,7 +766,7 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
 <div class="toast" id="toast" role="status"></div>
 <script>/* overlays live inside the stage so the phone preview shows them inside the frame */
 ["msg","lb","rep","login","toast"].forEach(id=>{const e=document.getElementById(id);if(e)document.getElementById("stage").appendChild(e)})</script>
-<script src="where-search.js?v=178e1e53"></script>
+<script src="where-search.js?v=50645075"></script>
 <script src="when-picker.js?v=7860cfd6"></script>
 <script src="budget-picker.js?v=552d4e21"></script>
 <script>
@@ -785,18 +785,6 @@ const nightsBetween=(a,b)=>Math.round((T(b)-T(a))/864e5);
 /* fields that match the mini program listing record: 8-digit listing number, layout code, original rent,
    shuttle coverage (covered / not_covered / unknown), amenities from the publish options, furniture level,
    extra items, usage note, and the roommate fields (count, gender, identity, schedule, cooking, cleanliness, guests) */
-const EXTRA={
-  l1:{code:'48271936',layout:'3B2B',orig:1550,shuttle:{s:'covered',route:'Intercampus Shuttle',min:7},amen:['washer','elevator','package'],furnished:'Fully furnished',extra:'A rice cooker, a set of pans and a clothes rack.',usage:'Please keep the desk where it is; the landlord owns it.',
-      mate:{gender:'Mixed',identity:'Grad students',schedule:'Early to bed',cooking:'Cooks most nights',clean:'Weekly cleaning',guests:'Tell us first'}},
-  l2:{code:'73194052',layout:'1B1B',orig:1700,shuttle:{s:'not_covered'},amen:['washer','parking','store'],furnished:'Fully furnished',extra:'The TV, sofa and a full kitchen set stay too.',usage:''},
-  l3:{code:'26508417',layout:'2B1B',orig:0,shuttle:{s:'covered',route:'Evanston Loop',min:11},amen:['washer','package'],furnished:'Partly furnished',extra:'',usage:'The lamp stays in the room; please don’t take it out.',
-      mate:{gender:'Woman',identity:'PhD student',schedule:'Late nights OK',cooking:'Cooks most nights',clean:'Clean after use',guests:'Tell me first'}},
-  l4:{code:'91736284',layout:'Studio',orig:1600,shuttle:{s:'covered',route:'Intercampus Shuttle',min:6},amen:['elevator','gym','package','store'],furnished:'Fully furnished',extra:'A monitor and a desk mat.',usage:'The monitor stays on the desk.'},
-  l5:{code:'35820679',layout:'2B1B',orig:1300,shuttle:{s:'unknown'},amen:['washer','parking'],furnished:'Fully furnished',extra:'A rice cooker and a vacuum.',usage:'',
-      mate:{gender:'Man',identity:'Grad student',schedule:'Early riser',cooking:'Some cooking',clean:'Weekly clean-up',guests:'Weekends, with notice'}},
-  l6:{code:'60492815',layout:'3B2B',orig:0,shuttle:{s:'covered',route:'Intercampus Shuttle',min:4},amen:['washer','elevator','gym','package'],furnished:'Partly furnished',extra:'',usage:'Please don’t move furniture between rooms.',
-      mate:{gender:'Mixed',identity:'Music students',schedule:'Practise on campus',cooking:'Light cooking',clean:'Rota every week',guests:'Quiet after 10 pm'}}
-};
 /* the six amenity options from the publish page, in the same order */
 const AMEN=[['washer','Washer & dryer','<rect x="5" y="3.5" width="14" height="17" rx="2.5"/><circle cx="12" cy="13" r="4"/><path d="M8 6.5h1.5"/>'],['elevator','Elevator','<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M12 3.5v17M8.5 10l1.5-2 1.5 2M12.5 14l1.5 2 1.5-2"/>'],['gym','Gym','<path d="M6.5 8v8M17.5 8v8M4 10v4M20 10v4M6.5 12h11"/>'],['store','Store downstairs','<path d="M4.5 9.5L6 5h12l1.5 4.5M5 9.5V19h14V9.5"/><path d="M4.5 9.5c0 1.4 1.1 2.3 2.4 2.3s2.4-.9 2.4-2.3c0 1.4 1.1 2.3 2.4 2.3s2.4-.9 2.4-2.3c0 1.4 1.1 2.3 2.4 2.3s2.3-.9 2.3-2.3M10 19v-4h4v4"/>'],['package','Package room','<path d="M12 3.5l7.5 4v9L12 20.5l-7.5-4v-9z"/><path d="M4.5 7.5L12 11.5l7.5-4M12 11.5v9"/>'],['parking','Parking','<rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M10 16V8h3a2.5 2.5 0 0 1 0 5h-3"/>']];
 const LAYOUT_EN={Studio:'Studio: bedroom, living area and kitchen share one open space; the bathroom is separate.','1B1B':'1B1B: 1 bedroom and 1 bathroom, usually with a living room and kitchen.','2B1B':'2B1B: 2 bedrooms and 1 bathroom; the two bedrooms share it.','2B2B':'2B2B: 2 bedrooms and 2 bathrooms.','3B2B':'3B2B: 3 bedrooms and 2 bathrooms.','3B3B':'3B3B: 3 bedrooms and 3 bathrooms.'};
@@ -808,51 +796,12 @@ let BUDGET=BudgetPicker.load(1500);
    B: the card follows you down and the photo is shorter, C: a shorter photo with no thumbnail row) */
 let FILL='A';try{FILL=localStorage.getItem('cs-room-fill')||'A'}catch(_){}
 
-/* example rooms at Northwestern · Evanston; keys match the homepage cards */
-const ROOMS={
-  l1:{who:'Maya',role:'Junior, Medill',reply:'replies within a day',title:'Private room in a 3-bed',area:'Downtown Evanston',walk:9,price:1390,start:'2027-01-02',end:'2027-04-30',type:'Short sublet',
-      photos:[['bedroom','Bedroom'],['living','Living room',1],['kitchen','Kitchen'],['bedroom','Desk corner',1],['nu-evanston','Your walk to campus']],
-      about:'I’m studying abroad January to April, so my room is free for exactly that stretch. Quiet corner room with a big window and a real desk. Happy to do a video tour.',
-      facts:[['info-layout','1 of 3 beds','~140 sq ft'],['info-bathroom','Shared bath','With 1 roommate'],['info-floor','3rd floor','Elevator'],['wash','Laundry','In the unit']],
-      furn:['bedframe','mattress','bedding','wardrobe','desk','chair','lamp','floorlamp'],terms:'use',
-      mates:['J','R'],matesText:'2 grad students, quiet weeknights.',prefs:['smoking','pets','visitors'],util:40,deposit:500,utilText:'Electricity share',included:'Wi-Fi + heat',landlord:'wa',asks:['Video tour?','Into May?','Still free?']},
-  l2:{who:'Leo',role:'Senior, McCormick',reply:'replies within hours',title:'Entire 1-bed apartment',area:'South Evanston',walk:22,price:1540,start:'2027-01-01',end:'2027-06-30',type:'Lease takeover',
-      photos:[['living','Living room'],['bedroom','Bedroom',1],['kitchen','Kitchen',1],['living','Reading corner',1],['nu-evanston','Your walk to campus']],
-      about:'I graduate in December and the lease runs to the end of June. The whole apartment is yours: own kitchen, own bathroom, sunny living room. The furniture is yours to keep.',
-      facts:[['info-layout','Entire 1-bed','~560 sq ft'],['info-bathroom','Own bath','Private'],['info-floor','2nd floor','Walk-up'],['wash','Laundry','In the building']],
-      furn:['bedframe','mattress','wardrobe','desk','chair','floorlamp'],terms:'gift',
-      mates:[],matesText:'Just you. Quiet building, mostly grad students.',prefs:['smoking','visitors'],util:85,deposit:1540,utilText:'Electricity + gas',included:'Water',landlord:'ok',asks:['Can I see it?','Lease transfer fee?','Parking?']},
-  l3:{who:'Priya',role:'Grad student, Kellogg',reply:'replies within a day',title:'Private room, shared kitchen',area:'Southeast Evanston',walk:15,price:1250,start:'2027-02-01',end:'2027-06-30',type:'Short sublet',
-      photos:[['living','Shared living room',1],['kitchen','Kitchen'],['bedroom','Bedroom'],['bedroom','Bedroom, other side',1],['nu-evanston','Your walk to campus']],
-      about:'I’m on an internship from February. The room is bright and quiet, and the kitchen is shared with one easygoing roommate who cooks a lot.',
-      facts:[['info-layout','1 of 2 beds','~120 sq ft'],['info-bathroom','Shared bath','With 1 roommate'],['info-floor','1st floor','Garden view'],['wash','Laundry','Basement']],
-      furn:['bedframe','mattress','desk','chair','lamp'],terms:'use',
-      mates:['A'],matesText:'1 PhD student who cooks most nights.',prefs:['smoking','pets','cooking'],util:35,deposit:400,utilText:'Utilities share',included:'Wi-Fi',landlord:'wa',asks:['Video tour?','From Jan?','Still free?']},
-  l4:{who:'Sam',role:'Junior, Weinberg',reply:'replies within a day',title:'Studio with a desk nook',area:'Downtown Evanston',walk:11,price:1480,start:'2026-12-20',end:'2027-03-15',type:'Short sublet',
-      photos:[['bedroom','Studio',1],['kitchen','Kitchenette'],['living','Desk nook',1],['bedroom','Window side'],['nu-evanston','Your walk to campus']],
-      about:'I’m away for winter quarter. Small but very efficient studio with a proper desk nook and big windows. Five minutes to the train.',
-      facts:[['info-layout','Studio','~380 sq ft'],['info-bathroom','Own bath','Private'],['info-floor','5th floor','Elevator'],['wash','Laundry','In the building']],
-      furn:['bedframe','mattress','bedding','desk','chair','lamp'],terms:'use',
-      mates:[],matesText:'Just you.',prefs:['smoking','pets'],util:60,deposit:600,utilText:'Electricity',included:'Heat + water',landlord:'ok',asks:['Video tour?','Into April?','Still free?']},
-  l5:{who:'Ava',role:'Senior, SESP',reply:'replies within hours',title:'Private room in a 2-bed',area:'North Evanston',walk:18,price:1180,start:'2027-01-05',end:'2027-05-31',type:'Lease takeover',
-      photos:[['kitchen','Kitchen'],['bedroom','Bedroom'],['living','Living room'],['kitchen','Dining corner',1],['nu-evanston','Your walk to campus']],
-      about:'I’m moving for a job in January and need someone to take over my part of the lease. Quiet street, big kitchen, a roommate who’s easy to live with. Furniture stays with you.',
-      facts:[['info-layout','1 of 2 beds','~150 sq ft'],['info-bathroom','Shared bath','With 1 roommate'],['info-floor','2nd floor','Porch'],['wash','Laundry','In the unit']],
-      furn:['bedframe','mattress','wardrobe','desk','chair'],terms:'gift',
-      mates:['K'],matesText:'1 grad student, early riser.',prefs:['smoking','visitors','cleaning'],util:45,deposit:1180,utilText:'Utilities share',included:'Wi-Fi',landlord:'ok',asks:['Video tour?','Lease length?','Still free?']},
-  l6:{who:'Noah',role:'Sophomore, Bienen',reply:'replies within a day',title:'Private room by the lake',area:'Northeast Evanston',walk:6,price:1620,start:'2027-01-03',end:'2027-04-30',type:'Short sublet',
-      photos:[['kitchen','Kitchen',1],['bedroom','Bedroom',1],['living','Living room'],['kitchen','Breakfast table'],['nu-evanston','Your walk to campus']],
-      about:'Two blocks from the lake and six minutes to campus. I’m on exchange this winter and spring. The room gets lake light in the morning.',
-      facts:[['info-layout','1 of 3 beds','~160 sq ft'],['info-bathroom','Shared bath','With 2 roommates'],['info-floor','4th floor','Lake view'],['wash','Laundry','In the unit']],
-      furn:['bedframe','mattress','bedding','wardrobe','desk','chair','lamp'],terms:'use',
-      mates:['E','L'],matesText:'2 music students, they practise on campus.',prefs:['smoking','pets','visitors'],util:40,deposit:500,utilText:'Electricity share',included:'Wi-Fi + heat',landlord:'wa',asks:['Video tour?','Into May?','Still free?']}
-};
-/* verification: ok (verified), pending (in review), more (more info needed), rejected (not approved), none (not submitted) */
-const VER={l1:{student:'ok',lease:'ok',landlord:'pending'},l2:{student:'ok',lease:'ok',landlord:'ok'},l3:{student:'ok',lease:'ok',landlord:'none'},
-  l4:{student:'ok',lease:'ok',landlord:'ok'},l5:{student:'ok',lease:'more',landlord:'ok'},l6:{student:'pending',lease:'rejected',landlord:'none'}};
-Object.entries(EXTRA).forEach(([k,v])=>Object.assign(ROOMS[k],v,{ver:VER[k]}));
-const KEY=ROOMS[new URLSearchParams(location.search).get('room')]?new URLSearchParams(location.search).get('room'):'l1';
-const ROOM=ROOMS[KEY];
+/* active listings from Firestore (src/listings.ts toRoom), keyed by listing number; filled by RL_onListings */
+const ROOMS={};
+const KEY=(new URLSearchParams(location.search).get('room')||'').trim();
+const ROOM={};
+/* a listing photo is a full URL; bundled images are short names */
+const pic=x=>!x?'data:image/gif;base64,R0lGODlhAQABAAAAACw=':(/[\/:]/.test(x)?x:`img/${x}.jpg`);
 const allIn=()=>ROOM.price+ROOM.util+ROOM.deposit;
 let plan={start:'2027-01-03',end:'2027-04-30'};try{const sp=JSON.parse(sessionStorage.getItem('cs-plan')||'null');if(sp&&sp.start&&sp.end)plan=sp}catch(_){}
 let AUTH=RL.authed;
@@ -877,9 +826,9 @@ function drawDates(){try{sessionStorage.setItem('cs-plan',JSON.stringify(plan))}
 document.addEventListener('change',e=>{const t=e.target;if(t.matches('[data-pin]')&&t.value){plan={...plan,start:t.value};drawDates()}if(t.matches('[data-pout]')&&t.value){plan={...plan,end:t.value};drawDates()}});
 document.addEventListener('click',e=>{const i=e.target.closest('.yours label')?.querySelector('input');if(i&&i.showPicker){try{i.showPicker()}catch(_){}}});
 
-const P=ROOM.photos;
+let P=[];
 /* photos and the room video, in the order the mini program shows them; any slide opens full screen */
-const MEDIA=()=>P.map(p=>({t:'img',src:`img/${p[0]}.jpg`,cap:p[1],flip:!!p[2]})).concat([{t:'video',src:'img/tour.webm',poster:`img/${P[1][0]}.jpg`,cap:'Video tour',flip:!!P[1][2]}]);
+const MEDIA=()=>P.map(p=>({t:'img',src:pic(p[0]),cap:p[1],flip:!!p[2]})).concat(ROOM.video?[{t:'video',src:ROOM.video,poster:pic((P[1]||P[0]||[])[0]),cap:'Video tour',flip:false}]:[]);
 const gallery=()=>{const M=MEDIA();return `<div class="sqr gal" data-gal><div class="track">${M.map((m,i)=>`<div data-open-lb="${i}">${m.t==='img'?`<img src="${m.src}" alt="${m.cap}" class="${m.flip?'flip':''}">`:`<img src="${m.poster}" alt="" class="${m.flip?'flip':''}"><span class="vplay">${ic2('play')}<b>Play video tour</b></span>`}</div>`).join('')}</div><span class="cap" data-cap>${M[0].cap}</span><button class="nav p" data-gp aria-label="Previous">${ic('l','sm')}</button><button class="nav n" data-gn aria-label="Next">${ic('r','sm')}</button><button type="button" class="expand" data-open-lb-cur aria-label="View full screen">${ic2('ext')}</button><div class="dots">${M.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div></div>`};
 function bindGal(){const M=MEDIA();$$('[data-gal]').forEach(gl=>{let i=0;const tr=$('.track',gl),pn=gl.closest('.panel'),go=n=>{i=(n+M.length)%M.length;tr.style.transform=`translateX(${-i*100}%)`;if(pn)$$('[data-thumb]',pn).forEach((b,j)=>b.classList.toggle('on',j===i));$('[data-cap]',gl).textContent=M[i].cap;$$('.dots i',gl).forEach((d,j)=>d.classList.toggle('on',j===i))};
   if(pn)$$('[data-thumb]',pn).forEach(b=>b.onclick=()=>go(+b.dataset.thumb));
@@ -998,7 +947,7 @@ const marks=()=>{const v=ROOM.ver,L=ROOM.type==='Lease takeover'?'takeover':'sub
 const factIcon=f=>f[0]==='wash'?ic('wash'):`<img src="img/icons/${f[0]}.svg" alt="">`;
 function moreCards(all){const list=Object.entries(ROOMS).filter(([k])=>all&&STATE!=='expired'&&STATE!=='removed'?true:k!==KEY).map(([k,R])=>({k,R,f:fitOf(R)})).filter(x=>x.f.k!=='no'&&x.R.price<=BUDGET*1.05).sort((a,b)=>(b.f.k==='ok')-(a.f.k==='ok')||b.f.ov-a.f.ov).slice(0,3);
   if(!list.length)return '<p class="mut">No other rooms fit these dates yet.</p>';
-  return list.map(({k,R,f})=>`<a class="mc" href="room.html?room=${k}"><div class="ph"><img src="img/${R.photos[0][0]}.jpg" alt="" class="${R.photos[0][2]?'flip':''}"></div><div class="tx"><b>${R.title}</b><span><span>${R.area} · ${R.walk} min walk</span><b style="display:inline">${money(R.price)}<small style="color:var(--muted);font-weight:500"> / mo</small></b></span><span class="badge ${f.k}">${f.k==='ok'?ic('check'):''}${f.t}</span></div></a>`).join('')}
+  return list.map(({k,R,f})=>`<a class="mc" href="room.html?room=${k}"><div class="ph"><img src="${pic(R.photos[0][0])}" alt="" class="${R.photos[0][2]?'flip':''}"></div><div class="tx"><b>${R.title}</b><span><span>${R.area} · ${R.walk} min walk</span><b style="display:inline">${money(R.price)}<small style="color:var(--muted);font-weight:500"> / mo</small></b></span><span class="badge ${f.k}">${f.k==='ok'?ic('check'):''}${f.t}</span></div></a>`).join('')}
 /* AI pick on this page: a card drops under the search bar, picks three rooms for your dates and budget, and stays here */
 function aiPool(){const sc=x=>(x.f.k==='ok'?1e4:0)+x.f.ov*10+Math.min(BUDGET*1.05-x.R.price,0);
   const all=Object.entries(ROOMS).filter(([k])=>k!==KEY).map(([k,R])=>({k,R,f:fitOf(R)})).filter(x=>x.f.k!=='no'&&x.R.price<=BUDGET*1.05).sort((a,b)=>sc(b)-sc(a)),whole=all.filter(x=>x.f.k==='ok');
@@ -1009,7 +958,7 @@ function aiPool(){const sc=x=>(x.f.k==='ok'?1e4:0)+x.f.ov*10+Math.min(BUDGET*1.0
 const SPK='<svg class="spk" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/><path d="M19 15.5c.2 1.8 1.2 2.8 3 3-1.8.2-2.8 1.2-3 3-.2-1.8-1.2-2.8-3-3 1.8-.2 2.8-1.2 3-3z"/></svg>';
 let aiBusy=false,aiCount=0,aiT=0;
 const aiFit=f=>f.k==='ok'?'Covers all your dates':`Covers ${Math.floor(f.ov/f.need*100)}% of your dates`;
-const aiRow=({k,R,f},i)=>`<a class="ai-row" style="--i:${i}" href="room.html?room=${k}"><img src="img/${R.photos[0][0]}.jpg" alt="" class="${R.photos[0][2]?'flip':''}"><span class="ai-tx"><b>${R.title}</b><span>${R.area} · ${R.walk} min walk</span><span class="ai-fit">${aiFit(f)}</span></span><span class="ai-pr">${money(R.price)} <small>/ mo</small></span></a>`;
+const aiRow=({k,R,f},i)=>`<a class="ai-row" style="--i:${i}" href="room.html?room=${k}"><img src="${pic(R.photos[0][0])}" alt="" class="${R.photos[0][2]?'flip':''}"><span class="ai-tx"><b>${R.title}</b><span>${R.area} · ${R.walk} min walk</span><span class="ai-fit">${aiFit(f)}</span></span><span class="ai-pr">${money(R.price)} <small>/ mo</small></span></a>`;
 const aiSk=()=>`<div class="ai-row ai-skr" aria-hidden="true"><span class="ai-ph ai-sk"></span><span class="ai-tx"><span class="ai-l a ai-sk"></span><span class="ai-l b ai-sk"></span><span class="ai-l c ai-sk"></span></span><span class="ai-p ai-sk"></span></div>`;
 function aiHtml(picks,loading){const list=loading?Array.from({length:Math.max(1,aiCount)},aiSk).join(''):(picks.length?picks.map(aiRow).join(''):`<div class="ai-empty"><b>Nothing else fits these dates yet</b><span>Try other dates or a higher budget.</span></div>`);
   return `<div class="ai-h"><div><b>Rooms that fit you</b><span>${WhenPicker.label(plan.start,plan.end)} · ${BudgetPicker.label(BUDGET).toLowerCase()}</span></div><button type="button" class="ai-x" data-aiclose aria-label="Close">${ic2('x')}</button></div>
@@ -1030,7 +979,7 @@ function searchRooms(q){const m=String(q||'').match(CODE_RE);
   const words=t.split(/\s+/);return {list:Object.entries(ROOMS).filter(([,R])=>{const hay=[R.title,R.area,R.layout,R.type,R.code,R.walk+' min walk'].join(' ').toLowerCase();return words.every(w=>hay.includes(w))})}}
 let sSel=0,sRes=[];
 function drawSearch(){const q=$('#sQ').value,r=searchRooms(q),L=$('#sList');sRes=r.list;sSel=0;
-  const row=([k,R],i)=>`<a class="sitem${i===sSel?' on':''}" role="option" aria-selected="${i===sSel}" href="room.html?room=${k}" data-si="${i}"><img src="img/${R.photos[0][0]}.jpg" alt="" class="${R.photos[0][2]?'flip':''}"><span class="stx"><b>${R.title}</b><span>${R.area} · ${R.layout} · <em>#${R.code}</em></span></span><span class="spr">${money(R.price)}<small>per month</small></span></a>`;
+  const row=([k,R],i)=>`<a class="sitem${i===sSel?' on':''}" role="option" aria-selected="${i===sSel}" href="room.html?room=${k}" data-si="${i}"><img src="${pic(R.photos[0][0])}" alt="" class="${R.photos[0][2]?'flip':''}"><span class="stx"><b>${R.title}</b><span>${R.area} · ${R.layout} · <em>#${R.code}</em></span></span><span class="spr">${money(R.price)}<small>per month</small></span></a>`;
   if(r.code&&!r.list.length)L.innerHTML=`<p class="snone"><b>No listing #${r.code}</b><span>Check the number, or the listing may have been taken down.</span></p>`;
   else if(r.code)L.innerHTML=`<p class="slab">Listing number</p>`+r.list.map(row).join('');
   else if(!q.trim())L.innerHTML=`<p class="shint">Type an area (Evanston, Downtown), a layout (2B1B, Studio), or an 8-digit listing number. You can also paste a shared listing message.</p>`;
@@ -1054,19 +1003,30 @@ const page=()=>`${head()}<main class="wrap f2">${titlebar()}<div class="tri-wrap
     <div class="amen"><p class="tl">In the building</p><div class="amen-row">${AMEN.map(([k,l,d])=>{const on=ROOM.amen.includes(k);return `<span class="${on?'':'off'}" title="${on?l:l+': not available'}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>${l}${on?'':'<em class="sr">, not available</em>'}</span>`}).join('')}</div></div><blockquote class="hquote" aria-label="A note from ${ROOM.who}, the host"><p class="clamp" data-clamp>“${ROOM.about}”</p><button type="button" class="more-btn" data-more>Read more</button><cite>${byline()}</cite></blockquote></div>${FILL==="A"?"":`<div class="blk fblk">${furnTile()}</div><div class="blk pblk">${pplTile()}</div>`}</div>
   <div class="panel rgt"><div class="blk bookc">${bookCard()}</div>${FILL==="A"?`<div class="blk fblk">${furnTile()}</div><div class="blk pblk">${pplTile()}</div>`:""}</div>
 </div></div>
-${nearSection()}
+${ROOM.near?nearSection():''}
 <section class="more"><h2>Other rooms that fit your dates <a href="index.html">See all</a></h2><div class="mrow" id="moreRooms">${moreCards()}</div></section>${below()}</main>${dock()}`;
 
+/* listings arrive from src/rentlet.ts; the room in the URL is looked up among them, or directly when it is
+   not active (taken down, or a host viewing their own hidden listing) */
+const today=new Date().toISOString().slice(0,10);
+function useRoom(R){const same=JSON.stringify(R)===JSON.stringify(ROOM);Object.keys(ROOM).forEach(k=>delete ROOM[k]);Object.assign(ROOM,R);P=ROOM.photos||[];
+  const want=ROOM.end&&ROOM.end<today?'expired':'ok';if(STATE!==want)setState(want);else if(!same)render()}
+window.RL_onListings=list=>{
+  if(list===null){if(STATE==='loading')setState('error');return}
+  Object.keys(ROOMS).forEach(k=>delete ROOMS[k]);list.forEach(d=>{ROOMS[d.code]=RentletListings.toRoom(d)});
+  if(!KEY)return setState('missing');
+  if(ROOMS[KEY])return useRoom(ROOMS[KEY]);
+  RentletListings.getListing(KEY).then(r=>{if(r.state==='ok')useRoom(RentletListings.toRoom(r.listing));else if(STATE!==r.state)setState(r.state)})};
 /* page states: the real page waits for data (three dots), and can find the listing gone, ended, unknown, or fail to load */
 const QS=new URLSearchParams(location.search),QROOM=QS.get('room');
-let STATE=QS.get('state')||(QROOM&&!ROOMS[QROOM]?'missing':'ok');
+let STATE=KEY?'loading':'missing';
 const ST_ICON={removed:'<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/>',expired:'<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4M9.5 14.5l5 3M14.5 14.5l-5 3"/>',missing:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M9 9l4 4M13 9l-4 4"/>',error:'<path d="M4 8.5a12 12 0 0 1 16 0M7 12a7.5 7.5 0 0 1 10 0M10 15.5a3 3 0 0 1 4 0"/><path d="M4 4l16 16"/>'};
 const stIcon=k=>`<span class="st-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ST_ICON[k]}</svg></span>`;
 const loadingView=()=>`${head()}<main class="wrap"><div class="st-load" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><p>Loading this room…</p></div></main>`;
 function stateView(){const yd=span(plan.start,plan.end);
   const box={
     removed:[`This listing is no longer available`,`The host took it down, or it was rented. The rooms below fit your dates (${yd}).`,`<a class="st-link" href="index.html">Search all rooms</a>`],
-    expired:[`This sublet has ended`,`It was available ${span(ROOM.start,ROOM.end)}. The rooms below are open on your dates.`,`<a class="st-link" href="index.html">Search all rooms</a>`],
+    expired:[`This sublet has ended`,`${ROOM.start&&ROOM.end?`It was available ${span(ROOM.start,ROOM.end)}. `:''}The rooms below are open on your dates.`,`<a class="st-link" href="index.html">Search all rooms</a>`],
     missing:[`We couldn’t find this listing`,`The link may be wrong, or the listing was removed. Check the listing number and search again.`,`<button type="button" class="st-link" data-sopen>Search by listing number</button>`],
     error:[`Couldn’t load this room`,`Check your connection and try again. Code: NET_TIMEOUT`,`<button type="button" class="btn btn-primary btn-sm" data-retry>Try again</button><a class="st-link" href="index.html">Back to search</a>`]}[STATE];
   const more=STATE==='error'?'':`<section class="more"><h2>Other rooms that fit your dates <a href="index.html">See all</a></h2><div class="mrow" id="moreRooms">${moreCards(true)}</div></section>`;
@@ -1077,7 +1037,7 @@ function boot(){setVh();
   if(STATE!=='ok'){document.title='Rentlet';site.innerHTML=stateView();return}
   site.innerHTML=loadingView();clearTimeout(boot.t);boot.t=setTimeout(render,reduced?0:650)}
 /* sign-in gate: messaging, quick questions, saving and reporting need an account */
-const GATE={message:[`Sign in to message ${ROOM.who}`,'Messages stay in Rentlet. Contact details are shared only when you both agree.'],
+const GATE={get message(){return[`Sign in to message ${ROOM.who}`,'Messages stay in Rentlet. Contact details are shared only when you both agree.']},
   save:['Sign in to save this room','Saved rooms follow your account on every device.'],
   report:['Sign in to report this listing','We may need to reach you about what you found.'],
   signin:['Sign in to Rentlet','Message hosts, save rooms, and get alerts when rooms open on your dates.']};

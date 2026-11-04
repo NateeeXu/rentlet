@@ -55,14 +55,20 @@ service cloud.firestore {
         && d.price is int && d.price > 0 && d.price <= 20000
         && isDate(d.start) && isDate(d.end) && d.start < d.end
         && d.status in ['active', 'taken', 'hidden']
-        && d.photos is list && d.photos.size() <= 20
+        && d.code is string && d.code.matches('[1-9][0-9]{7}')
+        && d.ownerName is string && d.ownerName.size() <= 60
+        && d.area is string && d.area.size() <= 80
+        && d.photos is list && d.photos.size() > 0 && d.photos.size() <= 20
         && (!('description' in d) || (d.description is string && d.description.size() <= 4000));
     }
 
     match /listings/{id} {
-      allow read: if resource.data.status == 'active'
+      // a missing id reads as empty, so the page can say "not found"
+      allow read: if resource == null
+        || resource.data.status == 'active'
         || (signedIn() && resource.data.ownerId == me());
       allow create: if isNU()
+        && id == request.resource.data.code
         && request.resource.data.ownerId == me()
         && request.resource.data.status == 'active'
         && isNow(request.resource.data.createdAt)
@@ -73,6 +79,12 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && validListing(request.resource.data);
       allow delete: if signedIn() && resource.data.ownerId == me();
+
+      // street address, building and website: the host only
+      match /private/{docId} {
+        allow read, write: if signedIn()
+          && get(/databases/$(database)/documents/listings/$(id)).data.ownerId == me();
+      }
     }
 
     // ---------- requests (people looking for a place) ----------
@@ -109,10 +121,11 @@ service cloud.firestore {
 
     match /conversations/{cid} {
       allow read: if signedIn() && me() in resource.data.participants;
+      // either side may start it: the guest from a listing, or the host from a request
       allow create: if isNU()
-        && request.resource.data.guestId == me()
-        && request.resource.data.hostId != me()
-        && cid == request.resource.data.listingId + '_' + me()
+        && me() in [request.resource.data.guestId, request.resource.data.hostId]
+        && request.resource.data.hostId != request.resource.data.guestId
+        && cid == request.resource.data.listingId + '_' + request.resource.data.guestId
         && request.resource.data.participants.size() == 2
         && request.resource.data.participants.hasAll([request.resource.data.guestId, request.resource.data.hostId])
         && get(/databases/$(database)/documents/listings/$(request.resource.data.listingId)).data.ownerId == request.resource.data.hostId;

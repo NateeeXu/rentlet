@@ -35,6 +35,22 @@
           }
         ]
       }
+    ],
+    "rewrites": [
+      {
+        "source": "/api/shuttle",
+        "function": {
+          "functionId": "shuttleLive",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/tiles/**",
+        "function": {
+          "functionId": "mapTile",
+          "region": "us-central1"
+        }
+      }
     ]
   },
   "firestore": {

@@ -11,7 +11,7 @@ import {
   hereUrl,
   lookupRequest,
   NEARBY_GROUPS,
-  nearestOf,
+  nearestList,
   suggestRequest,
   toPlace,
   toSuggestions,
@@ -141,22 +141,27 @@ export const nearby = onCall(OPTIONS, async (req): Promise<NearbyPlace[]> => {
 
   const from = { lat, lng };
   let failed = 0;
+  // up to three places of each kind, each with its walking time and position (for the room page's map)
   const found = await Promise.all(
-    NEARBY_GROUPS.map(async (g): Promise<NearbyPlace | null> => {
+    NEARBY_GROUPS.map(async (g): Promise<NearbyPlace[]> => {
       try {
-        const near = nearestOf(await here(browseRequest(from, [...g.categories])));
-        return near ? { kind: g.kind, name: near.name, meters: near.meters, walk: await walk(from, near.to) } : null;
+        const near = nearestList(await here(browseRequest(from, [...g.categories])));
+        return Promise.all(near.map(async (n) => ({ kind: g.kind, name: n.name, meters: n.meters, walk: await walk(from, n.to), lat: n.to.lat, lng: n.to.lng })));
       } catch {
         failed++;
-        return null;
+        return [];
       }
     }),
   );
   if (failed === NEARBY_GROUPS.length) throw new HttpsError('unavailable', 'Nearby places are unavailable right now.');
-  const list = found.filter((x): x is NearbyPlace => !!x);
+  const list = found.flat();
   if (!failed) {
     if (nearbyCache.size > 500) nearbyCache.clear();
     nearbyCache.set(key, { at: Date.now(), list });
   }
   return list;
 });
+
+// Northwestern shuttle live positions and the HERE base map tiles (agent 5)
+export { shuttleLive } from './shuttle.js';
+export { mapTile } from './tiles.js';

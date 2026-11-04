@@ -28,6 +28,8 @@ export interface NearbyPlace {
   name: string;
   meters: number;
   walk: number | null;
+  lat: number | null;
+  lng: number | null;
 }
 
 const CAMPUSES: CampusId[] = ['nu-evn', 'nu-chi', 'chi-dt'];
@@ -79,7 +81,7 @@ export function asNearby(x: unknown): NearbyPlace[] {
     const o = obj(it);
     const name = text(o?.name, 80);
     if (!o || !name || typeof o.kind !== 'string' || !NEARBY_KINDS.includes(o.kind) || !finite(o.meters)) return [];
-    return [{ kind: o.kind as NearbyPlace['kind'], name, meters: Math.round(o.meters), walk: minutes(o.walk) }];
+    return [{ kind: o.kind as NearbyPlace['kind'], name, meters: Math.round(o.meters), walk: minutes(o.walk), lat: finite(o.lat) ? o.lat : null, lng: finite(o.lng) ? o.lng : null }];
   });
 }
 

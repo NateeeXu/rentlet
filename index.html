@@ -1074,7 +1074,7 @@ const CXFAQ=[['Is Rentlet a broker?','No. Rentlet is a place for Northwestern st
  ['How are listings checked?','Everyone who posts signs in with a Northwestern account, and anyone can report a listing. Reported listings are reviewed and taken down if they break the rules.'],
  ['When is my contact information shared?','Only when you both agree. Until then you talk inside Rentlet.'],
  ['Which areas do you cover?','Places near Northwestern’s Evanston and Chicago campuses, and in downtown Chicago.']];
-const cxFaq=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-sh"><div><h2>FAQ</h2></div><button type="button" class="cx-lnk" data-toast="Opens the help center.">Help center</button></div><div class="cx-faq">${CXFAQ.map((f,i)=>`<details ${i?'':'open'}><summary>${f[0]}</summary><p>${f[1]}</p></details>`).join('')}</div></div></section>`;
+const cxFaq=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-sh"><div><h2>FAQ</h2></div><button type="button" class="cx-lnk" onclick="location.href='how-it-works.html#faq'">More questions</button></div><div class="cx-faq">${CXFAQ.map((f,i)=>`<details ${i?'':'open'}><summary>${f[0]}</summary><p>${f[1]}</p></details>`).join('')}</div></div></section>`;
 const cxFooter=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
   <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a></div>
@@ -1107,7 +1107,7 @@ function bindReel(){
 
 /* ---------- room page (placeholder for the jump) ---------- */
 function placeModel(key){
-  if(key.startsWith('l')){const l=L.find(x=>'l'+x.id===key);if(!l)return null;return{...l,key,school:'Northwestern · Evanston',youIn:plan.start,youOut:plan.end,budget:plan.budget}}
+  {const l=L.find(x=>x.key===key);if(!l)return null;return{...l,key,school:'Northwestern · Evanston',youIn:plan.start,youOut:plan.end,budget:plan.budget}}
   return ROOMS.find(x=>x.key===key)||null;
 }
 function roomPage(m){
@@ -1369,8 +1369,8 @@ function bindOrbit(){
     setTimeout(done,last+40)}
   $('#spin4').onclick=spin;
   hero.addEventListener('click',e=>{if(e.target.closest('[data-a4back]')){e.preventDefault();return closeFly()}if(e.target.closest('[data-a4again]'))return spin();
-    /* reel cards open their room page; only Evanston has full pages in this preview */
-    const rc=e.target.closest('[data-a4room]');if(rc){e.preventDefault();e.stopPropagation();if(rc.dataset.a4room.startsWith('l'))location.href=rc.href;else toast('In the preview only Evanston rooms have full room pages.')}});
+    /* reel cards open their room page */
+    const rc=e.target.closest('[data-a4room]');if(rc){e.preventDefault();e.stopPropagation();location.href=rc.href}});
   addEventListener('keydown',e=>{if(!flying)return;if(e.key==='Escape')closeFly();if(e.key==='ArrowLeft')$('#f4prev')?.click();if(e.key==='ArrowRight')$('#f4next')?.click()});
   window.__a4={spin,closeFly,state:st,get flying(){return flying}};
 }

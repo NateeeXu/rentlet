@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Northwestern shuttles · Rentlet</title>
+<meta name="description" content="Northwestern’s Intercampus shuttle and evening Loop on a map: routes, stops, service hours and live buses from the university’s shuttle system.">
+<link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+:root{--canvas:#f7f7f7;--soft:#f2f2f2;--ink:#222;--ink2:#484848;--muted:#717171;--line:#dddddd;--hair:#e8e8e8;--serif:"Newsreader",Georgia,"Times New Roman",serif;--ease:cubic-bezier(.22,1,.36,1);--hdr:72px;--c:#4E2A84}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--canvas);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+img{display:block}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.site{container-type:inline-size;overflow-x:clip;min-height:100vh}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+/* header (from how-it-works.html) */
+.hdr{background:#fff;border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:20}
+.hdr .wrap{display:flex;align-items:center;gap:20px;height:72px;position:relative}
+.logo{display:flex;align-items:center;min-height:44px}
+.logo img{height:30px}
+.nav{display:flex;gap:2px}
+.nav a{font-size:14px;font-weight:600;color:var(--ink2);padding:0 12px;height:44px;display:flex;align-items:center;border-radius:999px;text-decoration:none;white-space:nowrap}
+.nav a:hover{background:var(--soft);color:var(--ink)}
+.nav a[aria-current]{color:var(--ink);background:var(--soft)}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;border:1px solid transparent;font-size:15px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;text-decoration:none;color:var(--ink);transition:border-color .15s,background .15s}
+.btn-primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn-primary:hover{background:#000}
+.btn-secondary{background:#fff;border-color:var(--line)}
+.btn-secondary:hover{border-color:var(--ink)}
+.btn-ghost{padding:0 14px}
+.btn-ghost:hover{background:var(--soft)}
+.hdr .btn{font-size:14px}
+.icon-btn{width:44px;height:44px;padding:0;border-radius:999px;border:0;background:none;display:none;align-items:center;justify-content:center}
+.icon-btn:hover,.icon-btn[aria-expanded=true]{background:var(--soft)}
+.hmenu{position:absolute;right:16px;top:calc(100% + 8px);z-index:40;min-width:220px;display:flex;flex-direction:column;padding:8px;border-radius:16px;background:#fff;border:1px solid var(--hair)}
+.hmenu[hidden]{display:none}
+.hmenu a{display:flex;align-items:center;height:44px;padding:0 14px;border-radius:10px;font-size:15px;font-weight:600;color:var(--ink);text-decoration:none}
+.hmenu a:hover,.hmenu a[aria-current]{background:var(--soft)}
+.hmenu hr{border:0;border-top:1px solid var(--hair);margin:6px 8px}
+
+/* the shuttle map: side panel and map on wide screens, the map above its panel on phones */
+.app{display:grid;grid-template-columns:400px minmax(0,1fr);align-items:start;background:#fff;border-bottom:1px solid var(--hair)}
+.panel{grid-column:1;grid-row:1;padding:32px 28px 28px;border-right:1px solid var(--hair);min-height:calc(100svh - var(--hdr));display:flex;flex-direction:column}
+.mapbox{grid-column:2;grid-row:1;position:sticky;top:var(--hdr);height:calc(100svh - var(--hdr));background:var(--soft);isolation:isolate}
+#map{position:absolute;inset:0}
+.panel h1{font-family:var(--serif);font-size:32px;font-weight:500;line-height:1.1;letter-spacing:-.5px;margin:0}
+.lede{margin:10px 0 0;font-size:15px;line-height:1.55;color:var(--ink2)}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:22px 0 0;padding:4px;border:1px solid var(--line);border-radius:999px;background:#fff}
+.seg button{width:100%!important;min-width:0;margin:0;height:44px;display:flex;align-items:center;justify-content:center;border:0;border-radius:999px;background:none;font-size:15px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.seg button:hover{background:var(--soft);color:var(--ink)}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.dirs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 0}
+.dir{width:100%!important;min-width:0;margin:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:15px;font-weight:600;color:var(--ink);white-space:nowrap}
+.dir:hover{border-color:var(--ink)}
+.dir[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.route{margin:12px 0 0;font-size:14px;line-height:1.5;color:var(--muted)}
+.status{display:flex;align-items:center;gap:10px;margin:18px 0 0;padding:12px 14px;border:1px solid var(--hair);border-radius:12px;min-height:48px}
+.status .pulse{width:8px;height:8px;border-radius:50%;background:#b0b0b0;flex:none}
+.status[data-tone=live] .pulse{background:var(--c);box-shadow:0 0 0 0 var(--c);animation:pulse 2s var(--ease) infinite}
+.status[data-tone=off] .pulse{background:#b0b0b0}
+.status-copy{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;row-gap:2px;min-width:0}
+.status-text{font-size:15px;font-weight:600;line-height:1.4}
+.status-upd{font-size:13px;color:var(--muted);line-height:1.4;font-variant-numeric:tabular-nums}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 45%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){.status[data-tone=live] .pulse{animation:none}}
+.sub{margin:26px 0 0;font-size:16px;font-weight:600}
+.hours{margin:6px 0 0;font-size:15px;line-height:1.55;color:var(--ink2)}
+.stops{list-style:none;margin:10px 0 0;padding:0}
+.stop{position:relative}
+.stop button{width:100%!important;min-width:0;margin:0;display:grid;grid-template-columns:22px minmax(0,1fr) auto;column-gap:12px;align-items:center;min-height:52px;padding:6px 8px 6px 0;border:0;border-radius:10px;background:none;text-align:left}
+.stop button:hover{background:var(--canvas)}
+.stop button[aria-current=true]{background:var(--soft)}
+.stop .rail{position:relative;align-self:stretch;display:flex;align-items:center;justify-content:center}
+.stop .rail::before{content:"";position:absolute;left:50%;top:-6px;bottom:-6px;width:3px;margin-left:-1.5px;background:var(--c)}
+.stop:first-child .rail::before{top:50%}
+.stop:last-child .rail::before{bottom:50%}
+.stops.loop .stop:last-child .rail::before{bottom:-6px}
+.stop .rail i{position:relative;width:11px;height:11px;border-radius:50%;background:#fff;border:2.5px solid var(--c)}
+.stop:first-child .rail i,.stop:last-child .rail i{width:13px;height:13px}
+.stop-name{display:block;font-size:15px;font-weight:600;line-height:1.35}
+.stop-area{display:block;font-size:13px;color:var(--muted);line-height:1.4;margin-top:1px}
+.eta{display:flex;flex-direction:column;align-items:flex-end;text-align:right;white-space:nowrap}
+.eta b{font-size:15px;font-weight:600;line-height:1.35;font-variant-numeric:tabular-nums}
+.eta span{font-size:13px;color:var(--muted);line-height:1.4;font-variant-numeric:tabular-nums}
+.src{margin-top:auto;padding-top:24px}
+.src p{margin:0;font-size:13px;line-height:1.6;color:var(--muted)}
+.src p+p{margin-top:6px}
+.src a{display:inline-flex;align-items:center;min-height:44px;color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pop-name{display:block;font-weight:600}
+.pop-line{display:block;color:var(--muted);font-size:13px}
+.pop-next{display:block;margin-top:4px}
+
+/* footer (from how-it-works.html) */
+.foot{background:var(--canvas);border-top:1px solid var(--hair);padding:40px 0 28px}
+.fcols{display:grid;grid-template-columns:1.4fr repeat(4,minmax(0,1fr));gap:24px}
+.fcols h4{margin:0 0 4px;font-size:13px}
+.fcols a,.fcols .fl{display:flex;align-items:center;min-height:44px;min-width:44px;width:auto!important;margin:0;padding:0;border:0;background:none;font-size:14px;color:var(--muted);text-decoration:none;text-align:left}
+.fcols a:hover,.fcols .fl:hover{color:var(--ink);text-decoration:underline}
+.fcols .brand img{height:28px}
+.fcols .brand p{font-size:13px;color:var(--muted);line-height:1.6;margin:10px 0 0}
+.fbot{margin-top:28px;padding-top:18px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+
+@container (max-width:1100px){
+  .app{grid-template-columns:360px minmax(0,1fr)}
+  .panel{padding:28px 22px 24px}
+}
+@container (max-width:1000px){
+  .nav,.hdr-right .hide-s{display:none}
+  .icon-btn{display:inline-flex}
+}
+@container (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .mapbox{grid-column:1;grid-row:1;position:relative;top:auto;height:clamp(300px,52svh,560px)}
+  .panel{grid-column:1;grid-row:2;border-right:0;min-height:0;padding:24px 24px 28px;max-width:680px;width:100%;margin:0 auto}
+  .fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.fcols .brand{grid-column:1/-1}
+}
+@container (max-width:640px){
+  .wrap{padding:0 16px}
+  .hdr .wrap{height:64px;gap:12px}
+  .logo img{height:26px}
+  .hdr-right{gap:4px}
+  .panel{padding:20px 16px 24px}
+  .panel h1{font-size:28px;letter-spacing:-.4px}
+  .seg button,.dir{font-size:14px}
+  .dir{padding:0 8px;gap:6px}
+}
+@media (max-width:640px){:root{--hdr:64px}}
+</style>
+<style id="rentlet-base">
+.rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
+html,body{background:#f7f7f7}
+:root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
+a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
+</style>
+<script src="/rentlet-boot.js"></script>
+</head>
+<body>
+<div class="site">
+<header class="hdr"><div class="wrap">
+  <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
+  <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html">Requests</a></nav>
+  <div class="hdr-right">
+    <a class="btn btn-ghost hide-s" href="request.html">Post a request</a>
+    <a class="btn btn-secondary hide-s" href="post.html">Post a listing</a>
+    <span id="rlAuth" style="display:contents"></span><script>document.getElementById("rlAuth").innerHTML=RL.authed?`<a class="rl-me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button type="button" class="btn btn-ghost" data-rl-signin>Sign in</button>`</script>
+    <button type="button" class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+  <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html">Requests</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav>
+</div></header>
+
+<main class="app" id="app">
+  <section class="panel" aria-labelledby="title">
+    <h1 id="title">Northwestern shuttles</h1>
+    <p class="lede">The Intercampus shuttle between Evanston and Chicago, and the evening Loop around the Evanston campus, with buses live on the map.</p>
+    <div class="seg" role="group" aria-label="Shuttle">
+      <button type="button" data-line="intercampus" aria-pressed="true">Intercampus</button>
+      <button type="button" data-line="loop" aria-pressed="false">Loop</button>
+    </div>
+    <div class="dirs" role="group" aria-label="Direction" data-dirs>
+      <button type="button" class="dir" data-dir="to-chicago" aria-pressed="true"><span class="dot" aria-hidden="true"></span>To Chicago</button>
+      <button type="button" class="dir" data-dir="to-evanston" aria-pressed="false"><span class="dot" aria-hidden="true"></span>To Evanston</button>
+    </div>
+    <p class="route" data-route>Ryan Field to Ward, Chicago campus</p>
+    <div class="status" data-status data-tone="wait">
+      <span class="pulse" aria-hidden="true"></span>
+      <span class="status-copy"><span class="status-text" data-status-text role="status" aria-live="polite">Checking for live buses…</span><span class="status-upd" data-updated></span></span>
+    </div>
+    <h2 class="sub">Service hours</h2>
+    <p class="hours" data-hours>Weekdays, first bus 6:35 am and last 9:30 pm from Ryan Field. No weekend or university holiday service.</p>
+    <h2 class="sub" id="stops-h">Stops</h2>
+    <ol class="stops" aria-labelledby="stops-h" data-stops></ol>
+    <div class="src">
+      <p>Live data: Northwestern shuttle system (TripShot).</p>
+      <p data-checked>Routes and hours: Northwestern Transportation &amp; Parking. Times are Chicago time, and a Wildcard is needed to ride.</p>
+      <p><a href="https://www.northwestern.edu/transportation-parking/shuttles/routes/intercampus.html" target="_blank" rel="noopener" data-official>Official schedule</a></p>
+    </div>
+  </section>
+  <div class="mapbox"><div id="map"></div></div>
+</main>
+
+<footer class="foot"><div class="wrap"><div class="fcols">
+  <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
+  <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a><a href="messages.html">Messages</a></div>
+  <div><h4>Post</h4><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></div>
+  <div><h4>Areas</h4><a href="index.html">Northwestern Evanston</a><a href="index.html">Northwestern Chicago</a></div>
+  <div><h4>Legal</h4><a href="how-it-works.html#verification">Safety &amp; rules</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></div></div>
+  <div class="fbot"><span>© 2026 Rentlet</span><span>A student class project. Not affiliated with or endorsed by Northwestern University.</span></div></div></footer>
+</div>
+<script>
+/* header menu (from how-it-works.html); the shuttle map itself is src/shuttle.ts */
+(function(){
+  const $=(s,r=document)=>r.querySelector(s);
+  function closeMenu(focus){const m=$('#hmenu'),b=$('[data-hmenu]');if(m.hidden)return;m.hidden=true;b.setAttribute('aria-expanded','false');if(focus)b.focus()}
+  document.addEventListener('click',e=>{
+    const hb=e.target.closest('[data-hmenu]');if(hb){const m=$('#hmenu'),open=m.hidden;m.hidden=!open;hb.setAttribute('aria-expanded',String(open));if(open)$('a',m).focus({preventScroll:true});return}
+    const m=$('#hmenu');if(!m.hidden&&(!m.contains(e.target)||e.target.closest('a')))closeMenu(false);
+  });
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu(true)});
+})();
+</script>
+<script type="module" src="/src/rentlet.ts"></script>
+<script type="module" src="/src/shuttle.ts"></script>
+</body>
+</html>

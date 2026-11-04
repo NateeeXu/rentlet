@@ -64,6 +64,11 @@ export interface ListingDoc {
   createdAtMs?: number;
 }
 
+// The room page and the homepage put these strings straight into HTML, so anything a host typed is
+// escaped here, once, before it reaches them.
+export const html = (s: unknown): string =>
+  String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+
 const num = (s: unknown): number => {
   const n = Number(String(s ?? '').replace(/[^\d.]/g, ''));
   return Number.isFinite(n) ? n : 0;
@@ -162,20 +167,20 @@ export function toCard(d: ListingDoc) {
     id: d.code,
     key: d.code,
     code: d.code,
-    title: d.title,
-    area: d.area,
+    title: html(d.title),
+    area: html(d.area),
     walk: d.walk ?? null,
     price: d.price,
     start: d.start,
     end: d.end,
     type: KIND_LABEL[d.kind],
-    who: d.ownerName,
-    img: d.photos[0] ?? '',
+    who: html(d.ownerName),
+    img: html(d.photos[0] ?? ''),
     school: d.campusId,
     furnished: d.form.furn !== 'none',
     bath: d.form.bath,
     laundry: d.form.multi.amen.includes('Washer & dryer'),
-    layout: layoutCode(d.form),
+    layout: html(layoutCode(d.form)),
     createdAtMs: d.createdAtMs ?? 0,
   };
 }
@@ -191,13 +196,13 @@ export function toRoom(d: ListingDoc) {
   const floor = Math.round(num(f.f.floor));
   const deposit = f.dep === 'amount' ? num(f.f.dep) : 0;
   const fees = f.multi.fees.filter((x) => x !== 'Nothing extra');
-  const photos = d.photos.map((url, i) => [url, d.captions[i] || 'Photo']);
+  const photos = d.photos.map((url, i) => [html(url), html(d.captions[i] || 'Photo')]);
   return {
-    who: d.ownerName,
+    who: html(d.ownerName),
     role: 'Northwestern student',
     reply: 'verified with a Northwestern account',
-    title: d.title,
-    area: d.area,
+    title: html(d.title),
+    area: html(d.area),
     walk: d.walk ?? null,
     price: d.price,
     start: d.start,
@@ -205,13 +210,13 @@ export function toRoom(d: ListingDoc) {
     type: KIND_LABEL[d.kind],
     school: d.campusId,
     photos,
-    video: d.video,
-    about: (f.f.note || '').trim(),
+    video: d.video ? html(d.video) : null,
+    about: html((f.f.note || '').trim()),
     facts: [
       [
         'info-layout',
         f.unit === 'whole' ? (code === 'Studio' ? 'Studio' : beds ? `Entire ${beds}-bed` : 'Entire place') : beds ? `1 of ${beds} beds` : 'Private room',
-        sqft ? `~${sqft} sq ft` : code,
+        sqft ? `~${sqft} sq ft` : html(code),
       ],
       ['info-bathroom', f.bath === 'private' ? 'Own bath' : 'Shared bath', f.bath === 'private' ? 'Private' : mates ? `With ${mates} roommate${mates > 1 ? 's' : ''}` : 'Shared'],
       ['info-floor', floor ? `${ordinal(floor)} floor` : 'Floor', f.multi.amen.includes('Elevator') ? 'Elevator' : f.view ? `${f.view} view` : 'Ask the host'],
@@ -219,32 +224,34 @@ export function toRoom(d: ListingDoc) {
     ],
     furn: f.furn === 'none' ? [] : f.multi.items.map((x) => FURN_KEY[x]).filter(Boolean),
     terms: f.terms || (f.subletType === 'takeover' ? 'gift' : 'use'),
-    mates: Array.from({ length: mates }, () => (who ? who[0].toUpperCase() : 'R')),
-    matesText: mates
-      ? `${mates} ${who ? who.toLowerCase() : `roommate${mates > 1 ? 's' : ''}`}${f.multi.habits.length ? `, ${f.multi.habits.join(', ').toLowerCase()}` : ''}.`
-      : 'Just you.',
+    mates: Array.from({ length: mates }, () => html(who ? who[0].toUpperCase() : 'R')),
+    matesText: html(
+      mates
+        ? `${mates} ${who ? who.toLowerCase() : `roommate${mates > 1 ? 's' : ''}`}${f.multi.habits.length ? `, ${f.multi.habits.join(', ').toLowerCase()}` : ''}.`
+        : 'Just you.',
+    ),
     prefs: Object.values(f.prefs).map((v) => PREF_KEY[v]).filter(Boolean),
     util: num(f.f.extra),
     deposit,
     utilText: 'Other costs',
-    included: fees.length ? fees.join(' + ') : 'Nothing extra',
+    included: html(fees.length ? fees.join(' + ') : 'Nothing extra'),
     landlord: f.transferChannel === 'official' ? 'ok' : 'wa',
     asks: ['Video tour?', 'Still free?', f.subletType === 'takeover' ? 'Transfer fee?' : 'Flexible dates?'],
     code: d.code,
-    layout: code,
+    layout: html(code),
     orig: f.orig && f.orig !== f.rent ? f.orig : 0,
     shuttle: f.shuttle === 'covered' ? { s: 'covered', route: f.route } : { s: f.shuttle },
     amen: f.multi.amen.map((x) => AMEN_KEY[x]).filter(Boolean),
     furnished: f.furn === 'full' ? 'Fully furnished' : f.furn === 'part' ? 'Partly furnished' : 'Not furnished',
-    extra: (f.f.furnNote || '').trim(),
-    usage: (f.f.ruleNote || '').trim(),
+    extra: html((f.f.furnNote || '').trim()),
+    usage: html((f.f.ruleNote || '').trim()),
     mate: {
-      gender: f.gender,
-      identity: who || 'Roommates',
-      schedule: f.multi.habits[0] || 'Ask the host',
-      cooking: f.prefs.Cooking || 'Ask the host',
-      clean: f.prefs.Cleaning || 'Ask the host',
-      guests: f.prefs.Visitors || 'Ask the host',
+      gender: html(f.gender),
+      identity: html(who || 'Roommates'),
+      schedule: html(f.multi.habits[0] || 'Ask the host'),
+      cooking: html(f.prefs.Cooking || 'Ask the host'),
+      clean: html(f.prefs.Cleaning || 'Ask the host'),
+      guests: html(f.prefs.Visitors || 'Ask the host'),
     },
     ver: { student: 'ok', lease: f.proof === 'lease' ? 'pending' : 'none', landlord: f.transferChannel === 'official' ? 'pending' : 'none' },
   };

@@ -76,6 +76,14 @@ describe('areaFromAddress', () => {
 });
 
 describe('page shapes', () => {
+  it('escapes everything a host typed before the pages put it into HTML', () => {
+    const evil = { ...listing, ownerName: '<img src=x onerror=alert(1)>', form: { ...form, f: { ...form.f, note: '"><script>x()</script>', rmWho: 'A & B' } } };
+    const r = toRoom(evil);
+    expect(r.who).toBe('&lt;img src=x onerror=alert(1)&gt;');
+    expect(r.about).toBe('&quot;&gt;&lt;script&gt;x()&lt;/script&gt;');
+    expect(r.matesText).toContain('a &amp; b');
+    expect(toCard(evil).who).not.toContain('<');
+  });
   it('builds the homepage card', () => {
     const c = toCard(listing);
     expect(c).toMatchObject({ id: '48271936', key: '48271936', type: 'Short sublet', who: 'Emily', img: 'https://example.test/a.jpg', school: 'nu-evn', laundry: true });

@@ -104,6 +104,8 @@ export interface NearbyPlace {
   name: string;
   meters: number;
   walk: number | null;
+  lat: number;
+  lng: number;
 }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
@@ -181,6 +183,20 @@ export function walkMinutes(json: unknown): number | null {
     seconds += d;
   }
   return Math.max(1, Math.round(seconds / 60));
+}
+
+// Up to `limit` places in a browse answer within walking range, nearest first, each with the point to walk to.
+export function nearestList(json: unknown, maxMeters = NEARBY_MAX_METERS, limit = 3): { name: string; meters: number; to: Point }[] {
+  const out: { name: string; meters: number; to: Point }[] = [];
+  for (const it of items(json)) {
+    const name = str(it.title);
+    const to = isPoint(it.access?.[0]) ? it.access![0] : it.position;
+    if (!name || !isPoint(to) || typeof it.distance !== 'number') continue;
+    if (it.distance > maxMeters) break; // answers come nearest first
+    out.push({ name: name.slice(0, 80), meters: Math.round(it.distance), to: { lat: to.lat, lng: to.lng } });
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 // The nearest place in a browse answer within walking range, and the point to walk to (an entrance when known).

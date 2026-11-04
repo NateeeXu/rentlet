@@ -5,10 +5,15 @@ import {
   contactEmailError,
   instagramError,
   isListingCode,
+  isRequestId,
   listingFilePaths,
   liveCount,
   normalizeInstagram,
   requestView,
+  SavedSync,
+  savedRequestCard,
+  savedRequestState,
+  savesKey,
   sortOwnListings,
   storagePathFromUrl,
   validListingShape,
@@ -136,5 +141,166 @@ describe('requestView', () => {
       name: 'Sam',
     });
     expect(requestView('r3', {}, 'Emily', 'Northwestern').need).toBe('a place');
+  });
+});
+
+describe('saved requests', () => {
+  const uid = 'aB3dE5fG7hJ9kL1mN3pQ5rS7tU9v';
+  const stored = {
+    ownerId: uid,
+    ownerName: 'Maya',
+    ownerPhoto: 'https://lh3.googleusercontent.com/a/abc=s96-c',
+    status: 'open',
+    campus: 'evanston',
+    campusId: 'nu-evn',
+    start: '2026-12-15',
+    end: '2027-03-20',
+    budget: 1400,
+    anyPrice: false,
+    kind: 'room',
+    role: 'intern',
+    layouts: ['2B1B', 'Studio', 'Loft'],
+  };
+
+  it('accepts the ids src/rentlet.ts saves', () => {
+    expect(isRequestId(uid)).toBe(true);
+    expect(isRequestId('short')).toBe(false);
+    expect(isRequestId('has/slash/in/it/xx')).toBe(false);
+    expect(isRequestId('a'.repeat(65))).toBe(false);
+    expect(isRequestId(12345678901)).toBe(false);
+  });
+
+  it('maps a request to the Requests page card fields', () => {
+    expect(savedRequestCard(uid, stored, 1700000000000)).toEqual({
+      id: uid,
+      who: 'Maya',
+      photo: 'https://lh3.googleusercontent.com/a/abc=s96-c',
+      role: 'Intern',
+      kind: 'Private room',
+      layouts: ['2B1B', 'Studio'],
+      start: '2026-12-15',
+      end: '2027-03-20',
+      budget: 1400,
+      savedAtMs: 1700000000000,
+    });
+  });
+
+  it('falls back quietly on missing or odd fields', () => {
+    const c = savedRequestCard(uid, { ownerPhoto: 'javascript:alert(1)', budget: 1400, anyPrice: true, kind: 'castle', role: 7, layouts: 'Studio' }, 0);
+    expect(c).toMatchObject({ who: 'Northwestern student', photo: '', role: 'Student', kind: 'Private room', layouts: [], start: '', end: '', budget: null });
+    expect(savedRequestCard(uid, { kind: 'either', role: 'newhire', budget: 0 }, 0)).toMatchObject({
+      kind: 'Room or whole place',
+      role: 'New hire',
+      budget: null,
+    });
+  });
+
+  it('tells open requests from gone ones', () => {
+    const today = '2026-11-04';
+    expect(savedRequestState(stored, null, today)).toBe('open');
+    expect(savedRequestState({ ...stored, start: today }, null, today)).toBe('open');
+    expect(savedRequestState({ ...stored, start: '2026-11-03' }, null, today)).toBe('gone'); // move-in passed
+    expect(savedRequestState({ ...stored, status: 'closed' }, null, today)).toBe('gone'); // paused
+    expect(savedRequestState({ ...stored, start: undefined }, null, today)).toBe('gone');
+    expect(savedRequestState(null, null, today)).toBe('gone'); // deleted
+    expect(savedRequestState(null, 'permission-denied', today)).toBe('gone'); // not open: only its owner can read it
+    expect(savedRequestState(null, 'not-found', today)).toBe('gone');
+    expect(savedRequestState(null, 'unavailable', today)).toBe('error');
+  });
+
+  it('keys a set of saved ids the same in any order', () => {
+    expect(savesKey(['20000002', '10000001'], [uid])).toBe(savesKey(['10000001', '20000002'], new Set([uid])));
+    expect(savesKey(['10000001', '10000001'], [])).toBe(savesKey(['10000001'], []));
+    expect(savesKey(['10000001'], [])).not.toBe(savesKey([], []));
+    // a room code and a request id never stand in for each other
+    expect(savesKey(['10000001'], [])).not.toBe(savesKey([], ['10000001']));
+  });
+});
+
+describe('SavedSync: the Saved section follows saves made elsewhere', () => {
+  const A = '10000001';
+  const B = '20000002';
+  const Q = 'aB3dE5fG7hJ9kL1mN3pQ5rS7tU9v';
+  // a first load that shows rooms A and B and request Q, then the event that agrees with it
+  const shown = () => {
+    const s = new SavedSync();
+    const mark = s.loadStarted();
+    expect(s.loaded(mark, false, { room: [A, B], request: [Q] })).toBe(true);
+    s.saved({ room: [B, A], request: [Q] });
+    expect(s.check()).toBe(false);
+    return s;
+  };
+
+  it('waits for the first load, then reloads only when the saved set differs', () => {
+    const s = new SavedSync();
+    expect(s.check()).toBe(false); // no event yet
+    const mark = s.loadStarted();
+    s.saved({ room: [A], request: [] });
+    expect(s.check()).toBe(false); // still loading
+    s.loaded(mark, false, { room: [A], request: [] });
+    expect(s.check()).toBe(false);
+    s.saved({ room: [A, B], request: [] }); // saved on another tab
+    expect(s.check()).toBe(true);
+    expect(s.check()).toBe(false); // asked once
+  });
+
+  it('does not reload for a removal made here, nor for its undo', () => {
+    const s = shown();
+    s.writeStarted(); // heart tapped: Q goes
+    s.saved({ room: [A, B], request: [] }); // Firestore's local copy reports it at once
+    expect(s.check()).toBe(false);
+    s.writeEnded('request', [Q], false, true);
+    expect(s.check()).toBe(false);
+    s.writeStarted(); // Undo
+    s.saved({ room: [A, B], request: [Q] });
+    expect(s.check()).toBe(false);
+    s.writeEnded('request', [Q], true, true);
+    expect(s.check()).toBe(false);
+  });
+
+  it('a failed removal leaves the shown set as it was', () => {
+    const s = shown();
+    s.writeStarted();
+    s.saved({ room: [B], request: [Q] });
+    s.saved({ room: [A, B], request: [Q] }); // rolled back
+    s.writeEnded('room', [A], false, false);
+    expect(s.check()).toBe(false);
+  });
+
+  it('drops a quiet reload overtaken by a removal, then checks again', () => {
+    const s = shown();
+    s.saved({ room: [A, B, '30000003'], request: [Q] }); // saved elsewhere
+    expect(s.check()).toBe(true);
+    const mark = s.loadStarted();
+    s.writeStarted(); // meanwhile the person removes A here
+    s.saved({ room: [B, '30000003'], request: [Q] });
+    s.writeEnded('room', [A], false, true);
+    expect(s.check()).toBe(false); // the reload is still running
+    expect(s.loaded(mark, true, { room: [A, B, '30000003'], request: [Q] })).toBe(false); // may still hold A
+    expect(s.check()).toBe(true); // so it loads again
+    expect(s.loaded(s.loadStarted(), true, { room: [B, '30000003'], request: [Q] })).toBe(true);
+    expect(s.check()).toBe(false);
+  });
+
+  it('asks once for a group that keeps failing, again when the saved set changes', () => {
+    const s = new SavedSync();
+    s.loaded(s.loadStarted(), false, { room: [A], request: null }); // saved requests couldn't be read
+    s.saved({ room: [A], request: [Q] });
+    expect(s.check()).toBe(true);
+    s.loaded(s.loadStarted(), true, { room: [A], request: null });
+    expect(s.check()).toBe(false);
+    s.saved({ room: [A], request: [Q] }); // the same set again
+    expect(s.check()).toBe(false);
+    s.retry(); // Try again
+    expect(s.check()).toBe(true);
+    s.loaded(s.loadStarted(), true, null); // a quiet reload that fails keeps what is shown
+    s.saved({ room: [], request: [Q] });
+    expect(s.check()).toBe(true);
+  });
+
+  it('forgets what was shown for another account', () => {
+    const s = shown();
+    s.reset();
+    expect(s.check()).toBe(true); // nothing shown: the next load catches up
   });
 });

@@ -35,6 +35,19 @@ service firebase.storage {
       allow update: if false;
     }
 
+    // chat photos: chats/{conversationId}/{uid}/{fileName}, only the two people in that conversation
+    match /chats/{cid}/{uid}/{fileName} {
+      function participant() {
+        return request.auth != null
+          && request.auth.uid in firestore.get(/databases/(default)/documents/conversations/$(cid)).data.participants;
+      }
+      allow read: if participant();
+      allow create: if isNU() && mine(uid) && participant()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow update, delete: if false;
+    }
+
     match /{everything=**} {
       allow read, write: if false;
     }

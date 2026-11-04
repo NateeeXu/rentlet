@@ -20,6 +20,7 @@ import {
 import { deleteObject, listAll, ref } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
 import { getListing } from './listings';
+import { todayISO } from './lib/format';
 import type { ListingDoc } from './lib/listingView';
 import { firstName, isNorthwesternEmail } from './lib/nu';
 import {
@@ -27,14 +28,21 @@ import {
   cleanFirstName,
   contactEmailError,
   instagramError,
+  isListingCode,
+  isRequestId,
   listingFilePaths,
   liveCount,
   MAX_LIVE,
   normalizeInstagram,
   requestView,
+  SavedSync,
+  savedRequestCard,
+  savedRequestState,
   sortOwnListings,
   validListingShape,
   validRequestShape,
+  type SavedRequestCard,
+  type SaveKind,
 } from './lib/profileData';
 import * as saves from './saves';
 
@@ -106,6 +114,27 @@ const savedCard = (l: ListingDoc, savedAtMs: number) => ({
   savedAtMs,
 });
 
+// ---------- the Saved section: saved rooms and saved requests ----------
+type RoomCard = ReturnType<typeof savedCard>;
+interface SavedView {
+  items: RoomCard[]; // rooms still listed
+  gone: string[]; // saved rooms no longer listed
+  reqs: SavedRequestCard[]; // requests still open
+  reqGone: string[]; // saved requests no longer open
+  failed: '' | 'rooms' | 'requests'; // a group whose list couldn't be read
+}
+
+// When something is saved or removed on another page or tab, src/rentlet.ts says so (rentlet:saves)
+// and the section reloads quietly, in place; SavedSync (lib/profileData.ts) decides when, so a reload
+// never brings back a card the person just removed here or drops one they just restored.
+const sync = new SavedSync();
+let savedSeq = 0; // each Saved load gets a number; only the newest one lands
+
+function resetSaved() {
+  savedSeq++;
+  sync.reset();
+}
+
 function stop() {
   subs.forEach((u) => u());
   subs = [];
@@ -117,6 +146,7 @@ function signedOut() {
   uid = null;
   mine = [];
   requests.clear();
+  resetSaved();
   page({ authed: false, me: null, ...EMPTY });
 }
 
@@ -126,6 +156,7 @@ function start(u: User) {
   uid = u.uid;
   mine = [];
   requests.clear();
+  resetSaved();
   const role = affiliation(u.email);
   page({ authed: true, me: { uid: u.uid, name: firstName(u.displayName), photo: u.photoURL ?? '', email: u.email ?? '', role }, ...EMPTY });
 
@@ -175,23 +206,95 @@ async function loadContact(my: number, id: string) {
   }
 }
 
-async function loadSaved(my: number) {
+async function loadSavedRooms() {
+  const list = await saves.listSaved();
+  const found = await Promise.all(list.map((s) => getListing(s.code)));
+  const items: RoomCard[] = [];
+  const gone: string[] = [];
+  let failed = 0;
+  found.forEach((r, i) => {
+    if (r.state === 'ok') items.push(savedCard(r.listing, list[i].savedAtMs));
+    else if (r.state === 'error') failed++;
+    else gone.push(list[i].code);
+  });
+  return { ids: list.map((s) => s.code), items, gone, failed };
+}
+
+// requests/{id} is readable by everyone only while it is open (firestore.rules)
+async function loadSavedRequests() {
+  const list = await saves.listSavedRequests();
+  const today = todayISO();
+  const found = await Promise.all(
+    list.map(async (s) => {
+      try {
+        const snap = await getDoc(doc(db, 'requests', s.id));
+        const d = snap.exists() ? snap.data() : null;
+        const state = savedRequestState(d, null, today);
+        return state === 'open' && d ? savedRequestCard(s.id, d, s.savedAtMs) : state;
+      } catch (e) {
+        return savedRequestState(null, errCode(e) || 'unknown', today);
+      }
+    }),
+  );
+  const reqs: SavedRequestCard[] = [];
+  const gone: string[] = [];
+  let failed = 0;
+  found.forEach((r, i) => {
+    if (typeof r === 'object') reqs.push(r);
+    else if (r === 'error') failed++;
+    else gone.push(list[i].id);
+  });
+  return { ids: list.map((s) => s.id), reqs, gone, failed };
+}
+
+// quiet: a reload while the section is already showing; it keeps what is shown until the answer is in,
+// and keeps it on a failure.
+async function loadSaved(my: number, quiet = false) {
+  const seq = ++savedSeq;
+  const mark = sync.loadStarted();
+  const [rooms, reqs] = await Promise.allSettled([loadSavedRooms(), loadSavedRequests()]);
+  if (my !== gen || seq !== savedSeq) return; // signed out, another account, or a newer load
+  const r = rooms.status === 'fulfilled' ? rooms.value : null;
+  const q = reqs.status === 'fulfilled' ? reqs.value : null;
+  const empty = !r?.items.length && !r?.gone.length && !q?.reqs.length && !q?.gone.length;
+  // an error only when nothing can be shown; a group that didn't load gets a note with Try again
+  const failed = (!r && !q) || (empty && (!r || !q || r.failed > 0 || q.failed > 0));
+  if (sync.loaded(mark, quiet, failed ? null : { room: r ? r.ids : null, request: q ? q.ids : null })) {
+    if (!failed) {
+      const view: SavedView = {
+        items: r?.items ?? [],
+        gone: r?.gone ?? [],
+        reqs: q?.reqs ?? [],
+        reqGone: q?.gone ?? [],
+        failed: !r ? 'rooms' : !q ? 'requests' : '',
+      };
+      page({ saved: view });
+    } else if (!quiet) page({ saved: 'error' }); // a quiet reload that fails keeps what is shown
+  }
+  syncSaved();
+}
+
+function syncSaved() {
+  if (uid && sync.check()) loadSaved(gen, true);
+}
+
+addEventListener('rentlet:saves', (e) => {
+  const d = (e as CustomEvent<{ room?: unknown; request?: unknown }>).detail;
+  const ids = (v: unknown, ok: (s: unknown) => s is string) => (Array.isArray(v) ? v.filter(ok) : []);
+  sync.saved({ room: ids(d?.room, isListingCode), request: ids(d?.request, isRequestId) });
+  syncSaved();
+});
+
+// A removal or undo made on this page.
+async function savedWrite(kind: SaveKind, ids: string[], on: boolean, run: () => Promise<unknown>): Promise<void> {
+  sync.writeStarted();
+  let ok = false;
   try {
-    const list = await saves.listSaved();
-    const found = await Promise.all(list.map((s) => getListing(s.code)));
-    if (my !== gen) return;
-    const items: ReturnType<typeof savedCard>[] = [];
-    const gone: string[] = [];
-    let failed = 0;
-    found.forEach((r, i) => {
-      if (r.state === 'ok') items.push(savedCard(r.listing, list[i].savedAtMs));
-      else if (r.state === 'error') failed++;
-      else gone.push(list[i].code);
-    });
-    if (failed && !items.length && !gone.length) throw new Error('saved rooms did not load');
-    page({ saved: { items, gone } });
-  } catch {
-    if (my === gen) page({ saved: 'error' });
+    await run();
+    ok = true;
+  } finally {
+    sync.writeEnded(kind, ids, on, ok);
+    syncSaved();
   }
 }
 
@@ -220,8 +323,10 @@ async function wipe(owner: string) {
   for (const d of own.docs) await removeListing(fromDoc(d.id, d.data()), owner);
   const reqs = await getDocs(query(collection(db, 'requests'), where('ownerId', '==', owner)));
   await Promise.all(reqs.docs.map((d) => deleteDoc(d.ref)));
-  const saved = await getDocs(collection(db, 'users', owner, 'saves'));
-  await Promise.all(saved.docs.map((d) => deleteDoc(d.ref)));
+  for (const path of ['saves', 'savedRequests']) {
+    const saved = await getDocs(collection(db, 'users', owner, path));
+    await Promise.all(saved.docs.map((d) => deleteDoc(d.ref)));
+  }
   const priv = await getDocs(collection(db, 'users', owner, 'private'));
   await Promise.all(priv.docs.map((d) => deleteDoc(d.ref)));
   await Promise.allSettled([sweep(`listings/${owner}`), sweep(`videos/${owner}`)]);
@@ -305,10 +410,19 @@ const api = {
     await deleteDoc(doc(db, 'requests', id));
   },
 
-  unsave: (code: string) => saves.unsave(code),
-  resave: (code: string, savedAtMs: number) => saves.save(code, savedAtMs),
-  async forgetSaves(codes: string[]): Promise<void> {
-    await Promise.all(codes.map((c) => saves.unsave(c)));
+  // saved rooms and requests: remove, undo a removal (with the original time), clear the gone ones
+  unsave: (code: string) => savedWrite('room', [code], false, () => saves.unsave(code)),
+  resave: (code: string, savedAtMs: number) => savedWrite('room', [code], true, () => saves.save(code, savedAtMs)),
+  forgetSaves: (codes: string[]) => savedWrite('room', codes, false, () => Promise.all(codes.map((c) => saves.unsave(c)))),
+  unsaveRequest: (id: string) => savedWrite('request', [id], false, () => saves.unsaveRequest(id)),
+  resaveRequest: (id: string, savedAtMs: number) => savedWrite('request', [id], true, () => saves.saveRequest(id, savedAtMs)),
+  forgetSavedRequests: (ids: string[]) =>
+    savedWrite('request', ids, false, () => Promise.all(ids.map((i) => saves.unsaveRequest(i)))),
+  // the Saved section's "Try again" when one group didn't load: reloads in place
+  reloadSaved() {
+    if (!uid) return;
+    sync.retry();
+    loadSaved(gen, true);
   },
 
   // '' when both fields can be saved

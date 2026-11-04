@@ -1,12 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import {
+  badgeUnread,
+  chatPhotoPath,
   cleanText,
   conversationId,
   convFromData,
   counts,
   dayLabel,
+  fitWithin,
+  imageBody,
+  isHiddenFor,
   isUnread,
+  lastFor,
   lastLine,
+  listingBody,
+  listingCard,
+  msgFromData,
+  msgSnippet,
+  recallLeft,
+  replyTo,
+  snippet,
+  textBody,
+  underLimit,
   needsReveal,
   listingSnapshot,
   newConversation,
@@ -253,5 +268,164 @@ describe('thread view', () => {
     });
     expect(v.p).toMatchObject({ photo: 'https://p.test/m.jpg', role: 'Junior · Northwestern', since: 'Member since Oct 2026', bio: 'Tidy' });
     expect(v.taken).toBe(false);
+  });
+});
+
+describe('replies, recalls, photos and listing cards', () => {
+  const CID = '12345678_guestUid456';
+  const URL = `https://firebasestorage.googleapis.com/v0/b/rentlet-nu.firebasestorage.app/o/chats%2F${CID}%2F${GUEST}%2F1762268400000.jpg?alt=media&token=t`;
+
+  it('reads each kind of message and ignores what does not fit', () => {
+    expect(msgFromData('a', { senderId: GUEST, kind: 'image', imageUrl: URL, width: 1200.4, height: 900, createdAt: 5 })).toMatchObject({
+      kind: 'image',
+      text: '',
+      image: { url: URL, w: 1200, h: 900 },
+    });
+    // a photo from anywhere else is not shown as a photo
+    expect(msgFromData('b', { senderId: GUEST, kind: 'image', imageUrl: 'https://evil.test/x.jpg', text: '' })).toMatchObject({ kind: 'text', text: '' });
+    expect(msgFromData('c', { senderId: HOST, kind: 'listing', listing: { code: '12345678', title: 'Room', price: 1390, photo: 'javascript:x' } })).toMatchObject({
+      kind: 'listing',
+      listing: { code: '12345678', title: 'Room', price: 1390, photo: '' },
+    });
+    expect(msgFromData('d', { senderId: HOST, kind: 'listing', listing: { code: 'nope' }, text: 'hi' }).kind).toBe('text');
+    expect(msgFromData('e', { senderId: HOST, kind: 'recalled', text: 'secret' })).toMatchObject({ kind: 'recalled', text: '' });
+    expect(msgFromData('f', { senderId: HOST, text: 'ok', replyTo: { id: 'a', senderId: GUEST, text: 'x'.repeat(200) }, hiddenFor: { [GUEST]: true, [HOST]: 'yes' } })).toMatchObject({
+      kind: 'text',
+      replyTo: { id: 'a', senderId: GUEST },
+      hiddenFor: { [GUEST]: true },
+    });
+    expect(msgFromData('g', { senderId: HOST, text: 'ok', kind: 'system' }).kind).toBe('text');
+  });
+
+  it('leaves out what I deleted and what came before Delete conversation', () => {
+    const list: Msg[] = [
+      msg('1', GUEST, at(3, 9), 'old'),
+      { ...msg('2', HOST, at(4, 9), 'hidden for me'), hiddenFor: { [GUEST]: true } },
+      msg('3', HOST, at(4, 10), 'kept'),
+    ];
+    const items = timeline(list, { safetyMs: at(3, 10), share: {}, clearedAt: { [GUEST]: at(3, 12) } }, GUEST, HOST, 'Maya', 'looking', now);
+    expect(items.filter((i) => i.f === 'me' || i.f === 'them').map((i) => ('x' in i ? i.x : ''))).toEqual(['kept']);
+    expect(items.some((i) => i.f === 'sys')).toBe(false); // the money note was before the clear
+    // the host still sees everything
+    expect(timeline(list, { safetyMs: 0, share: {}, clearedAt: { [GUEST]: at(3, 12) } }, HOST, GUEST, 'Sam', 'subletting', now).filter((i) => i.f === 'me' || i.f === 'them')).toHaveLength(3);
+    // deleted-for-me messages still count toward the contact unlock
+    expect(counts(list, GUEST)).toEqual({ me: 1, them: 2 });
+  });
+
+  it('shows recalls to both sides and quotes that are gone as not available', () => {
+    const list: Msg[] = [
+      { ...msg('1', GUEST, at(4, 9), ''), kind: 'recalled' },
+      msg('2', GUEST, at(4, 9, 1), 'Still free?'),
+      { ...msg('3', HOST, at(4, 9, 2), 'Yes'), replyTo: { id: '2', senderId: GUEST, text: 'Still free?' } },
+      { ...msg('4', HOST, at(4, 9, 3), 'About that'), replyTo: { id: '1', senderId: GUEST, text: 'was here' } },
+      { ...msg('5', GUEST, at(4, 9, 4), 'photo'), kind: 'image', text: '', image: { url: URL, w: 4, h: 3 } },
+    ];
+    const g = timeline(list, null, GUEST, HOST, 'Maya', 'looking', now);
+    expect(g[1]).toEqual({ f: 'recalled', x: 'You recalled a message', id: '1', mine: true });
+    expect(g[2]).toMatchObject({ f: 'me', x: 'Still free?', rcl: at(4, 9, 1) + 120_000 });
+    expect(g[3]).toMatchObject({ f: 'them', re: { id: '2', who: 'You', x: 'Still free?', gone: false } });
+    expect(g[3]).not.toHaveProperty('rcl'); // only my own messages can be recalled
+    expect(g[4]).toMatchObject({ re: { who: 'You', x: '', gone: true } });
+    expect(g[5]).toMatchObject({ f: 'me', k: 'image', x: '', img: { url: URL, w: 4, h: 3 } });
+    expect(g[5]).not.toHaveProperty('rcl');
+    expect(timeline(list, null, HOST, GUEST, 'Sam', 'subletting', now)[1]).toEqual({ f: 'recalled', x: 'Sam recalled a message', id: '1', mine: false });
+    // a recalled message is no longer a reply
+    expect(counts(list, GUEST)).toEqual({ me: 1, them: 2 });
+  });
+
+  it('words the last line for each kind', () => {
+    const c = { lastMessage: 'Photo', lastSender: GUEST, lastKind: 'image' as const, updatedAtMs: 10, lastHidden: {} as Record<string, number> };
+    expect(lastLine(c, GUEST, 'Maya')).toBe('You: Photo');
+    expect(lastLine({ ...c, lastKind: 'recalled', lastMessage: 'Message recalled' }, GUEST, 'Maya')).toBe('You recalled a message');
+    expect(lastLine({ ...c, lastKind: 'recalled', lastMessage: 'Message recalled' }, HOST, 'Sam')).toBe('Sam recalled a message');
+    expect(lastLine({ ...c, lastHidden: { [GUEST]: 11 } }, GUEST, 'Maya')).toBe('Message deleted');
+    expect(lastLine({ ...c, lastHidden: { [GUEST]: 9 } }, GUEST, 'Maya')).toBe('You: Photo'); // a newer message came in
+  });
+
+  it('builds message documents the proposed rules accept', () => {
+    expect(Object.keys(textBody('hi'))).toEqual(['kind', 'text']);
+    const quoted = replyTo({ id: 'm1', senderId: HOST, text: 'a\n'.repeat(100), kind: 'text', atMs: 1 });
+    expect(quoted.text.length).toBeLessThanOrEqual(80);
+    expect(textBody('hi', quoted)).toEqual({ kind: 'text', text: 'hi', replyTo: quoted });
+    expect(Object.keys(quoted).sort()).toEqual(['id', 'senderId', 'text']);
+    expect(imageBody(URL, 1599.6, 1200.2)).toEqual({ kind: 'image', text: '', imageUrl: URL, width: 1600, height: 1200 });
+    const card = listingCard(listing);
+    expect(Object.keys(card).sort()).toEqual(['area', 'code', 'end', 'photo', 'price', 'start', 'title']);
+    expect(card).toMatchObject({ code: '12345678', price: 1390, photo: 'https://example.test/a.jpg' });
+    expect(Number.isInteger(card.price)).toBe(true);
+    expect(listingBody(card)).toEqual({ kind: 'listing', text: '', listing: card });
+    expect(lastFor(listingBody(card))).toEqual({ lastMessage: 'Listing: Private room in a 3-bed', lastKind: 'listing' });
+    expect(lastFor(imageBody(URL, 1, 1))).toEqual({ lastMessage: 'Photo', lastKind: 'image' });
+    expect(lastFor({ kind: 'recalled' })).toEqual({ lastMessage: 'Message recalled', lastKind: 'recalled' });
+    expect(chatPhotoPath(CID, GUEST, 1762268400000)).toBe(`chats/${CID}/${GUEST}/1762268400000.jpg`);
+    // the image URL check the rules make
+    const rule = new RegExp(`^https://firebasestorage[.]googleapis[.]com/v0/b/rentlet-nu[.]firebasestorage[.]app/o/chats%2F${CID}%2F${GUEST}%2F[^/?#]+[?].*$`);
+    expect(rule.test(URL)).toBe(true);
+    expect(rule.test(URL.replace(`%2F${GUEST}%2F`, `%2F${HOST}%2F`))).toBe(false);
+  });
+
+  it('quotes in one short line', () => {
+    expect(snippet('  Hi\n\nthere  ')).toBe('Hi there');
+    expect(snippet('x'.repeat(100))).toHaveLength(80);
+    expect(msgSnippet({ kind: 'image', text: '' })).toBe('Photo');
+    expect(msgSnippet({ kind: 'listing', text: '', listing: listingCard(listing) })).toBe('Listing: Private room in a 3-bed');
+  });
+
+  it('limits sending and recalling like the mini program', () => {
+    const t0 = 1_000_000;
+    const eleven = Array.from({ length: 11 }, (_, i) => t0 + i * 100);
+    expect(underLimit(eleven, t0 + 2000, { n: 12, ms: 10_000 })).toBe(true);
+    expect(underLimit([...eleven, t0 + 1200], t0 + 2000, { n: 12, ms: 10_000 })).toBe(false);
+    expect(underLimit([...eleven, t0 + 1200], t0 + 11_200, { n: 12, ms: 10_000 })).toBe(true);
+    const mine = { kind: 'text' as const, senderId: GUEST, atMs: t0 };
+    expect(recallLeft(mine, GUEST, t0 + 1000)).toBe(119);
+    expect(recallLeft(mine, GUEST, t0 + 120_000)).toBe(0);
+    expect(recallLeft(mine, HOST, t0)).toBe(0);
+    expect(recallLeft({ ...mine, kind: 'image' }, GUEST, t0)).toBe(0);
+  });
+
+  it('scales photos to at most 1600 px on the long side', () => {
+    expect(fitWithin(4032, 3024)).toEqual({ w: 1600, h: 1200 });
+    expect(fitWithin(1080, 1920)).toEqual({ w: 900, h: 1600 });
+    expect(fitWithin(800, 600)).toEqual({ w: 800, h: 600 });
+    expect(fitWithin(0, 600)).toEqual({ w: 0, h: 0 });
+  });
+});
+
+describe('conversation settings', () => {
+  const data = {
+    ...newConversation({ listing, hostId: HOST, guestId: GUEST, names: { [HOST]: 'Maya', [GUEST]: 'Sam' }, photos: {} }),
+    lastMessage: 'Hi',
+    lastSender: HOST,
+    updatedAt: 100,
+    pinned: { [GUEST]: true, [HOST]: 1 },
+    muted: { [GUEST]: true },
+    hidden: { [HOST]: 150 },
+    clearedAt: { [HOST]: 150 },
+    lastKind: 'bogus',
+  };
+
+  it('reads mine and keeps them per person', () => {
+    const c = convFromData('12345678_guestUid456', data);
+    expect(c.pinned).toEqual({ [GUEST]: true });
+    expect(c.muted).toEqual({ [GUEST]: true });
+    expect(c.hidden).toEqual({ [HOST]: 150 });
+    expect(c.clearedAt).toEqual({ [HOST]: 150 });
+    expect(c.lastKind).toBe('text');
+    expect(isHiddenFor(c, HOST)).toBe(true);
+    expect(isHiddenFor(c, GUEST)).toBe(false);
+    expect(isHiddenFor({ ...c, updatedAtMs: 151 }, HOST)).toBe(false); // a newer message brings it back
+    const g = threadView(c, { me: GUEST, msgs: [], profile: null, activeCodes: null, now });
+    expect(g).toMatchObject({ pinned: true, muted: true, hidden: false, unread: true, n: { me: 0, them: 0 } });
+    expect(threadView(c, { me: HOST, msgs: [], profile: null, activeCodes: null, now })).toMatchObject({ pinned: false, muted: false, hidden: true });
+  });
+
+  it('counts toward the header badge only when unread, unmuted, shown and not blocked', () => {
+    expect(badgeUnread(data, GUEST)).toBe(false); // muted
+    expect(badgeUnread({ ...data, muted: {} }, GUEST)).toBe(true);
+    expect(badgeUnread({ ...data, muted: {}, blocked: { [GUEST]: true } }, GUEST)).toBe(false);
+    expect(badgeUnread({ ...data, muted: {}, hidden: { [GUEST]: 100 } }, GUEST)).toBe(false);
+    expect(badgeUnread({ ...data, muted: {}, read: { [GUEST]: 100 } }, GUEST)).toBe(false);
+    expect(badgeUnread({ ...data, lastSender: GUEST }, HOST)).toBe(false); // hidden by the host
   });
 });

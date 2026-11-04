@@ -230,6 +230,10 @@ button{cursor:pointer}
 .poster span{white-space:nowrap;display:flex;align-items:center;gap:4px;font-size:13px;color:var(--muted)}
 .poster span .ic{color:var(--ok)}
 .poster .acts{margin-left:auto;display:flex;gap:8px}
+/* Save on the placeholder room page: the label follows aria-pressed, which src/rentlet.ts keeps current */
+.poster [data-rl-save]::after{content:'Save'}
+.poster [data-rl-save][aria-pressed=true]::after{content:'Saved'}
+.poster [data-rl-save][aria-pressed=true] .ic{fill:var(--ink)}
 .dt-note{font-size:13px;color:var(--muted);margin:18px 0 0}
 @supports (corner-shape:squircle){.dt-ph{border-radius:64px;corner-shape:squircle}}
 ::view-transition-group(hero-photo){animation-duration:.55s;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
@@ -613,6 +617,8 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .cx-card .cph img.flip{transform:scaleX(-1)}
 .cx-card .ctg{position:absolute;left:12px;top:12px;z-index:2;background:#fff;border-radius:99px;padding:5px 10px;font-size:12px;font-weight:600}
 .cx-card .csv{position:absolute;right:10px;top:10px;z-index:2;width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,255,255,.94);display:grid;place-items:center;cursor:pointer}
+/* the heart looks 34px but takes taps across a 44px square */
+.cx-card .csv::after{content:'';position:absolute;inset:-5px}
 .cx-card .csv .ic{width:17px;height:17px}
 .cx-card .csv[aria-pressed=true] .ic{fill:var(--ink)}
 .cx-card .cbd{padding:10px 2px 0}
@@ -762,7 +768,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=4610d86b"></script>
+<script src="/rentlet-boot.js?v=5ad688a5"></script>
 </head>
 <body>
 
@@ -865,10 +871,15 @@ const gapDays=(a,b)=>nights(a,b);
 function legStart(l,p){if(T(l.start)<=T(p.start)){const d=gapDays(l.start,p.start);return['ok',d===0?'Same day':`${plural(d,'day')} early`]}return['warn',`${gapDays(p.start,l.start)}-day gap`]}
 function legEnd(l,p){if(T(l.end)>=T(p.end)){const d=gapDays(p.end,l.end);return['ok',d===0?'Same day':`+${plural(d,'day')}`]}return['warn',`${plural(gapDays(l.end,p.end),'day')} short`]}
 const priceTag=l=>`<span class="price"><b>${money(l.price)}</b><span class="unit"> / mo</span></span>`;
+/* a room's heart, only on a real listing (8-digit number). The boot script owns the click (the card under it
+   never opens); src/rentlet.ts signs the visitor in, saves it to their account and keeps aria-pressed current */
+const ROOM_CODE=/^[1-9][0-9]{7}$/;
+const roomSaved=c=>!!(window.RL&&typeof RL.isSaved==='function'&&RL.isSaved('room',String(c)));
+const heartBtn=(l,cls)=>ROOM_CODE.test(String(l.code||''))?`<button type="button" class="${cls}" data-rl-save="room:${l.code}" aria-pressed="${roomSaved(l.code)}" aria-label="Save ${l.title}">${ic('heart')}</button>`:'';
 function hcard(l,p,i){
   const [s1,t1]=legStart(l,p),[s2,t2]=legEnd(l,p);
   return `<article class="card rise" style="--i:${Math.min(i,7)}" data-id="${l.id}" tabindex="0" aria-label="${l.title}, ${l.area}, ${money(l.price)} per month">
-    <div class="ph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ph-tag">${l.type}</span><button class="save" aria-label="Save ${l.title}" aria-pressed="false">${ic('heart')}</button><span class="walk">${ic('walk','sm')}${l.walk} min to campus</span></div>
+    <div class="ph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ph-tag">${l.type}</span>${heartBtn(l,'save')}<span class="walk">${ic('walk','sm')}${l.walk} min to campus</span></div>
     <div class="cb">
       <div class="ct"><h3>${l.title}</h3>${priceTag(l)}</div>
       <p class="meta">${l.area} · ${ic('shield','sm')}${l.who}, verified student</p>
@@ -981,13 +992,13 @@ const FICONS={walk:ICONS.walk,sofa:'<path d="M4 11.5V9a2 2 0 0 1 2-2h12a2 2 0 0 
   wash:'<rect x="5" y="3.5" width="14" height="17" rx="2.5"/><circle cx="12" cy="13" r="4"/><path d="M8.5 6.8h.01M11 6.8h2"/>'};
 const fic=k=>`<svg class="fi" viewBox="0 0 24 24" aria-hidden="true">${FICONS[k]}</svg>`;
 const ltype=l=>l.title.startsWith('Private room')?'Private room':l.title.startsWith('Entire')?'Entire place':'Studio';
-let CXF='All',CXS='fit',CXALR=null,CXFREQ='instant';const CXSAVED=new Set();
+let CXF='All',CXS='fit',CXALR=null,CXFREQ='instant';
 const lfacts=l=>[l.furnished?'Furnished':'Not furnished',l.bath==='private'?'Private bath':'Shared bath',l.laundry?'Laundry in building':'Ask about laundry'];
 const walkTx=l=>l.walk!=null?`${l.walk} min walk`:'';
 function cxCard(l,i,sub){const f=lfacts(l);
   return `<article class="cx-card" role="link" tabindex="0" data-cxhref="room.html?room=${l.key}" style="--i:${i}" aria-label="${l.title}, ${l.area}, ${money(l.price)} a month. ${[walkTx(l)&&walkTx(l)+' to campus',...f].filter(Boolean).join(', ')}">
     <div class="cph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ctg">${wl(l.start,l.end)}</span>
-      <button type="button" class="csv" data-cxsave="${l.id}" aria-pressed="${CXSAVED.has(l.id)}" aria-label="Save ${l.title}">${ic('heart')}</button>
+      ${heartBtn(l,'csv')}
       <span class="cfx" aria-hidden="true">${l.walk!=null?`<span>${fic('walk')}${l.walk} min to campus</span>`:''}<span>${fic('sofa')}${f[0]}</span><span>${fic('bath')}${f[1]}</span><span>${fic('wash')}${f[2]}</span></span></div>
     <div class="cbd"><div class="ct"><span>${l.title.replace(/-/g,'\u2011')}</span><b>${money(l.price)}<small> / mo</small></b></div><div class="cm">${l.area}</div><div class="cf">${sub}</div><div class="cf2">${[walkTx(l),f[0],f[1]].filter(Boolean).join(' · ')}</div></div></article>`}
 const cxEmpty=(t,x,a='')=>`<div class="cx-empty"><h3>${t}</h3><p>${x}</p>${a}</div>`;
@@ -1130,7 +1141,7 @@ function roomPage(m){
         </div>
         <p class="fit ${r.whole?'full':'part'}">${ic(r.whole?'check':'cal')}<span><b>${dates}</b>${m.budget&&budgetText(r.diff)?` <span class="bud">· ${budgetText(r.diff)}</span>`:''}</span></p>
         <div class="poster"><div class="avatar">${m.who[0]}</div><div><b>${m.who}</b><span>${ic('shield','sm')}Verified student</span></div>
-          <div class="acts"><button class="btn btn-primary" data-toast="Opens a message to ${m.who}.">${ic('chat','sm')}Message ${m.who}</button><button class="btn btn-secondary" data-toast="Saved. Sign in to keep it across devices.">${ic('heart','sm')}Save</button></div></div>
+          <div class="acts"><button class="btn btn-primary" data-toast="Opens a message to ${m.who}.">${ic('chat','sm')}Message ${m.who}</button>${ROOM_CODE.test(String(m.code||''))?`<button type="button" class="btn btn-secondary" data-rl-save="room:${m.code}" aria-pressed="${roomSaved(m.code)}" aria-label="Save this room">${ic('heart','sm')}</button>`:''}</div></div>
       </div>
     </div>
     <p class="dt-note">Room page placeholder. The full room page design is the next step.</p>
@@ -1224,6 +1235,12 @@ function bindOrbit(){
   /* budget: a slider over the prices of the rooms at this campus, ending in No max */
   function applyBudget(v){plan.budget=v;BudgetPicker.save(v);setV('bud',BudgetPicker.label(v));mode='need';results();syncMini()}
   const pickBudget=anchor=>BudgetPicker.open({anchor,value:plan.budget,prices:roomsHere().map(r=>r.price),onDone:applyBudget});
+  /* "Reset the search" on an empty result: any price, and the dates of the soonest room opening at this campus,
+     so the reset always brings rooms back; the bar and the compact bar show the new values */
+  window.RL_resetSearch=()=>{const today=new Date().toISOString().slice(0,10);
+    const here=L.filter(l=>l.school===plan.school&&l.end>today).sort((x,y)=>T(x.start)-T(y.start));
+    plan.budget=Infinity;BudgetPicker.save(Infinity);setV('bud',BudgetPicker.label(Infinity));
+    if(here.length)applyDates(here[0].start>today?here[0].start:today,here[0].end);else{mode='need';results();syncMini()}};
   $('#aBud',bar).addEventListener('click',e=>pickBudget(e.currentTarget));
 
   /* once the search bar scrolls under the header it shrinks into a compact bar that stays in the header:
@@ -1395,7 +1412,6 @@ function show(k,keep){
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
 site.addEventListener('click',e=>{
   const t0=e.target;
-  const cs=t0.closest('[data-cxsave]');if(cs){e.preventDefault();e.stopPropagation();const id=cs.dataset.cxsave,on=!CXSAVED.has(id);on?CXSAVED.add(id):CXSAVED.delete(id);$$(`[data-cxsave="${id}"]`).forEach(b=>b.setAttribute('aria-pressed',on));toast(on?'Saved. Sign in to keep it on every device.':'Removed from saved.');return}
   const cf=t0.closest('[data-cxf]');if(cf){CXF=cf.dataset.cxf;results();return}
   const cso=t0.closest('[data-cxs]');if(cso){CXS=cso.dataset.cxs;results();return}
   const cr=t0.closest('[data-cxrail]');if(cr){const r=$('#cxRail');r.scrollBy({left:+cr.dataset.cxrail*r.clientWidth*.8,behavior:reduced?'auto':'smooth'});return}
@@ -1408,10 +1424,8 @@ site.addEventListener('click',e=>{
   const sm=t0.closest('.cx-faq summary');if(sm){e.preventDefault();const d=sm.parentElement,pp=$('p',d);if(reduced){d.open=!d.open;return}
     if(!d.open){d.open=true;pp.animate([{height:'0px',opacity:0},{height:pp.scrollHeight+'px',opacity:1}],{duration:260,easing:'cubic-bezier(.22,1,.36,1)'})}
     else pp.animate([{height:pp.scrollHeight+'px',opacity:1},{height:'0px',opacity:0}],{duration:200,easing:'ease-in'}).onfinish=()=>{d.open=false};return}
-  const save=e.target.closest('.save');
-  if(save){e.stopPropagation();const on=save.getAttribute('aria-pressed')!=='true';save.setAttribute('aria-pressed',on);toast(on?'Saved. Sign in to keep it across devices.':'Removed from saved.');return}
   const t=e.target.closest('[data-toast]');if(t){e.preventDefault();toast(t.dataset.toast);return}
-  if(e.target.closest('[data-reset]')){plan={...DEFAULT};mine={...MINE};$('#searchWrap').innerHTML=searchBlock();bindSearch();results();return}
+  if(e.target.closest('[data-reset]')){if(window.RL_resetSearch){RL_resetSearch();return}plan={...DEFAULT};mine={...MINE};$('#searchWrap').innerHTML=searchBlock();bindSearch();results();return}
   if(e.target.closest('a[href="#"]')){e.preventDefault();return}
   if(e.target.closest('[data-back]')){history.back();return}
   const sq=e.target.closest('[data-place]');if(sq){e.preventDefault();openPlace(sq.dataset.place,$('img',sq));return}

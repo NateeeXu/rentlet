@@ -1,13 +1,20 @@
 // Pure helpers for the profile page (profile.html + src/profile.ts): field cleaning, the checks the
 // Firestore rules make before an update, and which Storage files belong to a listing. Tested.
 import { CAMPUS_NAME, type CampusId, type ListingDoc } from './listingView';
+import { KIND_LABEL, LAYOUTS, ROLE_LABEL } from './requestsView';
 
 export const MAX_LIVE = 3;
 const LISTING_CODE = /^[1-9][0-9]{7}$/;
+// A request's id is its owner's uid; src/rentlet.ts saves only ids of this shape.
+const REQUEST_ID = /^[A-Za-z0-9]{10,64}$/;
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isListingCode(s: unknown): s is string {
   return typeof s === 'string' && LISTING_CODE.test(s);
+}
+
+export function isRequestId(s: unknown): s is string {
+  return typeof s === 'string' && REQUEST_ID.test(s);
 }
 
 // Public profiles show a first name only, at most 24 characters.
@@ -167,4 +174,143 @@ export function requestView(id: string, d: Record<string, unknown>, fallbackName
     campus: CAMPUS_NAME[campusId] ?? CAMPUS_BY_KEY[str(d.campus)] ?? str(d.school),
     note: str(d.note),
   };
+}
+
+// ---------- saved requests (the profile's Saved section) ----------
+
+// What a saved request's card shows: the same fields, labels and fallbacks as a Requests page card
+// (toRow in requestsView.ts), read defensively because the stored document is someone else's.
+export interface SavedRequestCard {
+  id: string;
+  who: string;
+  photo: string;
+  role: string;
+  kind: string;
+  layouts: string[];
+  start: string;
+  end: string;
+  budget: number | null; // null: any price
+  savedAtMs: number;
+}
+
+export function savedRequestCard(id: string, d: Record<string, unknown>, savedAtMs: number): SavedRequestCard {
+  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  const kind = str(d.kind) as keyof typeof KIND_LABEL;
+  const role = str(d.role) as keyof typeof ROLE_LABEL;
+  return {
+    id,
+    who: str(d.ownerName) || 'Northwestern student',
+    photo: /^https:\/\//.test(str(d.ownerPhoto)) ? str(d.ownerPhoto) : '',
+    role: ROLE_LABEL[role] ?? 'Student',
+    kind: KIND_LABEL[kind] ?? KIND_LABEL.room,
+    layouts: (Array.isArray(d.layouts) ? d.layouts : []).filter((x): x is string => (LAYOUTS as readonly unknown[]).includes(x)),
+    start: isDate(d.start) ? d.start : '',
+    end: isDate(d.end) ? d.end : '',
+    budget: !d.anyPrice && isInt(d.budget) && d.budget > 0 ? d.budget : null,
+    savedAtMs,
+  };
+}
+
+// One saved request after looking it up: 'open' while it is open and its move-in day hasn't passed
+// (the Requests page shows it until then); 'gone' when it was paused, deleted or has expired (the rules
+// let only its owner read a request that isn't open, so everyone else gets permission-denied);
+// 'error' when the lookup itself failed and the answer is unknown.
+export function savedRequestState(
+  d: Record<string, unknown> | null | undefined,
+  errorCode: string | null,
+  today: string,
+): 'open' | 'gone' | 'error' {
+  if (errorCode) return errorCode === 'permission-denied' || errorCode === 'not-found' ? 'gone' : 'error';
+  if (!d || d.status !== 'open') return 'gone';
+  return isDate(d.start) && d.start >= today ? 'open' : 'gone';
+}
+
+// One string for a set of saved rooms and requests, the same whatever the order, so the Saved section
+// can tell whether what it shows still matches what is saved (src/rentlet.ts's rentlet:saves event).
+export function savesKey(room: Iterable<string>, request: Iterable<string>): string {
+  const sorted = (ids: Iterable<string>) => [...new Set(ids)].sort().join(',');
+  return `room:${sorted(room)}|request:${sorted(request)}`;
+}
+
+export type SaveKind = 'room' | 'request';
+export interface SavedIds {
+  room: string[];
+  request: string[];
+}
+
+// Keeps the profile's Saved section in step with what is saved, as src/rentlet.ts reports it after
+// every change (the rentlet:saves event), without fighting removals and undos made on the section
+// itself. src/profile.ts reports what happens; check() says when to reload the section quietly.
+//  - shown: the saved ids the section was built from (null: a group that couldn't be read), kept in
+//    step with removals made here once Firestore has them.
+//  - While a removal or undo is in flight, or a load is running, it never asks for a reload; a quiet
+//    reload that was running while one landed has its answer dropped, then it checks again.
+//  - It asks once per saved set: a reload that still can't match (a list that won't load) isn't repeated
+//    until the saved set changes again.
+export class SavedSync {
+  private shown: Record<SaveKind, Set<string> | null> = { room: null, request: null };
+  private latest: SavedIds | null = null;
+  private loading = false;
+  private pending = 0;
+  private writes = 0;
+  private answered = '';
+
+  // a new account (or none): nothing is shown yet
+  reset(): void {
+    this.shown = { room: null, request: null };
+    this.loading = false;
+    this.answered = '';
+  }
+
+  saved(latest: SavedIds): void {
+    this.latest = { room: [...latest.room], request: [...latest.request] };
+  }
+
+  // returns a mark to hand back to loaded()
+  loadStarted(): number {
+    this.loading = true;
+    return this.writes;
+  }
+
+  // ids: what the answer was built from, or null when the load failed. Returns false when the answer
+  // must not be shown (a quiet reload overtaken by a removal or undo made here).
+  loaded(mark: number, quiet: boolean, ids: { room: string[] | null; request: string[] | null } | null): boolean {
+    this.loading = false;
+    if (quiet && (this.pending || this.writes !== mark)) {
+      this.answered = '';
+      return false;
+    }
+    if (ids) this.shown = { room: ids.room && new Set(ids.room), request: ids.request && new Set(ids.request) };
+    else if (!quiet) this.shown = { room: null, request: null };
+    return true;
+  }
+
+  writeStarted(): void {
+    this.pending++;
+    this.writes++;
+  }
+
+  writeEnded(kind: SaveKind, ids: string[], on: boolean, ok: boolean): void {
+    this.pending = Math.max(0, this.pending - 1);
+    const set = this.shown[kind];
+    if (ok && set) ids.forEach((id) => (on ? set.add(id) : set.delete(id)));
+  }
+
+  // the next check() may reload even for a saved set it already reloaded for ("Try again")
+  retry(): void {
+    this.answered = '';
+  }
+
+  check(): boolean {
+    if (!this.latest || this.pending || this.loading) return false;
+    const want = savesKey(this.latest.room, this.latest.request);
+    const { room, request } = this.shown;
+    if (room && request && savesKey(room, request) === want) {
+      this.answered = '';
+      return false;
+    }
+    if (want === this.answered) return false;
+    this.answered = want;
+    return true;
+  }
 }

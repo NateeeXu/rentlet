@@ -48,6 +48,13 @@ service cloud.firestore {
       match /saves/{listingId} {
         allow read, write: if signedIn() && me() == uid;
       }
+      // saved requests: users/{uid}/savedRequests/{requestId} = {savedAt}
+      match /savedRequests/{requestId} {
+        allow read, delete: if signedIn() && me() == uid;
+        allow create, update: if signedIn() && me() == uid
+          && request.resource.data.keys().hasOnly(['savedAt'])
+          && request.resource.data.savedAt is timestamp;
+      }
     }
 
     // ---------- listings ----------
@@ -154,21 +161,67 @@ service cloud.firestore {
         && request.resource.data.listingId == resource.data.listingId
         && request.resource.data.hostId == resource.data.hostId
         && request.resource.data.guestId == resource.data.guestId
-        && ownOnly('read') && ownOnly('share') && ownOnly('blocked');
+        && ownOnly('read') && ownOnly('share') && ownOnly('blocked')
+        && ownOnly('pinned') && ownOnly('muted') && ownOnly('hidden')
+        && ownOnly('clearedAt') && ownOnly('lastHidden');
       allow delete: if false;
 
       match /messages/{mid} {
+        function validReply(d) {
+          return !('replyTo' in d) || (d.replyTo is map
+            && d.replyTo.keys().hasOnly(['id', 'senderId', 'text'])
+            && d.replyTo.id is string && d.replyTo.id.size() <= 64
+            && d.replyTo.senderId in convo(cid).participants
+            && d.replyTo.text is string && d.replyTo.text.size() <= 80);
+        }
+        function validBody(d) {
+          return (d.get('kind', 'text') == 'text'
+              && d.keys().hasOnly(['senderId', 'text', 'kind', 'createdAt', 'replyTo'])
+              && d.text is string && d.text.size() > 0 && d.text.size() <= 2000
+              && validReply(d))
+            || (d.get('kind', 'text') == 'image'
+              && d.keys().hasOnly(['senderId', 'text', 'kind', 'createdAt', 'imageUrl', 'width', 'height'])
+              && d.text == ''
+              && d.imageUrl is string && d.imageUrl.size() <= 2000
+              && d.imageUrl.matches('https://firebasestorage[.]googleapis[.]com/v0/b/rentlet-nu[.]firebasestorage[.]app/o/chats%2F' + cid + '%2F' + me() + '%2F[^/?#]+[?].*')
+              && d.width is int && d.width > 0 && d.width <= 4000
+              && d.height is int && d.height > 0 && d.height <= 4000)
+            || (d.get('kind', 'text') == 'listing'
+              && d.keys().hasOnly(['senderId', 'text', 'kind', 'createdAt', 'listing'])
+              && d.text == ''
+              && d.listing is map
+              && d.listing.keys().hasOnly(['code', 'title', 'price', 'start', 'end', 'area', 'photo'])
+              && d.listing.code is string && d.listing.code.matches('[1-9][0-9]{7}')
+              && d.listing.title is string && d.listing.title.size() <= 120
+              && d.listing.price is int && d.listing.price >= 0 && d.listing.price <= 20000
+              && d.listing.start is string && d.listing.start.size() <= 10
+              && d.listing.end is string && d.listing.end.size() <= 10
+              && d.listing.area is string && d.listing.area.size() <= 80
+              && d.listing.photo is string && d.listing.photo.size() <= 2000
+              && get(/databases/$(database)/documents/listings/$(d.listing.code)).data.ownerId == me()
+              && get(/databases/$(database)/documents/listings/$(d.listing.code)).data.status == 'active');
+        }
         allow read: if signedIn() && me() in convo(cid).participants;
         allow create: if isNU()
           && me() in convo(cid).participants
           && request.resource.data.senderId == me()
-          && request.resource.data.get('kind', 'text') == 'text'
           && convo(cid).get('blocked', {}).keys().size() == 0
           && isNow(request.resource.data.createdAt)
-          && request.resource.data.text is string
-          && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 2000;
-        allow update, delete: if false;
+          && validBody(request.resource.data);
+        // (a) recall: the sender's own text message, within 2 minutes; (b) delete for me: hiddenFor at my own key
+        allow update: if isNU()
+          && me() in convo(cid).participants
+          && ((resource.data.senderId == me()
+              && resource.data.get('kind', 'text') == 'text'
+              && request.time < resource.data.createdAt + duration.value(2, 'm')
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['kind', 'text', 'recalledAt'])
+              && request.resource.data.kind == 'recalled'
+              && request.resource.data.text == ''
+              && request.resource.data.recalledAt == request.time)
+            || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hiddenFor'])
+              && request.resource.data.hiddenFor.diff(resource.data.get('hiddenFor', {})).affectedKeys().hasOnly([me()])
+              && request.resource.data.hiddenFor[me()] == true));
+        allow delete: if false;
       }
     }
 

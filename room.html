@@ -234,6 +234,11 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .titlebar p{margin:8px 0 0;font-size:15px;color:var(--ink2);display:flex;gap:4px 14px;align-items:baseline;flex-wrap:wrap}
 .tb-acts{grid-column:2;grid-row:2;justify-self:end;display:flex;gap:6px;margin-top:6px}
 .tb-acts .btn[aria-pressed=true] .ic{fill:var(--ink)}
+/* Save reads "Saved" while aria-pressed is true; src/rentlet.ts keeps aria-pressed current */
+.tb-acts [data-rl-save]:not([aria-pressed=true]) .sv-on,.tb-acts [data-rl-save][aria-pressed=true] .sv-off{display:none}
+/* the 36px buttons take taps across 44px (on phones they are 44px already) */
+.tb-acts .btn{position:relative}
+.tb-acts .btn::after{content:'';position:absolute;inset:-5px 0}
 
 /* tiles */
 .tile{background:#fff;border-radius:24px;box-shadow:var(--shadow);padding:18px;position:relative;overflow:hidden;min-width:0;transition:box-shadow .25s,transform .25s var(--ease)}
@@ -726,6 +731,7 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
   .titlebar>div>p{grid-column:1;grid-row:2;margin:0;font-size:14px;gap:2px 12px}
   .tb-acts{grid-column:2;grid-row:2;gap:0;margin:-6px -8px -6px 0}
   .tb-acts .btn{width:44px!important;height:44px!important}
+  .tb-acts .btn::after{display:none}
   .tb-acts [data-report]{display:none}
   .tb-acts .btn{min-width:0;padding:0;border-radius:50%;justify-content:center}
   .tb-acts .btn span{display:none}
@@ -746,7 +752,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=4610d86b"></script>
+<script src="/rentlet-boot.js?v=5ad688a5"></script>
 </head>
 <body>
 <div class="rv" hidden><span id="roomTabs"></span><span id="stTabs"></span></div>
@@ -976,7 +982,12 @@ const head=()=>`<header class="hdr"><div class="wrap"><a href="index.html"><img 
   <button type="button" class="go" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button></div><div class="hdr-r"><button type="button" class="aipk ai-m" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button><button type="button" class="msrch" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button><button class="btn btn-ghost hide-s">Post a listing</button>${AUTH?`${RL.msgs?RL.msgs():''}<button type="button" class="me" data-me aria-label="Your account">${RL.me()}</button>`:`<button class="btn btn-secondary" data-signin>Sign in</button>`}</div></div><button type="button" class="ai-scrim" id="aiScrim" data-aiclose aria-label="Close AI picks" tabindex="-1" hidden></button><div class="ai-gp" id="aiCard" role="dialog" aria-label="AI picks" hidden></div><div class="aicard scard" id="sCard" role="dialog" aria-label="Search listings" hidden><label class="sfield">${ic('search','sm')}<span class="sr">Search</span><input id="sQ" type="search" placeholder="Search an area, layout or listing #" autocomplete="off" spellcheck="false" aria-controls="sList"><kbd>Esc</kbd></label><div class="slist" id="sList" role="listbox"></div></div></header>`;
 /* "Sam, junior at Weinberg" from the role "Junior, Weinberg" */
 const byline=()=>{const [a,b]=ROOM.role.split(', ');return b?`${ROOM.who}, ${/^.[a-z]/.test(a)?a[0].toLowerCase()+a.slice(1):a} at ${b}`:`${ROOM.who}, ${ROOM.role}`};
-const titlebar=()=>`<div class="titlebar"><div><h1>${ROOM.title}</h1><p class="t-sub"><span>${ROOM.area}</span><span>${ROOM.type}</span>${titleDates()}<button type="button" class="lcode" data-code="${ROOM.code}" aria-label="Copy listing number ${ROOM.code}">Listing #${ROOM.code}${ic2('copy')}</button></p></div><div class="tb-acts"><button class="btn btn-ghost btn-sm" data-share>${ic('share','sm')}<span>Share</span></button><button class="btn btn-ghost btn-sm" data-save aria-pressed="false">${ic('heart','sm')}<span>Save</span></button><button class="btn btn-ghost btn-sm" data-report aria-label="Report this listing">${ic2('flag')}<span>Report</span></button></div></div>`;
+/* Save: only on a real listing (8-digit number). The boot script owns the click; src/rentlet.ts signs the visitor in,
+   saves it to their account and keeps aria-pressed current, and the CSS turns that into "Save" or "Saved" */
+const saveBtn=()=>{const c=String(ROOM.code||'');if(!/^[1-9][0-9]{7}$/.test(c))return '';
+  const on=!!(window.RL&&typeof RL.isSaved==='function'&&RL.isSaved('room',c));
+  return `<button type="button" class="btn btn-ghost btn-sm" data-rl-save="room:${c}" aria-pressed="${on}" aria-label="Save this room">${ic('heart','sm')}<span class="sv-off">Save</span><span class="sv-on">Saved</span></button>`};
+const titlebar=()=>`<div class="titlebar"><div><h1>${ROOM.title}</h1><p class="t-sub"><span>${ROOM.area}</span><span>${ROOM.type}</span>${titleDates()}<button type="button" class="lcode" data-code="${ROOM.code}" aria-label="Copy listing number ${ROOM.code}">Listing #${ROOM.code}${ic2('copy')}</button></p></div><div class="tb-acts"><button class="btn btn-ghost btn-sm" data-share aria-label="Share this room">${ic('share','sm')}<span>Share</span></button>${saveBtn()}<button class="btn btn-ghost btn-sm" data-report aria-label="Report this listing">${ic2('flag')}<span>Report</span></button></div></div>`;
 const below=()=>`<div class="below"><details><summary>Room details ${ic('down')}</summary><div class="in">${ROOM.facts.map(f=>`${f[1]} (${f[2]})`).join(' · ')}.</div></details><details><summary>About ${ROOM.type==='Lease takeover'?'taking over the lease':'this sublet'} ${ic('down')}</summary><div class="in">${ROOM.type==='Lease takeover'?`You take over ${ROOM.who}’s lease until ${mdy(ROOM.end)}. The landlord signs the transfer; ask about any transfer fee.`:`You sublet from ${ROOM.who} until ${mdy(ROOM.end)}. ${ROOM.who} stays on the lease.`}</div></details><details><summary>Safety ${ic('down')}</summary><div class="in">Never pay before you’ve seen the room and the lease. <button class="chip" data-report>Report this listing</button></div></details></div>`;
 const dock=()=>`<div class="dock"><div class="dock-in"><div class="dp"><b>${money(ROOM.price)}</b><span>/ mo</span><small>${span(ROOM.start,ROOM.end)}</small></div><button class="btn btn-primary btn-sm" data-msg>${ic('chat','sm')}<span>Message<span class="dk-who"> ${ROOM.who}</span></span></button></div></div>`;
 const page=()=>`${head()}<main class="wrap f2">${titlebar()}<div class="tri-wrap"><div class="tri intro" id="tri">
@@ -1021,7 +1032,6 @@ function boot(){setVh();
   site.innerHTML=loadingView();clearTimeout(boot.t);boot.t=setTimeout(render,reduced?0:650)}
 /* sign-in gate: messaging, quick questions, saving and reporting need an account */
 const GATE={get message(){return[`Sign in to message ${ROOM.who}`,'Messages stay in Rentlet. Contact details are shared only when you both agree.']},
-  save:['Sign in to save this room','Saved rooms follow your account on every device.'],
   report:['Sign in to report this listing','We may need to reach you about what you found.'],
   signin:['Sign in to Rentlet','Message hosts, save rooms, and get alerts when rooms open on your dates.']};
 let pending=null;
@@ -1061,7 +1071,6 @@ document.addEventListener('click',e=>{const t=e.target;
   const no=t.closest('[data-non]');if(no){nb.on=+no.dataset.non;drawNear();return}
   if(t.closest('[data-msg]')){gate('message',()=>{$('#msgBox').value=`Hi ${ROOM.who}! I’m looking at ${span(plan.start,plan.end)}. Is the room still available?`;$('#msg').classList.add('on')});return}
   const a=t.closest('[data-ask]');if(a){gate('message',()=>{$('#msgBox').value=`Hi ${ROOM.who}! ${a.dataset.ask}`;$('#msg').classList.add('on')});return}
-  const sv=t.closest('[data-save]');if(sv){gate('save',()=>{const b=$('[data-save]'),on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);toast(on?'Saved.':'Removed from saved.')});return}
   if(t.closest('[data-share]')){const u=location.href.split('#')[0];(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Link copied'),()=>toast(`Link: ${u}`));return}
   const ts=t.closest('[data-toast]');if(ts)return toast(ts.dataset.toast);
   if(t.closest('[data-sopen]')){const c=$('#sCard');c.hidden?openSearch():closeSearch();return}

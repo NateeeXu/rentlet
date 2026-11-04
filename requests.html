@@ -110,26 +110,45 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 .tier.good{border-color:var(--ink);color:var(--ink)}
 .fh{margin:32px 0 0;font-size:20px;font-weight:650}
 
-/* the waterfall feed: two columns of cards; the room and the dates lead, the person's own line follows, then the person and the budget */
+/* the waterfall feed: two columns of request cards. Each card leads with the person, then three
+   lines with icons (the room, the dates, the budget). Cards float on a soft layered shadow and lift on hover. */
 .feed{display:grid;grid-template-columns:repeat(var(--n,2),minmax(0,1fr));gap:20px;align-items:start;margin-top:8px}
 .fcol{display:grid;gap:20px;min-width:0;align-content:start}
-.fc{position:relative;display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--hair);border-radius:20px;padding:24px;margin:0;overflow:hidden;color:inherit;min-width:0;font:inherit}
-.fc:hover{border-color:#b8b8bd}
-.fc.mine{border-color:var(--ink)}
-.fc>span{display:block}
-.fh2{font-size:22px;font-weight:650;line-height:1.2;letter-spacing:-.3px;color:var(--ink)}
-/* the request's dates sit to the right of what they need, above the budget; on narrow cards they drop below */
-.fc .ftop{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px}
-.fc .ftop .fh2{min-width:0}
-.fc .ftop .fdt{margin-top:0;margin-left:auto;text-align:right;white-space:nowrap}
-.fdt{margin-top:4px;font-size:18px;font-weight:500;line-height:1.3;color:var(--ink);font-variant-numeric:tabular-nums}
-.fq{margin:12px 0 16px;font-family:var(--serif);font-size:16px;line-height:1.45;color:var(--ink2);display:-webkit-box!important;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.fc{position:relative;display:block;width:100%;text-align:left;background:#fff;border:0;border-radius:20px;padding:20px 22px;margin:0;color:inherit;min-width:0;font:inherit;cursor:pointer;
+  box-shadow:0 0 0 1px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.08);transition:box-shadow .2s ease,transform .2s ease}
+.fc:hover{box-shadow:0 0 0 1px rgba(0,0,0,.05),0 2px 4px rgba(0,0,0,.07),0 14px 34px rgba(0,0,0,.13);transform:translateY(-2px)}
+.fc:has(>.fco:focus-visible){box-shadow:0 0 0 1px rgba(0,0,0,.05),0 2px 4px rgba(0,0,0,.07),0 14px 34px rgba(0,0,0,.13);transform:translateY(-2px)}
+.fc:has(>.fco:active){transform:translateY(0)}
+@media (prefers-reduced-motion:reduce){.fc{transition:none}.fc:hover{transform:none}.fc:has(>.fco:focus-visible){transform:none}}
+/* the whole card opens the request: a bare button stretched over it. The heart sits above that button,
+   so pressing the heart never opens the request. */
+.fco{position:absolute;inset:0;z-index:1;width:100%!important;height:100%;min-width:0;margin:0;padding:0;border:0;border-radius:inherit;background:none;cursor:pointer}
+.fco:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+/* the heart's whole 44px square is its hit area; the round hover and focus shapes are drawn inside it */
+.fsv{position:relative;z-index:2;flex:none;width:44px!important;height:44px;min-width:0;margin:0 -12px 0 0;padding:0;border:0;border-radius:0;background:none;color:var(--ink);display:flex;align-items:center;justify-content:center}
+.fsv::before{content:"";position:absolute;inset:2px;border-radius:50%}
+.fsv:hover::before{background:var(--soft)}
+.fsv:focus-visible{outline:0}
+.fsv:focus-visible::before{outline:2px solid var(--ink);outline-offset:0}
+.fsv .ic{position:relative;width:20px;height:20px;stroke-width:1.8}
+.fsv[aria-pressed=true] .ic{fill:currentColor}
+.fc .fhd{display:flex;align-items:center;gap:12px;min-width:0}
+.fav{position:relative;width:44px;height:44px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700;font-size:16px;flex:none;overflow:hidden}
+.fwho{flex:1;min-width:0}
+.fwho b{display:block;font-size:17px;font-weight:650;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fwho .rl{display:block;font-size:14px;color:var(--muted);line-height:1.35;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* never runs under the heart or the Live pill */
+.fwho .tk{margin-left:4px;color:var(--muted)}
+.flive{display:inline-flex;align-items:center;gap:6px;flex:none;height:26px;padding:0 10px;border-radius:999px;background:var(--soft);font-size:12px;font-weight:650;white-space:nowrap}
+.flive i{width:7px;height:7px;border-radius:50%;background:#1a7f37}
+.fc .fhr{height:1px;background:var(--hair);margin:16px 0 6px}
+.fc .fli{display:flex;align-items:flex-start;gap:12px;padding:6px 0;font-size:15px;line-height:1.4;min-width:0}
+.fli .ic{width:20px;height:20px;flex:none;margin-top:0;color:var(--ink2);stroke-width:1.6}
+.fli span{min-width:0;overflow-wrap:anywhere}
+.fli .num{font-variant-numeric:tabular-nums}
+.fli b{font-weight:650}
+.fli .g{color:var(--muted)}
+.fq{margin:8px 0 0;font-size:14px;line-height:1.5;color:var(--muted);display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .fm{font-size:15px;overflow-wrap:anywhere}.fm b{font-weight:650}.fm .rl{color:var(--ink2)}
-.fav{width:28px;height:28px;border-radius:50%;background:var(--soft);display:inline-grid;place-items:center;font-weight:700;font-size:12px;flex:none}
-.fc>.frow{display:flex;align-items:center;gap:10px;min-width:0}
-.frow .fm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.frow .fb{margin:0;flex:none;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
-.fc .qtag{display:inline-block;margin:0 0 10px}
 .fend{text-align:center;color:var(--muted);font-size:14px;margin:28px 0 0}
 .empty{text-align:center;padding:40px 16px;border:1px solid var(--hair);border-radius:16px;background:#fff;margin-top:8px}
 .empty h3{margin:0 0 16px;font-size:17px}
@@ -147,6 +166,15 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 .gs .lbl{display:block;font-size:14px;font-weight:650;margin:18px 0 8px}
 .gs .seg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) minmax(0,1fr);width:100%}
 .gs .full{margin-top:20px}
+/* someone else's request: the main action, with Save beside it (any explaining line sits above both) */
+.gact{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 10px;align-items:center;margin-top:40px}
+.gact>.fm{grid-column:1/-1;margin:0}
+.gs .gact .full{margin-top:0}
+.gsv{height:48px;padding:0 18px;font-size:15px}
+.gsv .ic{width:18px;height:18px}
+.gsv[aria-pressed=true] .ic{fill:currentColor}
+.gsv .s1,.gsv[aria-pressed=true] .s0{display:none}
+.gsv[aria-pressed=true] .s1{display:inline}
 
 .nudge{background:#fff;border-top:1px solid var(--hair);padding:28px 0}
 .nudge p{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;margin:0;font-size:16px;color:var(--ink2)}
@@ -182,7 +210,7 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
   .main{padding:24px 0 36px}
   h1{font-size:28px;letter-spacing:-.4px}
   .dbar{top:60px}
-  .feed,.fcol{gap:12px}.fc{padding:18px}.fh2{font-size:20px}.fdt{font-size:16px}.fq{font-size:14px;margin:10px 0 12px}
+  .feed,.fcol{gap:14px}.fc{padding:18px}
   .mbox{padding:16px 14px}
   .mr{grid-template-columns:40px minmax(0,1fr);column-gap:12px}
   .av{width:40px;height:40px;font-size:15px}
@@ -205,7 +233,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=4610d86b"></script>
+<script src="/rentlet-boot.js?v=5ad688a5"></script>
 </head>
 <body>
 <div class="site" id="site"></div>
@@ -222,7 +250,10 @@ const ICONS={
   sort:'<path d="M7 5v14M4 16l3 3 3-3M17 19V5M14 8l3-3 3 3"/>',
   check:'<path d="M5.5 12.5l4 4 9-9"/>',
   warn:'<path d="M12 4.5 21 19.5H3z"/><path d="M12 10v4M12 16.8v.2"/>',
-  down:'<path d="m6 9 6 6 6-6"/>'
+  down:'<path d="m6 9 6 6 6-6"/>',
+  home:'<path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
+  wallet:'<rect x="3.5" y="6" width="17" height="13" rx="2.5"/><path d="M3.5 10h17M15.5 14.5h2"/>',
+  heart:'<path d="M12 19.5s-7-4.3-7-9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7 2.3c0 5.3-7 9.6-7 9.6z"/>'
 };
 const ic=(n,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
 const money=n=>'$'+Math.round(n).toLocaleString('en-US');
@@ -333,10 +364,22 @@ const mrow=m=>{const q=m.q;return `<article class="mr" data-mid="${esc(q.id)}"><
   <p class="need">${esc(q.kind)} · <span class="nw">${wl(q.start,q.end)}</span> · <span class="nw">${budTxt(q.budget)}</span></p>
   <div class="rs">${m.reasons.map(r=>`<span class="rc">${esc(r)}</span>`).join('')}${m.caution?`<span class="rc warn">${ic('warn')}${esc(m.caution)}</span>`:''}</div></div>
   <div class="mx"><span class="tier ${m.tier.toLowerCase()}">${m.tier}</span><a class="btn btn-secondary" href="${mhref(m.L.code,q.uid)}">${ic('chat','sm')}<span class="bl">Message ${esc(q.who)}</span></a></div></article>`};
-const fav=q=>`<span class="fav" aria-hidden="true" style="overflow:hidden">${face(q)}</span>`;
-const fcard=(q,isMine)=>`<button type="button" class="fc ${isMine?'mine':''}" data-fc="${isMine?'mine':esc(q.id)}" aria-label="${esc(q.who)}, ${esc(q.role)}. ${esc(q.kind)}, ${wl(q.start,q.end)}">${isMine?`<span class="qtag">${myTag()}</span>`:''}
-  <span class="ftop"><span class="fh2">${esc(q.kind)}${(q.layouts||[]).length?` · ${q.layouts.join(' / ')}`:''}</span><span class="fdt">${wl(q.start,q.end)}</span></span>${q.note?`<span class="fq">${esc(q.note)}</span>`:''}
-  <span class="frow">${fav(q)}<span class="fm"><b>${esc(q.who)}</b><span class="rl"> · ${esc(q.role)}</span>${tick(q.verified)}</span><span class="fb">${budTxt(q.budget)}</span></span></button>`;
+const fav=q=>`<span class="fav" aria-hidden="true">${face(q)}</span>`;
+const budLine=b=>b==null?'Any price':`<b class="num">Up to ${money(b)}</b> <span class="g">/ month</span>`;
+/* saving a request: the heart (data-rl-save) is handled by rentlet-boot.js and src/rentlet.ts, which sign in
+   when needed and repaint aria-pressed; markup reads the saved state when it is drawn. An old cached boot
+   script has no saves, so every heart starts empty. */
+const isSaved=id=>!!(RL.isSaved&&RL.isSaved('request',id));
+const heart=q=>`<button type="button" class="fsv" data-rl-save="request:${esc(q.id)}" aria-pressed="${isSaved(q.id)}" aria-label="Save ${esc(q.who)}’s request">${ic('heart')}</button>`;
+const saveBtn=q=>`<button type="button" class="btn btn-secondary gsv" data-rl-save="request:${esc(q.id)}" aria-pressed="${isSaved(q.id)}">${ic('heart')}<span class="s0">Save</span><span class="s1">Saved</span></button>`;
+/* a request card: the person (with a heart, or Live on your own), then the room, dates and budget. The
+   stretched .fco button opens it and speaks for the card, so the text under it is hidden from screen readers. */
+const fcard=(q,isMine)=>`<article class="fc${isMine?' mine':''}"><button type="button" class="fco" data-fc="${isMine?'mine':esc(q.id)}" aria-label="${isMine?'Your request, live. ':''}${esc(q.who)}, ${esc(q.role)}${q.verified?', verified':''}. ${esc(q.kind)}, ${wl(q.start,q.end)}, ${budTxt(q.budget)}"></button>
+  <div class="fhd">${fav(q)}<div class="fwho" aria-hidden="true"><b>${esc(q.who)}</b><span class="rl">${esc(q.role)}${q.verified?' · Verified':''}</span></div>${isMine?`<span class="flive" aria-hidden="true"><i></i>${myTag()}</span>`:heart(q)}</div>
+  <div aria-hidden="true"><div class="fhr"></div>
+  <div class="fli">${ic('home')}<span>${esc(q.kind)}${(q.layouts||[]).length?` · ${q.layouts.join(' / ')}`:''}</span></div>
+  <div class="fli">${ic('cal')}<span class="num">${wl(q.start,q.end)}</span></div>
+  <div class="fli">${ic('wallet')}<span>${budLine(q.budget)}</span></div>${q.note?`<p class="fq">${esc(q.note)}</p>`:''}</div></article>`;
 
 const header=()=>{const BADGE=badge();return `<header class="hdr"><div class="wrap">
   <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
@@ -350,11 +393,12 @@ const footer=()=>`<footer class="foot"><div class="wrap"><div class="fcols">
   <div><h4>Post</h4><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></div>
   <div><h4>Legal</h4><a href="how-it-works.html">Safety &amp; rules</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></div></div></div></footer>`;
 
-/* the feed: two columns on anything wider than a phone; each card goes to the shortest column, so it reads left to right like a waterfall */
+/* the feed: two columns on anything wider than a phone; each card goes to the shortest column, so it reads left to right like a waterfall.
+   FEED holds [request, isMine]; cards are drawn here, so a re-layout after a save shows the current hearts. */
 let FEED=[],feedW=0;
 function layoutFeed(){const f=$('[data-feed]');if(!f)return;const W=$('#site').clientWidth,n=W>=600?2:1;
   f.style.setProperty('--n',n);f.innerHTML=Array.from({length:n},()=>'<div class="fcol"></div>').join('');const cols=[...f.children];
-  FEED.forEach(h=>{const t=document.createElement('template');t.innerHTML=h.trim();cols.reduce((a,b)=>b.offsetHeight<a.offsetHeight?b:a).appendChild(t.content.firstChild)});feedW=W}
+  FEED.forEach(([q,m])=>{const t=document.createElement('template');t.innerHTML=fcard(q,m).trim();cols.reduce((a,b)=>b.offsetHeight<a.offsetHeight?b:a).appendChild(t.content.firstChild)});feedW=W}
 /* Message on someone's request: about one of your listings. Sign in first; no listing yet, post one first. */
 function msgAction(q){
   if(!myUid())return `<button type="button" class="btn btn-primary full" data-msg>${ic('chat','sm')}<span class="bl">Message ${esc(q.who)}</span></button>`;
@@ -376,13 +420,14 @@ function sheet(list,my){
   return `<div class="gscrim"><div class="gs" role="dialog" aria-modal="true" aria-label="${esc(q.who)}’s request"><button type="button" class="x" data-close aria-label="Close">×</button>
     ${isMine?`<span class="qtag" style="display:inline-block;margin-bottom:10px">${myTag()}</span>`:''}${q.note?`<p class="gq">${esc(q.note)}</p>`:''}<p class="fm"><b>${esc(q.who)}</b><span class="rl"> · ${esc(q.role)}</span>${tick(q.verified)}</p>
     <dl class="gd"><dt>Room</dt><dd>${esc(q.kind)}</dd><dt>Layouts</dt><dd>${(q.layouts||[]).length?q.layouts.join(', '):'Any'}</dd><dt>Dates</dt><dd>${wl(q.start,q.end)} · ${WhenPicker.nights(q.start,q.end)} nights</dd><dt>Budget</dt><dd>${budTxt(q.budget)}</dd></dl>
-    ${isMine?mineActs(q):msgAction(q)}</div></div>`}
+    ${isMine?mineActs(q):`<div class="gact">${msgAction(q)}${saveBtn(q)}</div>`}</div></div>`}
 
 function render(){
   if(window.WhenPicker)WhenPicker.close();
   const list=shown(),my=myHere(),n=inCampus().length;
   if(R.sheet&&R.sheet.t==='req'&&!(R.sheet.id==='mine'?my:others().some(x=>x.id===R.sheet.id)))R.sheet=null; /* taken down meanwhile */
-  FEED=[...(my?[fcard(my,1)]:[]),...list.map(q=>fcard(q))];
+  if(!WANT&&!(R.sheet&&R.sheet.t==='req'))dropReq(); /* a request opened from ?req= has closed */
+  FEED=[...(my?[[my,1]]:[]),...list.map(q=>[q,0])];
   const top=`<h1>Requests near ${esc(campus())}${n?`<span class="cnt" aria-label="${n} requests">${n}</span>`:''}</h1>`;
   /* matches for each of your listings at this campus */
   const boxes=REQ?LS().filter(L=>L.campusId===R.campusId).map(L=>[L,matchesFor(L)]).filter(([,m])=>m.length):[];
@@ -410,7 +455,15 @@ new ResizeObserver(()=>requestAnimationFrame(()=>{if($('#site').clientWidth!==fe
 /* live data (src/requests.ts). A redraw keeps an open sheet open; while the date picker is open, it waits for it to close. */
 function refresh(){if(document.querySelector('[data-when][aria-expanded="true"]')){clearTimeout(refresh.t);refresh.t=setTimeout(refresh,400);return}
   autoCampus();const x=$('.gs .x'),had=document.activeElement===x;render();if(had){const nx=$('.gs .x');if(nx)nx.focus()}}
-window.RL_onRequests=rows=>{if(rows){REQ=rows;REQ_ERR=false}else REQ_ERR=true;refresh()};
+/* requests.html?req=<id> (a saved request on the Profile page) opens that request once requests have loaded,
+   at its campus; closing it takes ?req off the address. A request that is gone or closed gets a toast. */
+let WANT=QS.get('req')||null;
+function dropReq(){const u=new URL(location.href);if(!u.searchParams.has('req'))return;u.searchParams.delete('req');history.replaceState(history.state,'',u.pathname+u.search+u.hash)}
+function openWanted(){const q=REQ.find(x=>x.id===WANT);WANT=null;
+  if(!q){dropReq();if(window.Rentlet)Rentlet.toast('This request is no longer open.');return false}
+  R.campusId=q.campusId;R.auto=false;R.sheet={t:'req',id:q.uid===myUid()?'mine':q.id};return true}
+window.RL_onRequests=rows=>{let open=false;if(rows){REQ=rows;REQ_ERR=false;if(WANT)open=openWanted()}else REQ_ERR=true;refresh();
+  if(open){const x=$('.gs .x');if(x)x.focus()}};
 window.RL_onMine=m=>{ME=m;refresh()};
 window.RL_onAuth=()=>{if(!RL.authed)ME=null;refresh()};
 

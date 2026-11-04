@@ -159,6 +159,40 @@ small a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;mar
 .cx-card .ct b small{font-weight:500;color:var(--muted);font-size:13px}
 .cx-card .cm{font-size:14px;color:var(--muted);margin-top:2px}
 .cx-card:hover .ct span{text-decoration:underline;text-underline-offset:3px}
+/* Saved: a group for rooms, a group for requests; each shows only when it has something */
+.sgrp+.sgrp{margin-top:28px}
+.sgh{display:flex;align-items:baseline;gap:8px;margin:0 0 12px;font-size:16px;font-weight:650;line-height:1.3}
+.sgh span{font-size:14px;font-weight:500;color:var(--muted)}
+.sgrp>.note{margin-top:14px}
+.empty .eacts{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.empty .eacts .btn{margin-top:0}
+/* saved requests (requests.html request card, compact): the person, then the room, the dates, the budget */
+.sqs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px}
+.sq{position:relative;min-width:0}
+.sq-a{display:block;height:100%;min-width:0;padding:16px 18px 12px;border-radius:18px;background:#fff;color:inherit;text-decoration:none;
+  box-shadow:0 0 0 1px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.06);transition:box-shadow .2s ease,transform .2s ease}
+.sq-a:hover{box-shadow:0 0 0 1px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06),0 10px 26px rgba(0,0,0,.11);transform:translateY(-2px)}
+.sq-a:active{transform:translateY(0)}
+.sq-a>span{display:block}
+.sq-a .sq-hd{display:flex;align-items:center;gap:12px;min-width:0;padding-right:36px}
+.sq-av{width:44px;height:44px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700;font-size:16px;flex:none;overflow:hidden}
+.sq-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.sq-who{flex:1;min-width:0}
+.sq-who b,.sq-who span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sq-who b{font-size:16px;font-weight:650;line-height:1.25}
+.sq-who span{font-size:14px;color:var(--muted);line-height:1.35;margin-top:1px}
+.sq-a .sq-hr{height:1px;background:var(--hair);margin:14px 0 4px}
+.sq-a .sq-li{display:flex;align-items:flex-start;gap:12px;padding:5px 0;font-size:15px;line-height:1.4;min-width:0}
+.sq-li .ic{color:var(--ink2)}
+.sq-li>span{min-width:0;overflow-wrap:anywhere}
+.sq-li .num{font-variant-numeric:tabular-nums}
+.sq-li b{font-weight:650}
+.sq-li .g{color:var(--muted)}
+.sq-a:hover .sq-who b{text-decoration:underline;text-underline-offset:3px}
+.csv.sqv{top:16px;right:8px}
+.csv.sqv::before{background:none;transition:background .15s}
+.csv.sqv:hover::before{background:var(--soft)}
+@media (prefers-reduced-motion:reduce){.sq-a{transition:none}.sq-a:hover{transform:none}}
 
 /* ---------- A: sticky section links + one column ---------- */
 .pa{display:grid;grid-template-columns:200px minmax(0,760px);gap:40px;justify-content:center;max-width:1120px;margin:0 auto;padding:32px 24px 56px}
@@ -280,7 +314,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=4610d86b"></script>
+<script src="/rentlet-boot.js?v=5ad688a5"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -298,7 +332,11 @@ ls.del('cs-profile');ls.del('cs-notify'); /* the old sample profile kept on this
 
 const ICONS={check:'<path d="M5 12.5l4.2 4.2L19 7"/>',shield:'<path d="M12 3.5l7 2.6v5.4c0 4.4-3 7.7-7 9-4-1.3-7-4.6-7-9V6.1z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.4"/>',
   heart:'<path d="M12 20s-7.5-4.4-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.6 12 20 12 20z"/>',user:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/>',
-  x:'<path d="M6 6l12 12M18 6L6 18"/>'};
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  /* the Requests page card's line icons */
+  home:'<path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
+  cal:'<rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
+  wallet:'<rect x="3.5" y="6" width="17" height="13" rx="2.5"/><path d="M3.5 10h17M15.5 14.5h2"/>'};
 const ic=(k,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`;
 const GOOGLE=`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"/></svg>`;
 
@@ -367,12 +405,32 @@ function secRequest(){const R=S.requests;
 
 function savedCard(r){
   return `<div class="cx-card" data-saved="${r.code}"><a href="room.html?room=${r.code}" style="display:block;text-decoration:none;color:inherit"><div class="cph">${r.img?`<img src="${esc(r.img)}" alt="" loading="lazy">`:''}${r.start&&r.end?`<span class="ctg">${wl(r.start,r.end)}</span>`:''}</div><div class="cbd"><div class="ct"><span>${esc(r.title)}</span><b>${money(r.price)}<small> / mo</small></b></div><div class="cm">${esc(r.area)}</div><div class="cm">${r.walk!=null?`${r.walk} min walk to campus`:esc(campusName(r.campusId))}</div></div></a><button type="button" class="csv" data-act="unsave" data-key="${r.code}" aria-label="Remove ${esc(r.title)} from saved" aria-pressed="true">${ic('heart')}</button></div>`}
+/* a saved request, in the Requests page card's words; the card opens it there */
+const qface=q=>q.photo?`<img src="${esc(q.photo)}" alt="" referrerpolicy="no-referrer">`:esc((q.who||'?').trim().charAt(0).toUpperCase()||'?');
+const qbudget=b=>b==null?'Any price':`Up to ${money(b)} / month`;
+function savedReqCard(q){const dates=q.start&&q.end?wl(q.start,q.end):'',lay=(q.layouts||[]).length?` · ${q.layouts.map(esc).join(' / ')}`:'';
+  return `<div class="sq" data-saved-req="${esc(q.id)}"><a class="sq-a" href="requests.html?req=${encodeURIComponent(q.id)}" aria-label="${esc(q.who)}, ${esc(q.role)}, verified. ${esc(q.kind)}${dates?`, ${esc(dates)}`:''}, ${qbudget(q.budget)}">
+    <span class="sq-hd"><span class="sq-av" aria-hidden="true">${qface(q)}</span><span class="sq-who"><b>${esc(q.who)}</b><span>${esc(q.role)} · Verified</span></span></span>
+    <span class="sq-hr"></span>
+    <span class="sq-li">${ic('home')}<span>${esc(q.kind)}${lay}</span></span>${dates?`
+    <span class="sq-li">${ic('cal')}<span class="num">${esc(dates)}</span></span>`:''}
+    <span class="sq-li">${ic('wallet')}<span>${q.budget==null?'Any price':`<b class="num">Up to ${money(q.budget)}</b> <span class="g">/ month</span>`}</span></span></a>
+    <button type="button" class="csv sqv" data-act="unsaveReq" data-key="${esc(q.id)}" aria-label="Remove ${esc(q.who)}’s request from saved" aria-pressed="true">${ic('heart')}</button></div>`}
+const goneNote=(n,what,state,act)=>n?`<p class="note">${n===1?`1 saved ${what} is`:`${n} saved ${what}s are`} no longer ${state}. <button type="button" class="lk" data-act="${act}">Remove ${n===1?'it':'them'}</button></p>`:'';
+/* Saved: rooms, then requests; a group shows only when it has something */
 function secSaved(){const V=S.saved;
-  if(V===null)return loading('Loading saved rooms…');
-  if(V==='error')return failed('Couldn’t load your saved rooms.');
-  const g=V.gone.length,gone=g?`<p class="note">${g===1?'1 saved room is':`${g} saved rooms are`} no longer listed. <button type="button" class="lk" data-act="forgetGone">Remove ${g===1?'it':'them'}</button></p>`:'';
-  if(!V.items.length)return `<div class="empty"><h3>Rooms you save show up here.</h3><a class="btn sec" href="index.html">Find a place</a></div>${gone}`;
-  return `<div class="svg">${V.items.map(savedCard).join('')}</div>${gone}`}
+  if(V===null)return loading('Loading what you’ve saved…');
+  if(V==='error')return failed('Couldn’t load what you’ve saved.');
+  const rooms=V.items||[],reqs=V.reqs||[],rg=goneNote((V.gone||[]).length,'room','listed','forgetGone'),qg=goneNote((V.reqGone||[]).length,'request','open','forgetGoneReq');
+  const miss=V.failed?`<p class="note">Couldn’t load your saved ${V.failed}. <button type="button" class="lk" data-act="reloadSaved">Try again</button></p>`:'';
+  const group=(k,t,list,card,gone)=>list.length?`<div class="sgrp" data-group="${k}"><h3 class="sgh">${t} <span>${list.length}</span></h3><div class="${k==='rooms'?'svg':'sqs'}">${list.map(card).join('')}</div>${gone}</div>`:'';
+  const body=group('rooms','Rooms',rooms,savedCard,rg)+group('requests','Requests',reqs,savedReqCard,qg),tail=(rooms.length?'':rg)+(reqs.length?'':qg)+miss;
+  if(!body)return `<div class="empty"><h3>Rooms and requests you save show up here.</h3><div class="eacts"><a class="btn sec" href="index.html">Find a place</a><a class="btn sec" href="requests.html">Browse requests</a></div></div>${tail}`;
+  return body+tail}
+/* put a removed card back after Undo (or a failed removal), into whatever the section shows now */
+function putBack(list,key,item,i){const V=S.saved;if(!ready(V))return;const L=V[list];
+  if(!L.some(x=>x[key]===item[key])){let j=item.savedAtMs?L.findIndex(x=>(x.savedAtMs||0)<item.savedAtMs):Math.min(i,L.length);L.splice(j<0?L.length:j,0,item)}
+  render()}
 
 const showUseNu=()=>!!nuEmail()&&(S.f.cemail||'').trim().toLowerCase()!==nuEmail().toLowerCase();
 function cemailState(){const e=(S.f.cemail||'').trim().toLowerCase();
@@ -389,9 +447,9 @@ function secNotify(){
 
 function secAccount(){
   return `<div class="rows"><div class="row"><div class="rl"><b>Sign out</b><span>${nuEmail()?`Signed in as ${esc(nuEmail())}`:'On this device'}</span></div><span></span><div class="ra"><button type="button" class="btn sec" data-act="signout">Sign out</button></div></div>
-    <div class="row"><div class="rl"><b>Delete account</b><span>Removes your profile, listings, request, saved rooms and contact details.</span></div><span></span><div class="ra"><button type="button" class="btn red-t" data-act="del1">Delete</button></div></div></div>`}
+    <div class="row"><div class="rl"><b>Delete account</b><span>Removes your profile, listings, request, saved rooms and requests, and contact details.</span></div><span></span><div class="ra"><button type="button" class="btn red-t" data-act="del1">Delete</button></div></div></div>`}
 
-const SECS=[['you','You'],['listings','Your listings'],['request','Your request'],['saved','Saved rooms'],['contact','Contact details'],['notify','Notifications'],['account','Account']];
+const SECS=[['you','You'],['listings','Your listings'],['request','Your request'],['saved','Saved'],['contact','Contact details'],['notify','Notifications'],['account','Account']];
 const SUBS={you:'',listings:'',request:'Live requests show on the Requests page.',saved:'',contact:'Instagram and email only.',notify:'',account:''};
 const BODY={you:secYou,listings:secListings,request:secRequest,saved:secSaved,contact:secContact,notify:secNotify,account:secAccount};
 const csaveEl=()=>`<span class="csave ${S.csaveErr?'err':''}" data-csave role="status">${esc(S.csave)}</span>`;
@@ -421,10 +479,10 @@ function sheetHtml(){const s=S.sheet;if(!s)return '';
   if(s.kind==='ldel'){const l=listing(s.id);return wrap(`<h3>Delete “${esc(l.title)}”?</h3><p>The listing, its photos and its video are removed. This can’t be undone.</p>${two(`<button type="button" class="btn red" data-act="confirmLdel" data-id="${esc(s.id)}">Delete</button>`)}`,'Delete listing')}
   if(s.kind==='delreq')return wrap(`<h3>Delete your request?</h3><p>Messages you already have stay.</p>${two(`<button type="button" class="btn red" data-act="confirmDelReq" data-id="${esc(s.id)}">Delete</button>`)}`,'Delete request');
   if(s.kind==='signout')return wrap(`<h3>Sign out?</h3>${two(`<button type="button" class="btn" data-act="confirmSignout">Sign out</button>`)}`,'Sign out');
-  if(s.kind==='del1')return wrap(`<p class="stp">Step 1 of 2</p><h3>Delete your account?</h3><p>Your profile, listings with their photos, request, saved rooms and contact details are removed. Messages you sent stay with the people you sent them to. This can’t be undone.</p>${two(`<button type="button" class="btn red" data-act="del2">Continue</button>`)}`,'Delete account');
+  if(s.kind==='del1')return wrap(`<p class="stp">Step 1 of 2</p><h3>Delete your account?</h3><p>Your profile, listings with their photos, request, saved rooms and requests, and contact details are removed. Messages you sent stay with the people you sent them to. This can’t be undone.</p>${two(`<button type="button" class="btn red" data-act="del2">Continue</button>`)}`,'Delete account');
   if(s.kind==='del2'){const ok=(S.tmp.delconf||'').trim().toUpperCase()==='DELETE';return wrap(`<p class="stp">Step 2 of 2</p><h3>Type DELETE to confirm</h3><p>If you signed in a while ago, Google asks you to sign in once more first.</p><div class="grp"><label class="in"><input data-f="delconf" value="${esc(S.tmp.delconf||'')}" autocomplete="off" aria-label="Type DELETE"></label></div>${two(`<button type="button" class="btn red" data-act="confirmDel" ${ok?'':'disabled'}>Delete account</button>`)}`,'Confirm delete')}
   if(s.kind==='deleting')return `<div class="ov"><div class="sheet" role="alertdialog" aria-modal="true" aria-label="Deleting your account"><h3>Deleting your account…</h3><p>Keep this page open. It takes a few seconds.</p></div></div>`;
-  if(s.kind==='reauth')return `<div class="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="raT"><h3 id="raT">One more step</h3><p>Your listings, request, saved rooms and contact details are deleted. Sign in with Google once more to delete the account itself.</p>
+  if(s.kind==='reauth')return `<div class="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="raT"><h3 id="raT">One more step</h3><p>Your listings, request, saved rooms and requests, and contact details are deleted. Sign in with Google once more to delete the account itself.</p>
     <button type="button" class="lg-g" data-act="reauth">${GOOGLE}Continue with Google</button><div class="lg-back"><button type="button" class="lk" data-act="cancelDelete">Not now</button></div></div></div>`;
   return ''}
 const gateHtml=()=>`<div class="ov gate"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gT"><div class="lg-top"><span class="lg-ic">${ic('user')}</span><div><h3 id="gT">Sign in to see your page</h3><p>Sign in with your Northwestern Google account.</p></div></div>
@@ -446,11 +504,29 @@ function render(keepScroll=true){
   if(S.editName&&S.tmp.focusName){S.tmp.focusName=false;const i=$('[data-f=name]',st);if(i)setTimeout(()=>{i.focus({preventScroll:true});i.select()},30)}
   else if(S.sheet&&S.sheet.kind==='del2'){const i=$('.sheet input',st);if(i&&fk!=='delconf')setTimeout(()=>i.focus({preventScroll:true}),50)}
   if(fk){const i=$(`[data-f="${fk}"]`,st);if(i){i.focus({preventScroll:true});if(sel)try{i.setSelectionRange(sel[0],sel[1])}catch(_){}}}
-  spy()}
+  anchor();spy()}
+
+/* profile.html#saved (the heart in every header) or #sec-saved lands on that section. While the
+   sections above it are still loading, it is kept in place as they grow; any scrolling, tap or key
+   by the person ends that. */
+const secOf=h=>{const k=String(h||'').replace(/^#/,'').replace(/^sec-/,'');return SECS.some(s=>s[0]===k)?k:''};
+const settled=()=>[S.profile,S.listings,S.requests,S.saved,S.contact].every(v=>v!==null);
+let want=null,wantT=null,wantRO=null,wantEl=null;
+function follow(k,ms=10000){want=k;S.active=k;clearTimeout(wantT);wantT=setTimeout(unfollow,ms)}
+function unfollow(){want=null;clearTimeout(wantT);if(wantRO)wantRO.disconnect();wantEl=null}
+function anchor(){const site=$('#site');if(!want||!S.authed||!site)return;const el=$(`#sec-${want}`,site);if(!el)return;
+  const hd=$('.hdr',site).offsetHeight,cr=$('.chiprow',site),extra=cr&&cr.offsetParent?cr.offsetHeight:0;
+  site.scrollTop=Math.max(0,el.getBoundingClientRect().top-site.getBoundingClientRect().top+site.scrollTop-hd-extra-16);setActive(want);
+  /* fonts and late content change heights without a redraw */
+  const pa=$('.pa',site);if(window.ResizeObserver&&pa&&pa!==wantEl){wantRO=wantRO||new ResizeObserver(()=>requestAnimationFrame(anchor));wantRO.disconnect();wantRO.observe(pa);wantEl=pa}
+  if(settled()&&!anchor.done){anchor.done=true;follow(want,1500)}}
+function goTo(k){if(S.authed&&!settled()){anchor.done=false;follow(k);anchor()}else{unfollow();jump(k)}}
+['wheel','touchstart','keydown','pointerdown'].forEach(t=>addEventListener(t,()=>{if(want)unfollow()},{capture:true,passive:true}));
+addEventListener('hashchange',()=>{const k=secOf(location.hash);if(k)goTo(k)});
 
 /* section links follow the scroll (A) */
 let jumpLock=0;
-function spy(){if(Date.now()<jumpLock)return;const site=$('#site');if(!site)return;
+function spy(){if(want){setActive(want);return}if(Date.now()<jumpLock)return;const site=$('#site');if(!site)return;
   const secs=$$('[data-sec]',site),sr=site.getBoundingClientRect(),hd=$('.hdr',site).offsetHeight,cr=$('.chiprow',site),off=hd+(cr&&cr.offsetParent?cr.offsetHeight:0)+Math.min(160,site.clientHeight*.25);
   let cur=secs[0]&&secs[0].dataset.sec;secs.forEach(s=>{if(s.getBoundingClientRect().top-sr.top<=off)cur=s.dataset.sec});
   if(site.scrollTop+site.clientHeight>=site.scrollHeight-2){const foot=$('.cx-foot',site);if(foot&&foot.getBoundingClientRect().top-sr.top<site.clientHeight)cur=secs[secs.length-1].dataset.sec}
@@ -464,6 +540,7 @@ function jump(k){const site=$('#site'),el=$(`#sec-${k}`,site);if(!el)return;cons
 /* ---------- Firebase hooks (src/profile.ts) ---------- */
 window.RLP={update(p){
   if('authed' in p&&!p.authed){S.sheet=null;S.editName=false;S.busy={}}
+  if(p.authed&&!S.authed){const k=secOf(location.hash);if(k){anchor.done=false;follow(k)}} /* signed in here: land where the address asked */
   if('contact' in p){if(p.contact===null){S.f={instagram:'',cemail:''};S.csave='';S.csaveErr=false}
     else if(ready(p.contact)&&!ready(S.contact))S.f={instagram:p.contact.instagram,cemail:p.contact.email}}
   Object.assign(S,p);render()}};
@@ -491,6 +568,10 @@ const LOCKED=['deleting','reauth'];
 document.addEventListener('click',e=>{const t=e.target;
   if(t.matches('[data-scrim]')){S.sheet=null;render();return}
   const j=t.closest('[data-jump]');if(j){e.preventDefault();jump(j.dataset.jump);return}
+  /* a link to a section of this page (the header's heart is profile.html#saved): scroll there, no reload */
+  const a=t.closest('a[href*="#"]');
+  if(a&&!(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)){const u=new URL(a.href,location.href),k=secOf(u.hash);
+    if(k&&u.origin===location.origin&&/\/profile(\.html)?$/.test(u.pathname)){e.preventDefault();if(location.hash!=='#'+k)history.replaceState(history.state,'','#'+k);goTo(k);return}}
   const b=t.closest('[data-act]');if(!b)return;const act=b.dataset.act,id=b.dataset.id;
   switch(act){
     case 'top':e.preventDefault();jump('you');return;
@@ -512,13 +593,15 @@ document.addEventListener('click',e=>{const t=e.target;
     case 'reqResume':run('r:'+id,()=>window.RentletProfile.setRequestStatus(id,'open'),'Your request is live.');return;
     case 'reqDelete':S.sheet={kind:'delreq',id};render();return;
     case 'confirmDelReq':S.sheet=null;run('r:'+id,()=>window.RentletProfile.deleteRequest(id),'Request deleted.');return;
-    case 'unsave':{const P=api(),V=S.saved;if(!P||!ready(V))return;const k=b.dataset.key,i=V.items.findIndex(r=>r.code===k);if(i<0)return;
-      const item=V.items[i],back=()=>{if(!V.items.some(r=>r.code===k))V.items.splice(Math.min(i,V.items.length),0,item);render()};
-      V.items.splice(i,1);render();
-      P.unsave(k).then(()=>toast('Removed from saved.',()=>P.resave(k,item.savedAtMs).then(back,()=>toast('Couldn’t save it again. Try again.'))),
+    /* hearts in Saved: the card goes at once; Undo saves it again with its original time */
+    case 'unsave':case 'unsaveReq':{const P=api(),V=S.saved;if(!P||!ready(V))return;const room=act==='unsave',list=room?'items':'reqs',key=room?'code':'id',k=b.dataset.key,i=V[list].findIndex(r=>r[key]===k);if(i<0)return;
+      const item=V[list][i],back=()=>putBack(list,key,item,i),off=room?P.unsave:P.unsaveRequest,on=room?P.resave:P.resaveRequest;
+      V[list].splice(i,1);render();
+      off(k).then(()=>toast('Removed from saved.',()=>on(k,item.savedAtMs).then(back,()=>toast('Couldn’t save it again. Try again.'))),
         ()=>{back();toast('Couldn’t remove it. Try again.')});return}
-    case 'forgetGone':{const P=api(),V=S.saved;if(!P||!ready(V)||!V.gone.length)return;
-      P.forgetSaves(V.gone.slice()).then(()=>{V.gone=[];render();toast('Removed from saved.')},()=>toast('Couldn’t remove them. Try again.'));return}
+    case 'forgetGone':case 'forgetGoneReq':{const P=api(),V=S.saved,list=act==='forgetGone'?'gone':'reqGone';if(!P||!ready(V)||!V[list].length)return;const ids=V[list].slice();
+      (list==='gone'?P.forgetSaves:P.forgetSavedRequests)(ids).then(()=>{const c=S.saved;if(ready(c))c[list]=c[list].filter(x=>!ids.includes(x));render();toast('Removed from saved.')},()=>toast('Couldn’t remove them. Try again.'));return}
+    case 'reloadSaved':{const P=api();if(P)P.reloadSaved();return}
     case 'useNu':S.f.cemail=nuEmail();render();queueContact(true);return;
     case 'undo':{const f=undoFn;undoFn=null;$('#toast').classList.remove('on');if(f)f();return}
     case 'signout':S.sheet={kind:'signout'};render();return;
@@ -545,6 +628,7 @@ document.addEventListener('keydown',e=>{
     if(k==='name'){e.preventDefault();$('[data-act=saveName]').click()}
     else if(k==='instagram'||k==='cemail'){e.preventDefault();queueContact(true)}
     else if(k==='delconf'){e.preventDefault();const c=$('[data-act=confirmDel]');if(c&&!c.disabled)c.click()}}});
+{const k=secOf(location.hash);if(k)follow(k)}
 render(false);
 </script>
 <script type="module" src="/src/rentlet.ts"></script>

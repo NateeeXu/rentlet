@@ -7,11 +7,14 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
-import { addDoc, collection, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where, type Timestamp, type Unsubscribe } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { firstName, isNorthwesternEmail } from './lib/nu';
+import { badgeUnread } from './lib/chatModel';
 import * as listings from './listings';
 import type { ListingDoc } from './lib/listingView';
+
+export type SaveKind = 'room' | 'request';
 
 export interface RentletUser {
   uid: string;
@@ -22,7 +25,16 @@ export interface RentletUser {
 
 declare global {
   interface Window {
-    RL: { authed: boolean; user: RentletUser | null; initial: string; me(): string; unread: number; msgs(current?: boolean): string };
+    RL: {
+      authed: boolean;
+      user: RentletUser | null;
+      initial: string;
+      me(): string;
+      unread: number;
+      msgs(current?: boolean): string;
+      saved: Record<string, 1>;
+      isSaved(kind: SaveKind, id: string): boolean;
+    };
     RL_onAuth?: (user: RentletUser | null) => void;
     RL_onListings?: (list: ListingDoc[] | null) => void;
     RentletListings: typeof listings;
@@ -32,6 +44,7 @@ declare global {
       signOut(): Promise<void>;
       toast(message: string): void;
       report(listingId: string, reason: string, details: string): Promise<boolean>;
+      toggleSave(kind: SaveKind, id: string): Promise<boolean | null>;
     };
   }
 }
@@ -178,15 +191,96 @@ async function report(listingId: string, reason: string, details: string): Promi
   }
 }
 
+// Saved rooms (users/{uid}/saves/{code}) and saved requests (users/{uid}/savedRequests/{requestId}).
+// Kept live while signed in so every heart on the page (data-rl-save="room:<code>" or "request:<id>")
+// shows the right state; pages that list saved things listen for the rentlet:saves event.
+const SAVE_PATH: Record<SaveKind, string> = { room: 'saves', request: 'savedRequests' };
+const SAVE_ID: Record<SaveKind, RegExp> = { room: /^[1-9][0-9]{7}$/, request: /^[A-Za-z0-9]{10,64}$/ };
+const savedIds: Record<SaveKind, Set<string>> = { room: new Set(), request: new Set() };
+Object.keys(window.RL.saved || {}).forEach((k) => {
+  const [kind, id] = [k.slice(0, k.indexOf(':')), k.slice(k.indexOf(':') + 1)] as [SaveKind, string];
+  if (kind in SAVE_PATH && SAVE_ID[kind].test(id)) savedIds[kind].add(id);
+});
+let stopSaves: Unsubscribe[] = [];
+
+function paintSaves() {
+  const keys = [...[...savedIds.room].map((id) => `room:${id}`), ...[...savedIds.request].map((id) => `request:${id}`)];
+  const map: Record<string, 1> = {};
+  keys.forEach((k) => (map[k] = 1));
+  window.RL.saved = map;
+  try {
+    sessionStorage.setItem('rl-saved', JSON.stringify(keys));
+  } catch {
+    /* private mode */
+  }
+  document.querySelectorAll<HTMLElement>('[data-rl-save]').forEach((el) => {
+    el.setAttribute('aria-pressed', String(!!map[el.dataset.rlSave ?? '']));
+  });
+  dispatchEvent(new CustomEvent('rentlet:saves', { detail: { room: [...savedIds.room], request: [...savedIds.request] } }));
+}
+
+function watchSaves(uid: string | null) {
+  stopSaves.forEach((stopIt) => stopIt());
+  stopSaves = [];
+  if (!uid) {
+    savedIds.room.clear();
+    savedIds.request.clear();
+    return paintSaves();
+  }
+  (Object.keys(SAVE_PATH) as SaveKind[]).forEach((kind) => {
+    stopSaves.push(
+      onSnapshot(
+        collection(db, 'users', uid, SAVE_PATH[kind]),
+        (snap) => {
+          savedIds[kind] = new Set(snap.docs.map((d) => d.id).filter((id) => SAVE_ID[kind].test(id)));
+          paintSaves();
+        },
+        () => undefined,
+      ),
+    );
+  });
+}
+
+// Saves or removes; signs the visitor in first when needed. Returns whether it is saved afterwards,
+// or null when nothing changed (not signed in, or the write failed and was rolled back).
+async function toggleSave(kind: SaveKind, id: string): Promise<boolean | null> {
+  if (!(kind in SAVE_PATH) || !SAVE_ID[kind].test(id)) {
+    toast('This can’t be saved.');
+    return null;
+  }
+  if (!auth.currentUser && !(await signIn())) return null;
+  const u = auth.currentUser;
+  if (!u) return null;
+  const on = !savedIds[kind].has(id);
+  if (on) savedIds[kind].add(id);
+  else savedIds[kind].delete(id);
+  paintSaves();
+  const ref = doc(db, 'users', u.uid, SAVE_PATH[kind], id);
+  try {
+    if (on) await setDoc(ref, { savedAt: serverTimestamp() });
+    else await deleteDoc(ref);
+    toast(on ? (kind === 'room' ? 'Saved. Find it under the heart at the top.' : 'Request saved. Find it under the heart at the top.') : 'Removed from saved.');
+    return on;
+  } catch {
+    if (on) savedIds[kind].delete(id);
+    else savedIds[kind].add(id);
+    paintSaves();
+    toast('Couldn’t update your saved list. Try again.');
+    return null;
+  }
+}
+
 window.Rentlet = {
   user: null,
   signIn,
   signOut: () => firebaseSignOut(auth),
   toast,
   report,
+  toggleSave,
 };
 
-// Unread conversations for the header's messages button: the other person wrote last, after I last opened it.
+// Unread conversations for the header's messages button: the other person wrote last, after I last opened it,
+// and I haven't muted, blocked or hidden it.
 let stopUnread: Unsubscribe | null = null;
 
 function showUnread(n: number) {
@@ -213,12 +307,10 @@ function watchUnread(uid: string | null) {
   stopUnread = onSnapshot(
     query(collection(db, 'conversations'), where('participants', 'array-contains', uid)),
     (snap) => {
+      // muted, blocked and hidden conversations don't count (the same check the messages page uses)
       let n = 0;
       snap.forEach((d) => {
-        const c = d.data();
-        const updated = (c.updatedAt as Timestamp | undefined)?.toMillis() ?? 0;
-        const read = (c.read?.[uid] as Timestamp | undefined)?.toMillis() ?? 0;
-        if (c.lastSender && c.lastSender !== uid && updated > read) n++;
+        if (badgeUnread(d.data(), uid)) n++;
       });
       showUnread(n);
     },
@@ -233,6 +325,7 @@ onAuthStateChanged(auth, async (u) => {
   }
   apply(u ? toUser(u) : null);
   watchUnread(u ? u.uid : null);
+  watchSaves(u ? u.uid : null);
 });
 
 window.RentletListings = listings;

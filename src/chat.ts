@@ -1,7 +1,8 @@
 // Rentlet chat: conversations and messages in Firestore. Loaded as a module on messages.html, which
 // renders what this sends to window.RL_chat.update(), and on room.html, which only calls
 // window.RentletChat.start() from its message sheet. Every write follows firestore.rules:
-// conversations/{listingCode_guestUid} with a messages subcollection.
+// conversations/{listingCode_guestUid} with a messages subcollection; chat photos are in Storage
+// under chats/{conversationId}/{senderUid}/ (storage.rules).
 import { onAuthStateChanged } from 'firebase/auth';
 import {
   addDoc,
@@ -21,17 +22,33 @@ import {
   writeBatch,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
+import { auth, db, storage } from './firebase';
 import { firstName, isNorthwesternEmail } from './lib/nu';
 import { getListing } from './listings';
 import type { ListingDoc } from './lib/listingView';
 import {
+  chatPhotoPath,
   cleanText,
   conversationId,
   convFromData,
+  fitWithin,
+  imageBody,
   isUnread,
+  lastFor,
+  listingBody,
+  listingCard,
   ms,
   msgFromData,
+  PHOTO_LIMIT,
+  PHOTO_MAX_BYTES,
+  PHOTO_QUALITY,
+  PHOTO_TYPES,
+  RECALL_MS,
+  replyTo,
+  SEND_LIMIT,
+  textBody,
+  underLimit,
   needsReveal,
   newConversation,
   otherOf,
@@ -58,12 +75,24 @@ interface Me {
   email: string;
 }
 
+// A photo on its way up: shown at the end of the thread until its message arrives.
+export interface Upload {
+  id: string;
+  url: string; // a local object URL
+  w: number;
+  h: number;
+  pct: number; // 0–1
+}
+
 export interface ChatState {
   auth: 'unknown' | 'out' | 'in';
   me: Me | null;
   list: 'loading' | 'ready' | 'error';
-  threads: ThreadView[];
+  threads: (ThreadView & { uploads: Upload[] })[];
 }
+
+// 'limit': too many messages in 10 seconds; 'photos': too many photos this minute.
+export type SendResult = 'ok' | 'limit' | 'photos' | 'type' | 'big' | 'blocked' | 'failed';
 
 type StartResult = { ok: true; id: string } | { ok: false; reason: 'signin' | 'own' | 'gone' | 'blocked' | 'failed' };
 type Entry = { id: string } | { notice: string } | null;
@@ -83,6 +112,10 @@ const drafts = new Map<string, { conv: Conv; listing: ListingDoc }>();
 const msgs = new Map<string, Msg[]>();
 const profiles = new Map<string, Profile | null>();
 let active: Set<string> | null = null;
+let activeDocs: ListingDoc[] = [];
+const uploads = new Map<string, Upload[]>();
+const sendLog = new Map<string, number[]>(); // per conversation: when each message went out
+const photoLog = new Map<string, number[]>();
 let openId: string | null = null;
 let msgSubId: string | null = null;
 let unsubList: Unsubscribe | null = null;
@@ -121,7 +154,7 @@ function push() {
       ? [
           ...[...drafts.values()].filter((d) => !convs.has(d.conv.id)).map((d) => view(d.conv, true)),
           ...[...convs.values()].map((c) => view(c)),
-        ]
+        ].map((t) => ({ ...t, uploads: (uploads.get(t.id) ?? []).map((u) => ({ ...u })) }))
       : [];
     hook.update({ auth: authState, me, list: listState, threads });
   });
@@ -138,6 +171,9 @@ function stopAll() {
   drafts.clear();
   msgs.clear();
   marked.clear();
+  uploads.clear();
+  sendLog.clear();
+  photoLog.clear();
   listState = 'loading';
   listReady = new Promise<void>((r) => (listResolve = r));
 }
@@ -243,17 +279,18 @@ async function createConversation(id: string, listing: ListingDoc, hostId: strin
   await setDoc(convRef(id), { ...newConversation({ listing, hostId, guestId, names, photos }), createdAt: serverTimestamp() }, { merge: true });
 }
 
-async function writeMessage(id: string, conv: Conv | null, text: string, keys: SettleKey[]) {
+type Body = ReturnType<typeof textBody> | ReturnType<typeof imageBody> | ReturnType<typeof listingBody>;
+
+async function writeMessage(id: string, conv: Conv | null, body: Body, keys: SettleKey[]) {
   const m = requireMe();
   const batch = writeBatch(db);
   batch.set(doc(collection(db, 'conversations', id, 'messages')), {
     senderId: m.uid,
-    text,
-    kind: 'text',
+    ...body,
     createdAt: serverTimestamp(),
   });
   const upd: Record<string, unknown> = {
-    lastMessage: text.slice(0, 200),
+    ...lastFor(body),
     lastSender: m.uid,
     updatedAt: serverTimestamp(),
     [`read.${m.uid}`]: serverTimestamp(),
@@ -266,19 +303,161 @@ async function writeMessage(id: string, conv: Conv | null, text: string, keys: S
   await batch.commit();
 }
 
-async function send(id: string, raw: string, keys: SettleKey[] = []): Promise<boolean> {
+// The mini program's per-conversation limits, kept here in the browser: 12 messages in 10 seconds
+// (every kind), and 6 photos a minute.
+function allowed(id: string, photo: boolean): 'ok' | 'limit' | 'photos' {
+  const now = Date.now();
+  const sent = sendLog.get(id) ?? [];
+  const shots = photoLog.get(id) ?? [];
+  if (!underLimit(sent, now, SEND_LIMIT)) return 'limit';
+  if (photo && !underLimit(shots, now, PHOTO_LIMIT)) return 'photos';
+  sendLog.set(id, [...sent.filter((t) => now - t < SEND_LIMIT.ms), now]);
+  if (photo) photoLog.set(id, [...shots.filter((t) => now - t < PHOTO_LIMIT.ms), now]);
+  return 'ok';
+}
+
+const isBlocked = (c: Conv, uid: string) => !!(c.blocked[uid] || c.blocked[otherOf(c, uid)]);
+
+// A text message, optionally replying to one of the open thread's messages (by id).
+async function send(id: string, raw: string, keys: SettleKey[] = [], replyId: string | null = null): Promise<SendResult> {
   const text = cleanText(raw);
-  if (!text.trim() || !me) return false;
+  if (!text.trim() || !me) return 'failed';
   const draft = drafts.get(id);
   const conv = convs.get(id) ?? draft?.conv ?? null;
-  if (!conv || conv.blocked[me.uid] || conv.blocked[otherOf(conv, me.uid)]) return false;
+  if (!conv) return 'failed';
+  if (isBlocked(conv, me.uid)) return 'blocked';
+  const quoted = replyId ? (msgs.get(id) ?? []).find((m) => m.id === replyId && m.kind !== 'recalled') : null;
+  const gate = allowed(id, false);
+  if (gate !== 'ok') return gate;
   try {
     if (draft && !convs.has(id)) {
       await createConversation(id, draft.listing, conv.hostId, conv.guestId, conv.names, conv.photos);
     }
-    await writeMessage(id, conv, text, keys);
+    await writeMessage(id, conv, textBody(text, quoted ? replyTo(quoted) : null), keys);
     drafts.delete(id);
     watchMessages();
+    return 'ok';
+  } catch {
+    return 'failed';
+  }
+}
+
+// Phone photos are large: at most 1600 px on the long side, as an 82% JPEG.
+async function compressPhoto(file: File): Promise<{ blob: Blob; w: number; h: number }> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    const { w, h } = fitWithin(img.naturalWidth, img.naturalHeight);
+    if (!w || !h) throw new Error('empty');
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('canvas');
+    ctx.fillStyle = '#fff'; // a transparent PNG gets a white background, not black
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/jpeg', PHOTO_QUALITY));
+    if (!blob) throw new Error('encode');
+    return { blob, w, h };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+let uploadSeq = 0;
+async function sendPhoto(id: string, file: File): Promise<SendResult> {
+  if (!me) return 'failed';
+  const uid = me.uid;
+  const conv = convs.get(id);
+  if (!conv) return 'failed'; // a draft: the first message is text
+  if (isBlocked(conv, uid)) return 'blocked';
+  if (!PHOTO_TYPES.includes(file.type)) return 'type';
+  const gate = allowed(id, true);
+  if (gate !== 'ok') return gate;
+  const up: Upload = { id: `up${++uploadSeq}`, url: URL.createObjectURL(file), w: 0, h: 0, pct: 0 };
+  const list = () => uploads.get(id) ?? [];
+  uploads.set(id, [...list(), up]);
+  push();
+  try {
+    const { blob, w, h } = await compressPhoto(file);
+    if (blob.size >= PHOTO_MAX_BYTES) return 'big';
+    up.w = w;
+    up.h = h;
+    push();
+    const task = uploadBytesResumable(ref(storage, chatPhotoPath(id, uid, Date.now())), blob, { contentType: 'image/jpeg' });
+    task.on('state_changed', (s) => {
+      up.pct = s.totalBytes ? s.bytesTransferred / s.totalBytes : 0;
+      push();
+    });
+    await task;
+    const url = await getDownloadURL(task.snapshot.ref);
+    await writeMessage(id, convs.get(id) ?? conv, imageBody(url, w, h), []);
+    return 'ok';
+  } catch {
+    return 'failed';
+  } finally {
+    uploads.set(id, list().filter((u) => u !== up));
+    if (!uploads.get(id)?.length) uploads.delete(id);
+    URL.revokeObjectURL(up.url);
+    push();
+  }
+}
+
+// My own active listings, for the "Send a listing" picker.
+function myListings(): ListingDoc[] {
+  return me ? activeDocs.filter((d) => d.ownerId === me!.uid && d.status === 'active') : [];
+}
+
+async function sendListing(id: string, code: string): Promise<SendResult> {
+  if (!me) return 'failed';
+  const conv = convs.get(id);
+  const L = myListings().find((d) => d.code === code);
+  if (!conv || !L) return 'failed';
+  if (isBlocked(conv, me.uid)) return 'blocked';
+  const gate = allowed(id, false);
+  if (gate !== 'ok') return gate;
+  try {
+    await writeMessage(id, conv, listingBody(listingCard(L)), []);
+    return 'ok';
+  } catch {
+    return 'failed';
+  }
+}
+
+const msgRef = (id: string, mid: string) => doc(db, 'conversations', id, 'messages', mid);
+const isLast = (id: string, mid: string) => {
+  const list = msgs.get(id) ?? [];
+  return list.length > 0 && list[list.length - 1].id === mid;
+};
+
+// My own text message, within 2 minutes: both sides then see "… recalled a message".
+async function recall(id: string, mid: string): Promise<'ok' | 'expired' | 'failed'> {
+  if (!me) return 'failed';
+  const m = (msgs.get(id) ?? []).find((x) => x.id === mid);
+  if (!m || m.senderId !== me.uid || m.kind !== 'text') return 'failed';
+  if (!m.atMs || Date.now() - m.atMs >= RECALL_MS) return 'expired';
+  try {
+    const batch = writeBatch(db);
+    batch.update(msgRef(id, mid), { kind: 'recalled', text: '', recalledAt: serverTimestamp() });
+    if (isLast(id, mid)) batch.update(convRef(id), lastFor({ kind: 'recalled' }));
+    await batch.commit();
+    return 'ok';
+  } catch {
+    return Date.now() - m.atMs >= RECALL_MS ? 'expired' : 'failed';
+  }
+}
+
+// Delete for me: the message leaves my thread only.
+async function deleteMessage(id: string, mid: string): Promise<boolean> {
+  if (!me || !convs.has(id)) return false;
+  try {
+    const batch = writeBatch(db);
+    batch.update(msgRef(id, mid), { [`hiddenFor.${me.uid}`]: true });
+    if (isLast(id, mid)) batch.update(convRef(id), { [`lastHidden.${me.uid}`]: serverTimestamp() });
+    await batch.commit();
     return true;
   } catch {
     return false;
@@ -381,6 +560,43 @@ async function report(id: string, reason: string): Promise<boolean> {
 
 const block = (id: string) => (me ? update(id, { [`blocked.${me.uid}`]: true }) : Promise.resolve(false));
 const unblock = (id: string) => (me ? update(id, { [`blocked.${me.uid}`]: deleteField() }) : Promise.resolve(false));
+
+// Every conversation where I blocked this person.
+async function unblockPerson(uid: string): Promise<boolean> {
+  if (!me) return false;
+  const mine = me.uid;
+  const ids = [...convs.values()].filter((c) => c.blocked[mine] && otherOf(c, mine) === uid).map((c) => c.id);
+  const done = await Promise.all(ids.map(unblock));
+  return done.every(Boolean);
+}
+
+// ---------- conversation settings (mine only) ----------
+
+const myKey = (f: string) => `${f}.${me!.uid}`;
+const pin = (id: string, on: boolean) => (me ? update(id, { [myKey('pinned')]: on ? true : deleteField() }) : Promise.resolve(false));
+const mute = (id: string, on: boolean) => (me ? update(id, { [myKey('muted')]: on ? true : deleteField() }) : Promise.resolve(false));
+
+// Hide: out of my list until a newer message arrives. It counts as read, and it is no longer pinned.
+function hide(id: string): Promise<boolean> {
+  if (!me) return Promise.resolve(false);
+  return update(id, {
+    [myKey('hidden')]: serverTimestamp(),
+    [myKey('read')]: serverTimestamp(),
+    ...(convs.get(id)?.pinned[me.uid] ? { [myKey('pinned')]: deleteField() } : {}),
+  });
+}
+const unhide = (id: string) => (me && convs.get(id)?.hidden[me.uid] ? update(id, { [myKey('hidden')]: deleteField() }) : Promise.resolve(true));
+
+// Delete conversation, for me: hidden, and when it comes back I see only what came after.
+function clear(id: string): Promise<boolean> {
+  if (!me) return Promise.resolve(false);
+  return update(id, {
+    [myKey('hidden')]: serverTimestamp(),
+    [myKey('clearedAt')]: serverTimestamp(),
+    [myKey('read')]: serverTimestamp(),
+    ...(convs.get(id)?.pinned[me.uid] ? { [myKey('pinned')]: deleteField() } : {}),
+  });
+}
 
 // The other person's newest open request, if they have one (for the host's view of a guest).
 async function openRequest(uid: string): Promise<RequestSummary | null> {
@@ -500,7 +716,7 @@ async function start(code: string, raw: string): Promise<StartResult> {
         { [me.uid]: me.photo, [L.ownerId]: L.ownerPhoto || '' },
       );
     }
-    await writeMessage(id, existing, text, []);
+    await writeMessage(id, existing, textBody(text), []);
     return { ok: true, id };
   } catch {
     return { ok: false, reason: 'failed' };
@@ -520,12 +736,24 @@ const api = {
   report,
   block,
   unblock,
+  unblockPerson,
+  pin,
+  mute,
+  hide,
+  unhide,
+  clear,
+  sendPhoto,
+  sendListing,
+  recall,
+  deleteMessage,
+  myListings,
   openRequest,
   profile: loadProfile,
   parseId: parseConversationId,
   // active listings from src/rentlet.ts (via the page's RL_onListings): a room not among them is no longer listed
   listings(list: ListingDoc[] | null) {
     if (!list) return;
+    activeDocs = list;
     active = new Set(list.map((d) => d.code));
     push();
   },

@@ -40,6 +40,8 @@ export interface ConvListing {
   channel: 'official' | 'private';
 }
 
+export type LastKind = 'text' | 'image' | 'listing' | 'recalled';
+
 export interface Conv {
   id: string;
   listingId: string;
@@ -57,14 +59,51 @@ export interface Conv {
   share: Record<string, ShareEntry>;
   safetyMs: number;
   blocked: Record<string, boolean>;
+  // per person, each changed only at the writer's own key (see firestore.rules ownOnly)
+  pinned: Record<string, boolean>;
+  muted: Record<string, boolean>;
+  hidden: Record<string, number>; // out of that person's list until a newer message (updatedAt) arrives
+  clearedAt: Record<string, number>; // "Delete conversation": that person sees only messages after it
+  lastHidden: Record<string, number>; // that person deleted the last message for themselves
+  lastKind: LastKind;
+}
+
+export type MsgKind = 'text' | 'image' | 'listing' | 'recalled';
+
+// A quoted message, as the reply stores it: the snippet is kept so it reads without the original.
+export interface ReplyTo {
+  id: string;
+  senderId: string;
+  text: string;
+}
+
+export interface MsgImage {
+  url: string;
+  w: number;
+  h: number;
+}
+
+// A listing card someone sent: what the card shows, so it still reads when the listing comes down.
+export interface MsgListing {
+  code: string;
+  title: string;
+  price: number;
+  start: string;
+  end: string;
+  area: string;
+  photo: string;
 }
 
 export interface Msg {
   id: string;
   senderId: string;
   text: string;
-  kind: 'text' | 'system';
+  kind: MsgKind;
   atMs: number;
+  replyTo?: ReplyTo | null;
+  image?: MsgImage | null;
+  listing?: MsgListing | null;
+  hiddenFor?: Record<string, boolean>; // deleted for that person only
 }
 
 export interface Profile {
@@ -76,14 +115,39 @@ export interface Profile {
   year: string;
 }
 
+// A message bubble. k is what it holds; img, card and re only on the kinds that have them; rcl is
+// when my own text message can no longer be recalled.
+export interface Bubble {
+  f: 'me' | 'them';
+  x: string;
+  t: string;
+  id: string;
+  k?: 'text' | 'image' | 'listing';
+  img?: MsgImage;
+  card?: MsgListing;
+  re?: { id: string; who: string; x: string; gone: boolean };
+  rcl?: number;
+}
+
 export type Item =
   | { f: 'day'; x: string }
-  | { f: 'me' | 'them'; x: string; t: string; id: string }
+  | Bubble
   | { f: 'sys'; x: string }
-  | { f: 'unlock' };
+  | { f: 'unlock' }
+  | { f: 'recalled'; x: string; id: string; mine: boolean };
 
 export const UNLOCK_AFTER = 3; // replies from each side before contact details can be shared
 export const MAX_TEXT = 2000; // firestore.rules: message text is 1–2000 characters
+export const REPLY_SNIPPET = 80; // a reply keeps at most this much of the quoted message
+export const RECALL_MS = 2 * 60_000; // own text messages can be recalled for 2 minutes
+// Sending limits, per conversation, like the mini program's chatApi: 12 messages in 10 seconds,
+// and 6 photos a minute.
+export const SEND_LIMIT = { n: 12, ms: 10_000 };
+export const PHOTO_LIMIT = { n: 6, ms: 60_000 };
+export const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+export const PHOTO_MAX_PX = 1600;
+export const PHOTO_QUALITY = 0.82;
+export const PHOTO_MAX_BYTES = 5 * 1024 * 1024; // storage.rules: chat photos under 5 MB
 
 // ---------- ids ----------
 
@@ -166,8 +230,15 @@ export function convFromData(id: string, data: Record<string, unknown>): Conv {
   }
   const read: Record<string, number> = {};
   for (const [uid, v] of Object.entries(rec(data.read))) read[uid] = ms(v);
-  const blocked: Record<string, boolean> = {};
-  for (const [uid, v] of Object.entries(rec(data.blocked))) if (v === true) blocked[uid] = true;
+  const blocked = trueMap(data.blocked);
+  const times = (x: unknown) => {
+    const out: Record<string, number> = {};
+    for (const [uid, v] of Object.entries(rec(x))) {
+      const t = ms(v);
+      if (t > 0) out[uid] = t;
+    }
+    return out;
+  };
   const strMap = (x: unknown) =>
     Object.fromEntries(Object.entries(rec(x)).filter(([, v]) => typeof v === 'string')) as Record<string, string>;
   return {
@@ -187,17 +258,68 @@ export function convFromData(id: string, data: Record<string, unknown>): Conv {
     share,
     safetyMs: ms(data.safety),
     blocked,
+    pinned: trueMap(data.pinned),
+    muted: trueMap(data.muted),
+    hidden: times(data.hidden),
+    clearedAt: times(data.clearedAt),
+    lastHidden: times(data.lastHidden),
+    lastKind: (['image', 'listing', 'recalled'] as const).find((k) => k === data.lastKind) ?? 'text',
   };
 }
 
-export function msgFromData(id: string, data: Record<string, unknown>): Msg {
+function trueMap(x: unknown): Record<string, boolean> {
+  const out: Record<string, boolean> = {};
+  for (const [k, v] of Object.entries(rec(x))) if (v === true) out[k] = true;
+  return out;
+}
+
+// Only photos in this project's Cloud Storage bucket show in a thread (firestore.rules checks the same).
+const PHOTO_URL = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[a-z0-9.-]+\/o\/chats%2F/;
+const dim = (x: unknown) => {
+  const n = Math.round(Number(x));
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 10_000) : 0;
+};
+
+function readMsgListing(x: unknown): MsgListing | null {
+  const l = rec(x);
+  const code = str(l.code, 8);
+  if (!/^[1-9][0-9]{7}$/.test(code)) return null;
+  const photo = str(l.photo, 2000);
   return {
+    code,
+    title: str(l.title, 120) || 'Listing',
+    price: Number(l.price) || 0,
+    start: str(l.start, 10),
+    end: str(l.end, 10),
+    area: str(l.area, 80),
+    photo: /^https:\/\//.test(photo) ? photo : '',
+  };
+}
+
+function readReply(x: unknown): ReplyTo | null {
+  const r = rec(x);
+  const id = str(r.id, 64);
+  return id ? { id, senderId: str(r.senderId, 128), text: str(r.text, REPLY_SNIPPET) } : null;
+}
+
+export function msgFromData(id: string, data: Record<string, unknown>): Msg {
+  // anything a participant writes shows as their own message, never as a Rentlet notice
+  const base = {
     id,
     senderId: str(data.senderId, 128),
-    text: str(data.text, MAX_TEXT),
-    kind: 'text', // anything a participant writes shows as their own message, never as a Rentlet notice
     atMs: ms(data.createdAt),
+    hiddenFor: trueMap(data.hiddenFor),
   };
+  if (data.kind === 'recalled') return { ...base, kind: 'recalled', text: '' };
+  if (data.kind === 'image') {
+    const url = str(data.imageUrl, 2000);
+    if (PHOTO_URL.test(url)) return { ...base, kind: 'image', text: '', image: { url, w: dim(data.width), h: dim(data.height) } };
+  }
+  if (data.kind === 'listing') {
+    const listing = readMsgListing(data.listing);
+    if (listing) return { ...base, kind: 'listing', text: '', listing };
+  }
+  return { ...base, kind: 'text', text: str(data.text, MAX_TEXT), replyTo: readReply(data.replyTo) };
 }
 
 export function profileFromData(data: Record<string, unknown> | null | undefined): Profile | null {
@@ -291,6 +413,81 @@ export function cleanText(text: string): string {
   return String(text ?? '').replace(/\s+$/, '').replace(/^\s*\n/, '').slice(0, MAX_TEXT);
 }
 
+// The quoted part of a reply: one line, at most 80 characters.
+export function snippet(text: string, max = REPLY_SNIPPET): string {
+  const one = String(text ?? '').replace(/\s+/g, ' ').trim();
+  return one.length > max ? one.slice(0, max - 1).trimEnd() + '…' : one;
+}
+
+// What a message reads as when it is quoted, copied into a menu title or shown as the last line.
+export function msgSnippet(m: Pick<Msg, 'kind' | 'text' | 'listing'>, max = REPLY_SNIPPET): string {
+  if (m.kind === 'image') return 'Photo';
+  if (m.kind === 'listing') return snippet(`Listing: ${m.listing?.title ?? ''}`, max);
+  if (m.kind === 'recalled') return '';
+  return snippet(m.text, max);
+}
+
+export function replyTo(m: Msg): ReplyTo {
+  return { id: m.id, senderId: m.senderId, text: msgSnippet(m) };
+}
+
+// The message document's own fields for each kind (the caller adds senderId and createdAt).
+// They match the create rule proposed for firestore.rules: text 1–2000 with an optional replyTo;
+// a photo in Storage under chats/{conversation}/{sender}/; a card of one of the sender's own listings.
+export function textBody(text: string, reply?: ReplyTo | null) {
+  return { kind: 'text' as const, text, ...(reply ? { replyTo: reply } : {}) };
+}
+
+export function imageBody(url: string, width: number, height: number) {
+  return { kind: 'image' as const, text: '', imageUrl: url, width: Math.round(width), height: Math.round(height) };
+}
+
+export function listingCard(d: ListingDoc): MsgListing {
+  return {
+    code: d.code,
+    title: String(d.title ?? '').slice(0, 120) || 'Listing',
+    price: Math.round(Number(d.price) || 0),
+    start: String(d.start ?? '').slice(0, 10),
+    end: String(d.end ?? '').slice(0, 10),
+    area: String(d.area ?? '').slice(0, 80),
+    photo: String(d.photos?.[0] ?? '').slice(0, 2000),
+  };
+}
+
+export function listingBody(card: MsgListing) {
+  return { kind: 'listing' as const, text: '', listing: card };
+}
+
+// The conversation's last line for each kind of message.
+export function lastFor(body: { kind: LastKind; text?: string; listing?: MsgListing }) {
+  const lastMessage =
+    body.kind === 'image' ? 'Photo' : body.kind === 'listing' ? `Listing: ${body.listing?.title ?? ''}` : body.kind === 'recalled' ? 'Message recalled' : body.text ?? '';
+  return { lastMessage: lastMessage.slice(0, 200), lastKind: body.kind };
+}
+
+// chats/{conversationId}/{uid}/{timestamp}.jpg (storage.rules: only that uid, a participant, writes there)
+export function chatPhotoPath(conversationId: string, uid: string, at: number): string {
+  return `chats/${conversationId}/${uid}/${at}.jpg`;
+}
+
+// A photo's size after scaling it to fit within max px on its long side (never enlarged).
+export function fitWithin(w: number, h: number, max = PHOTO_MAX_PX): { w: number; h: number } {
+  if (!(w > 0) || !(h > 0)) return { w: 0, h: 0 };
+  const k = Math.min(1, max / Math.max(w, h));
+  return { w: Math.max(1, Math.round(w * k)), h: Math.max(1, Math.round(h * k)) };
+}
+
+// True while fewer than lim.n sends happened in the last lim.ms.
+export function underLimit(times: number[], now: number, lim: { n: number; ms: number }): boolean {
+  return times.filter((t) => now - t < lim.ms).length < lim.n;
+}
+
+// Seconds left to recall my own text message, or 0.
+export function recallLeft(m: Pick<Msg, 'kind' | 'senderId' | 'atMs'>, me: string, now: number): number {
+  if (m.kind !== 'text' || m.senderId !== me || !m.atMs) return 0;
+  return Math.max(0, Math.ceil((m.atMs + RECALL_MS - now) / 1000));
+}
+
 // ---------- state ----------
 
 export function otherOf(conv: Pick<Conv, 'hostId' | 'guestId'>, me: string): string {
@@ -304,6 +501,19 @@ export function tabOf(conv: Pick<Conv, 'hostId'>, me: string): Tab {
 export function isUnread(conv: Pick<Conv, 'lastSender' | 'updatedAtMs' | 'read'>, me: string): boolean {
   if (!conv.lastSender || conv.lastSender === me) return false;
   return conv.updatedAtMs > (conv.read[me] ?? 0);
+}
+
+// Hidden (or deleted) by me, and nothing newer has arrived since.
+export function isHiddenFor(conv: Pick<Conv, 'hidden' | 'updatedAtMs'>, me: string): boolean {
+  const h = conv.hidden[me];
+  return !!h && h >= conv.updatedAtMs;
+}
+
+// For the header's unread count, from a raw conversations/{id} document: unread, and not muted,
+// hidden or blocked by me (src/rentlet.ts may import this).
+export function badgeUnread(data: Record<string, unknown>, me: string): boolean {
+  const c = convFromData('', data);
+  return isUnread(c, me) && !c.muted[me] && !c.blocked[me] && !isHiddenFor(c, me);
 }
 
 export function counts(msgs: Msg[], me: string): { me: number; them: number } {
@@ -389,9 +599,17 @@ export function whenLabel(t: number, now: Date = new Date()): string {
   return dayLabel(t, now);
 }
 
-export function lastLine(conv: Pick<Conv, 'lastMessage' | 'lastSender'>, me: string): string {
+export function lastLine(
+  conv: Pick<Conv, 'lastMessage' | 'lastSender'> & Partial<Pick<Conv, 'lastKind' | 'lastHidden' | 'updatedAtMs'>>,
+  me: string,
+  otherName = '',
+): string {
+  const gone = conv.lastHidden?.[me];
+  if (gone && gone >= (conv.updatedAtMs ?? 0)) return 'Message deleted';
+  const mine = conv.lastSender === me;
+  if (conv.lastKind === 'recalled') return mine ? 'You recalled a message' : `${otherName || 'They'} recalled a message`;
   if (!conv.lastMessage) return 'New conversation';
-  return (conv.lastSender === me ? 'You: ' : '') + conv.lastMessage.replace(/\s*\n+\s*/g, ' ');
+  return (mine ? 'You: ' : '') + conv.lastMessage.replace(/\s*\n+\s*/g, ' ');
 }
 
 export const SAFE: Record<Tab, string> = {
@@ -401,9 +619,11 @@ export const SAFE: Record<Tab, string> = {
 
 // The thread as rendered: messages, a day stamp whenever the day changes, and the notes that
 // mark the money reminder, the contact unlock and the swap at the moment each happened.
+// Messages I deleted for myself, and everything up to "Delete conversation", are left out; they
+// still count toward the contact unlock, which the other side sees too.
 export function timeline(
   msgs: Msg[],
-  conv: Pick<Conv, 'safetyMs' | 'share'> | null,
+  conv: (Pick<Conv, 'safetyMs' | 'share'> & Partial<Pick<Conv, 'clearedAt'>>) | null,
   me: string,
   other: string,
   otherName: string,
@@ -413,16 +633,27 @@ export function timeline(
   type Ev = { at: number; seq: number; item: Item };
   const evs: Ev[] = [];
   let seq = 0;
+  const cleared = conv?.clearedAt?.[me] ?? 0;
+  const shown = (at: number) => !cleared || at > cleared;
+  const byId = new Map(msgs.map((m) => [m.id, m]));
+  const quote = (r: ReplyTo) => {
+    const q = byId.get(r.id);
+    const gone = !!q && (q.kind === 'recalled' || !!q.hiddenFor?.[me] || (!!cleared && q.atMs > 0 && q.atMs <= cleared));
+    return { id: r.id, who: r.senderId === me ? 'You' : otherName, x: gone ? '' : r.text, gone };
+  };
   const unlockAt = unlockIndex(msgs, me);
   msgs.forEach((m, i) => {
     const at = m.atMs || now.getTime();
-    evs.push({ at, seq: seq++, item: { f: m.senderId === me ? 'me' : 'them', x: m.text, t: clockLabel(at), id: m.id } });
-    if (i === unlockAt) evs.push({ at, seq: seq++, item: { f: 'unlock' } });
+    if (i === unlockAt && shown(at)) evs.push({ at, seq: seq + 1, item: { f: 'unlock' } });
+    const item = m.hiddenFor?.[me] || !shown(at) ? null : bubble(m, at, me, otherName, quote);
+    if (item) evs.push({ at, seq, item });
+    seq += 2;
   });
-  if (conv?.safetyMs) evs.push({ at: conv.safetyMs, seq: seq++, item: { f: 'sys', x: SAFE[tab] } });
+  if (conv?.safetyMs && shown(conv.safetyMs)) evs.push({ at: conv.safetyMs, seq: seq++, item: { f: 'sys', x: SAFE[tab] } });
   const a = conv?.share[me];
   const b = conv?.share[other];
-  if (a && b && b.val) evs.push({ at: Math.max(a.atMs, b.atMs) || now.getTime(), seq: seq++, item: { f: 'sys', x: `You and ${otherName} swapped contact details` } });
+  const swapAt = a && b && b.val ? Math.max(a.atMs, b.atMs) || now.getTime() : 0;
+  if (swapAt && shown(swapAt)) evs.push({ at: swapAt, seq: seq++, item: { f: 'sys', x: `You and ${otherName} swapped contact details` } });
   evs.sort((x, y) => x.at - y.at || x.seq - y.seq);
   const out: Item[] = [];
   let day = '';
@@ -435,6 +666,18 @@ export function timeline(
     out.push(e.item);
   }
   return out;
+}
+
+function bubble(m: Msg, at: number, me: string, otherName: string, quote: (r: ReplyTo) => Bubble['re']): Item | null {
+  const mine = m.senderId === me;
+  if (m.kind === 'recalled') return { f: 'recalled', x: mine ? 'You recalled a message' : `${otherName} recalled a message`, id: m.id, mine };
+  const b: Bubble = { f: mine ? 'me' : 'them', x: m.text, t: clockLabel(at), id: m.id };
+  if (m.kind === 'image' && m.image) return { ...b, k: 'image', x: '', img: m.image };
+  if (m.kind === 'listing' && m.listing) return { ...b, k: 'listing', x: m.listing.title, card: m.listing };
+  if (!m.text.trim()) return null;
+  if (m.replyTo) b.re = quote(m.replyTo);
+  if (mine && m.atMs) b.rcl = m.atMs + RECALL_MS;
+  return b;
 }
 
 const listText = (a: string[]) => {
@@ -545,11 +788,15 @@ export function threadView(conv: Conv, o: ThreadOpts) {
     },
     r: { key: conv.listingId, ...L, span: L.start && L.end ? dateRange(L.start, L.end) : '' },
     msgs: o.msgs ? timeline(msgs, conv, me, other, name, tab, o.now) : [],
+    n: counts(msgs, me), // replies each side sent (for the contact unlock), deleted-for-me ones included
     loaded: !!o.msgs || !!o.draft,
-    last: lastLine(conv, me),
+    last: lastLine(conv, me, name),
     when: whenLabel(conv.updatedAtMs, o.now),
     ord: conv.updatedAtMs || Number.MAX_SAFE_INTEGER,
     unread: isUnread(conv, me),
+    pinned: !!conv.pinned[me],
+    muted: !!conv.muted[me],
+    hidden: isHiddenFor(conv, me),
     taken: !!o.activeCodes && !o.activeCodes.has(conv.listingId),
     blocked: !!conv.blocked[me],
     blockedBy: !!conv.blocked[other],

@@ -62,6 +62,8 @@ button{cursor:pointer}
 /* the compact search bar in the header (A4) */
 .mini4{position:absolute;left:50%;top:50%;z-index:2;display:flex;max-width:calc(100% - 480px);align-items:center;height:50px;padding:5px 5px 5px 8px;border:1px solid var(--line);border-radius:999px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.06),0 8px 22px rgba(0,0,0,.08);transform:translate(-50%,-50%) scale(1.12);opacity:0;pointer-events:none;transition:opacity .22s,transform .32s cubic-bezier(.22,1,.36,1)}
 .hdr.compact .mini4{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
+/* while the compact search bar is in the header, Requests and Post a listing step back into the menu */
+.hdr.compact .rl-top{display:none!important}
 .mini4 .m-seg{border:0;background:none;height:38px;padding:0 13px;border-radius:999px;font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;cursor:pointer}
 .mini4 .m-seg:hover,.mini4 .m-seg[aria-expanded=true]{background:var(--soft)}
 .mini4 .m-where{max-width:220px;min-width:0;flex:0 1 auto} /* "Northwestern · Evanston" fits without an ellipsis */
@@ -757,7 +759,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=670e83eb"></script>
+<script src="/rentlet-boot.js?v=e10eccc0"></script>
 </head>
 <body>
 

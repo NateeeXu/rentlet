@@ -45,6 +45,9 @@ button{cursor:pointer}
 /* logo | search | actions: the search sits in the true centre while there is room; when it gets tight it moves
    off centre instead of closer to the right-end group, so the gap to Saved, Messages and the menu never drops below 20px */
 .hdr .wrap{display:grid;grid-template-columns:minmax(max-content,1fr) auto minmax(max-content,1fr);align-items:center;gap:20px;height:76px}
+/* the search bar fills the middle of this header, so Requests and Post a listing stay in the menu here
+   (shown, they push the bar to its 20px minimum even at 1600px) */
+.hdr .rl-top{display:none!important}
 .hdr .wrap>a:first-child{justify-self:start}
 .hdr .hdr-r{justify-self:end}
 @container (max-width:640px){.hdr .wrap{gap:8px}}
@@ -752,7 +755,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=670e83eb"></script>
+<script src="/rentlet-boot.js?v=e10eccc0"></script>
 </head>
 <body>
 <div class="rv" hidden><span id="roomTabs"></span><span id="stTabs"></span></div>

@@ -34,6 +34,10 @@
     + '.rl-mlist hr{border:0;border-top:1px solid #ebebeb;margin:6px 8px}'
     + '.rl-mlist .rl-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}'
     + '.rl-mlist .rl-msgs-n,.rl-mlist .rl-n{position:static;box-shadow:none;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#4E2A84;color:#fff;font:600 12px/20px ' + F + ';text-align:center;box-sizing:border-box}'
+    + '.rl-top{display:inline-flex;align-items:center;height:44px;padding:0 14px;border-radius:999px;font:600 14px/1 ' + F + ';color:#222;text-decoration:none;white-space:nowrap;flex:none;box-sizing:border-box}'
+    + '.rl-top:hover{background:#f2f2f4}.rl-top[aria-current=page]{text-decoration:underline;text-underline-offset:6px}'
+    + '.rl-top.rl-post{border:1px solid #ddd;background:#fff;margin:0 6px 0 2px}.rl-top.rl-post:hover{border-color:#222;background:#fff}'
+    + '@media (max-width:900px){.rl-top{display:none!important}}'
     + '@media (max-width:399px){.rl-saved{display:none!important}}';
   try { var st = document.createElement('style'); st.id = 'rl-msgs-css'; st.textContent = MSG_CSS; document.head.appendChild(st); } catch (_) {}
   var BARS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
@@ -55,10 +59,15 @@
     /* whether a heart starts filled: kind is 'room' (8-digit listing code) or 'request' (request id) */
     isSaved: function (kind, id) { return !!(window.RL.authed && window.RL.saved[kind + ':' + id]); },
     msgs: function (current) {
-      if (!window.RL.authed) return '';
+      /* Requests and Post a listing stay in sight in every header (Founder, Nov 4); the forms leave them out.
+         Below 900px they live only in the menu. */
+      var top = here === 'post' || here === 'request' ? ''
+        : '<a class="rl-top" href="requests.html"' + (here === 'requests' ? ' aria-current="page"' : '') + '>Requests</a>'
+          + '<a class="rl-top rl-post" href="post.html">Post a listing</a>';
+      if (!window.RL.authed) return top;
       var n = window.RL.unread || 0;
       /* Saved (heart) sits just before Messages */
-      return '<a class="rl-msgs rl-saved" href="profile.html#saved" aria-label="Saved">' + HEART + '</a>'
+      return top + '<a class="rl-msgs rl-saved" href="profile.html#saved" aria-label="Saved">' + HEART + '</a>'
         + '<a class="rl-msgs" href="messages.html" data-rl-msgs aria-label="' + (n ? 'Messages, ' + n + ' unread' : 'Messages') + '"' + (current ? ' aria-current="page"' : '') + '>'
         + MSG_ICON + '<span class="rl-msgs-n"' + (n ? '' : ' hidden') + '>' + (n > 9 ? '9+' : n) + '</span></a>';
     },

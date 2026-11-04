@@ -369,7 +369,7 @@ button{cursor:pointer}
   .h-reel .hero-in{max-width:none;padding-bottom:0}
   .h-reel .hero-in{min-height:0}
   .reel{position:relative;left:auto;right:auto;top:auto;width:auto;margin:8px -24px 0;height:390px;perspective-origin:30% 40%;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 40px,#000 calc(100% - 40px),transparent)}
-  .reel-plane{left:20px;top:110px}
+  .h-a4 .reel-plane{left:20px;top:20px;transform:none}
   .h-reel .search-wrap{padding-top:8px}
   .search{grid-template-columns:repeat(2,minmax(0,1fr));border-radius:18px;padding:8px}
   .search .field{border-right:0;border-bottom:1px solid var(--hair);border-radius:10px;padding:8px 10px}
@@ -393,7 +393,7 @@ button{cursor:pointer}
   .btn,.seg button{height:44px}
   .save{width:44px;height:44px}
   .reel{height:320px;margin:0 -16px 0}
-  .reel-plane{left:10px;top:70px;transform:rotateX(20deg) rotateY(22deg) rotateZ(-20deg) scale(.7)}
+  .h-a4 .reel-plane{left:10px;top:38px;transform:scale(.7);transform-origin:0 0}
   .grid{grid-template-columns:minmax(0,1fr);gap:16px}
   .res-head{flex-direction:column;align-items:flex-start;gap:4px}
   .res-head h2{font-size:22px}
@@ -427,12 +427,10 @@ button{cursor:pointer}
 @keyframes spinic{to{transform:rotate(360deg)}}
 .h-a4{padding-top:118px}
 .h-a4 .reel-track{animation-name:drift3}
-@container (min-width:1001px){
-.h-a4 .reel{left:0;right:0;top:0;bottom:0;height:auto;perspective:1700px;perspective-origin:50% 40%;-webkit-mask-image:none;mask-image:none}
-/* on desktops the reel dissolves before it reaches the headline, so the text never sits on a photo;
-   the fade runs across the search bar's band, which is glass anyway */
-@container (min-width:861px){.h-a4 .reel{-webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 96px,#000 200px);mask-image:linear-gradient(180deg,transparent 0,transparent 96px,#000 200px)}}
-.h-a4 .reel-plane{left:-6%;top:50%;transform-origin:0 50%;transform:rotateX(16deg) rotateY(8deg) rotateZ(-15deg)}
+@container (min-width:861px){
+.h-a4 .reel{left:0;right:0;top:0;bottom:0;height:auto;perspective:1700px;perspective-origin:50% 40%;-webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 96px,#000 200px);mask-image:linear-gradient(180deg,transparent 0,transparent 96px,#000 200px)}
+/* the fade runs across the search bar's band, so a tall card never reaches the headline */
+.h-a4 .reel-plane{left:-6%;top:50%;transform-origin:0 50%;transform:translateY(-50%)}
 }
 @keyframes drift3{to{transform:translateX(-33.3333%)}}
 .fly4{position:absolute;inset:0;z-index:40;display:none}
@@ -484,8 +482,8 @@ button{cursor:pointer}
 @container (max-width:700px){.r4body{grid-template-columns:minmax(0,1fr)}.fly4-card{border-radius:28px}.fly4-card .rk,.fly4-card .tg{display:none}}
 .h-a4 .reel-track{align-items:center}
 .h-a4 .sq.m0{width:272px;height:272px}
-.h-a4 .sq.m1{width:200px;height:250px;margin-top:-90px}
-.h-a4 .sq.m2{width:220px;height:220px;margin-top:84px}
+.h-a4 .sq.m1{width:200px;height:250px}
+.h-a4 .sq.m2{width:220px;height:220px}
 .h-a4 .sq.m0 .sq-chip{font-size:15px;font-weight:650;padding:8px 14px}
 .h-a4 .sq.m1 .sq-chip,.h-a4 .sq.m2 .sq-chip{font-size:13px;font-weight:650;padding:7px 12px}
 .h-a4 .sq{border-radius:38px}

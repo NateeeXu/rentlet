@@ -79,6 +79,20 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 .ph.has em{position:absolute;left:8px;bottom:8px;font-style:normal;font-size:12px;font-weight:650;background:rgba(255,255,255,.92);border-radius:99px;padding:3px 8px;color:var(--ink)}
 .ph .x{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:var(--ink);font-size:16px;line-height:1;display:grid;place-items:center;padding:0}
 .ph b{font-size:14px;color:var(--ink)}
+/* step 12: lease proof files, private to the host and the Rentlet team */
+.pf{margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.pf-h{margin:0 0 10px;font-size:15px;font-weight:650;color:var(--ink)}
+.pf-row{display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 0;border-top:1px solid var(--line)}
+.pf-row:first-of-type{border-top:0}
+.pf-ic{flex:none;width:36px;height:36px;border-radius:8px;background:#f2f2f4;display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--ink2)}
+.pf-n{flex:1;min-width:0;font-size:14px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-s{flex:none;font-size:13px;color:var(--muted)}
+.pf-row .x{flex:none;width:44px!important;height:44px;min-width:0;margin:0 -8px 0 0;padding:0;border:0;border-radius:50%;background:none;font-size:20px;color:var(--ink);cursor:pointer}
+.pf-row .x:hover{background:#f2f2f4}
+.pf-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:88px;margin-top:10px;border:1px dashed #c8c8cc;border-radius:12px;cursor:pointer;text-align:center;font-size:13px;color:var(--muted)}
+.pf-add:hover{border-color:var(--ink)}
+.pf-add b{font-size:14px;color:var(--ink)}
+.pf-note{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
 .btn{height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--ink);color:#fff;font-weight:650;font-size:15px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 .btn.lnk{background:none;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:0 8px;margin:0 -8px;height:44px}
 .btn.lnk:disabled{opacity:.35;cursor:default}
@@ -162,7 +176,7 @@ const PRICES=[950,1050,1100,1150,1180,1200,1200,1250,1280,1300,1300,1320,1350,13
 const CHEV=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>`;
 
 /* ---------- publish to Rentlet (src/listings.ts) ---------- */
-let VIDEO=null,BUSY=false;
+let VIDEO=null,BUSY=false,PROOF=[]; /* PROOF: lease-proof files (photos or PDFs), uploaded privately when the listing is published */
 /* signing in on the last step must not reload the page and lose the form */
 window.RL_onAuth=()=>render();
 async function publish(btn){
@@ -171,7 +185,7 @@ async function publish(btn){
   if(!window.RentletListings){Rentlet.toast('Still loading. Try again in a moment.');return}
   BUSY=true;const label=btn.textContent;btn.disabled=true;btn.textContent='Uploading photos…';
   try{
-    S.code=await RentletListings.publishListing(S,VIDEO,s=>{const b=document.querySelector('[data-next]');if(b)b.textContent=s==='photos'?'Uploading photos…':'Publishing…'});
+    S.code=await RentletListings.publishListing(S,VIDEO,PROOF,s=>{const b=document.querySelector('[data-next]');if(b)b.textContent=s==='photos'?'Uploading photos…':'Publishing…'});
     S.done=true;try{sessionStorage.removeItem('cs-post-draft')}catch(_){}
     render();window.scrollTo(0,0);
   }catch(e){
@@ -210,6 +224,9 @@ const AREAS=[['bedroom','Bedroom',2],['living','Living room',1],['bath','Bathroo
 const ROUTES=['Intercampus Shuttle','Evanston Loop','Ryan Field'];
 const PRESETS=[['Winter quarter','2027-01-03','2027-03-20'],['Winter + spring','2027-01-03','2027-06-12'],['Until my lease ends','2026-12-20','2027-08-31']];
 
+/* step 12: the files that prove the lease (up to 3 photos or PDFs, 10 MB each) */
+const kb=n=>n>=1048576?`${(n/1048576).toFixed(1)} MB`:`${Math.max(1,Math.round(n/1024))} KB`;
+const proofHtml=()=>`<div class="pf"><p class="pf-h">Lease page or landlord’s email</p>${PROOF.map((f,i)=>`<div class="pf-row"><span class="pf-ic" aria-hidden="true">${f.type==='application/pdf'?'PDF':'IMG'}</span><span class="pf-n">${esc(f.name)}</span><span class="pf-s">${kb(f.size)}</span><button type="button" class="x" data-rmproof="${i}" aria-label="Remove ${esc(f.name)}">×</button></div>`).join('')}${PROOF.length<3?`<label class="pf-add"><input type="file" accept="image/*,application/pdf" data-proof hidden><b>+ Add a photo or PDF</b><span>Up to 3 files, 10 MB each</span></label>`:''}<p class="pf-note">Only you and the Rentlet team can open these files. Renters see that lease proof was sent, not the files.</p></div>`;
 const photoCount=()=>Object.values(S.photos).reduce((n,a)=>n+a.length,0);
 const areasDone=()=>AREAS.filter(([k,,min])=>S.photos[k].length>=min).length;
 const terms=()=>S.terms||(S.subletType==='takeover'?'gift':'use');
@@ -348,7 +365,7 @@ const STEPS=[
    grp('Also staying, or please note',ta('furnNote','A monitor and a desk mat. The monitor stays on the desk.'),'optional')},
  {q:'House rules',h:'What you ask of the person moving in.',body:()=>PREFS.map(([g,items])=>grp(g,`<div class="chips">${items.map(t=>chip(t,S.prefs[g]===t,`data-pref="${g}:${t}"`)).join('')}</div>`)).join('')+grp('Anything else',ta('ruleNote','','Quiet after 10 pm, please.'),'optional')},
  {q:'Photos',h:'At least 2 of the bedroom and 1 of each other area. Phone photos in daylight are fine.',body:()=>`<div class="grp">${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?S.video:'Optional · up to 60 seconds'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk"><input type="file" accept="video/*" data-video hidden>Add</label>`}</div></div><p class="note">${areasDone()} of ${AREAS.length} areas done. Anyone can report a photo that doesn’t match the place.</p>`},
- {q:'Prove it’s yours',h:'Your Northwestern sign-in counts as student verification. A badge shows what was checked; it is not a guarantee.',body:()=>`<div class="opts" style="margin-top:28px">${opt(S.proof==='student','Student verification','Verified with your Northwestern account','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>`},
+ {q:'Prove it’s yours',h:'Your Northwestern sign-in counts as student verification. A badge shows what was checked; it is not a guarantee.',body:()=>`<div class="opts" style="margin-top:28px">${opt(S.proof==='student','Student verification','Verified with your Northwestern account','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}`},
  {q:'Check and publish',h:'This is how it will look. Edit anything, any time.',body:()=>`<div class="grp">${card()}</div>
    <dl class="review grp">${[
      ['Where',val('building','')||val('addr','')?`${esc(val('building','')||val('addr',''))} · on the map`:'Address not added yet',1],
@@ -359,7 +376,7 @@ const STEPS=[
      ['What stays',S.furn==='none'?'Not furnished':`${S.furn==='full'?'Fully':'Partly'} furnished · ${S.multi.items.length} items · ${terms()==='gift'?'theirs to keep':'use during the stay'}`,8],
      ['Rules',Object.values(S.prefs).filter(Boolean).join(' · ')||'None set',9],
      ['Photos',`${photoCount()} photos · ${areasDone()} of ${AREAS.length} areas${S.video?' · video':''}`,10],
-     ['Verification',S.proof==='student'?'Student ✓ · lease proof pending':'Lease proof · student pending',11]
+     ['Verification',S.proof==='student'?'Student ✓':`Student ✓ · lease proof (${PROOF.length} file${PROOF.length===1?'':'s'})`,11]
    ].map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
    ${grp('A note for the listing',ta('note','I’m away for winter quarter. Small but very efficient room with a proper desk nook. Five minutes to the train.'),'optional · shows as a quote')}
    <p class="note">Goes live as soon as you publish, with a listing number. Up to 3 listings at a time.</p>`}];
@@ -383,7 +400,9 @@ function render(){
 const draft=()=>{try{const {photos,...rest}=S;sessionStorage.setItem('cs-post-draft',JSON.stringify(rest))}catch(_){}}; /* photos are files; they are not kept in the draft */
 
 document.addEventListener('click',e=>{const t=e.target;
-  if(t.closest('[data-next]')){if(S.step>=STEPS.length-1){publish(t.closest('[data-next]'));return}S.step++;render();window.scrollTo(0,0);return}
+  if(t.closest('[data-next]')){if(STEPS[S.step].q==='Prove it’s yours'&&S.proof==='lease'&&!PROOF.length){Rentlet.toast('Add a photo of the lease or the landlord’s email, or choose Student verification.');return}
+    if(S.step>=STEPS.length-1){publish(t.closest('[data-next]'));return}S.step++;render();window.scrollTo(0,0);return}
+  const rp=t.closest('[data-rmproof]');if(rp){PROOF.splice(+rp.dataset.rmproof,1);render();return}
   if(t.closest('[data-back]')){S.step=Math.max(0,S.step-1);render();return}
   if(t.closest('[data-edit]')){S.done=false;S.step=STEPS.length-1;render();return}
   if(t.closest('[data-save]')){draft();location.href='index.html';return}
@@ -406,7 +425,11 @@ document.addEventListener('input',e=>{const k=e.target.dataset.f;if(k)S.f[k]=e.t
 /* photos and the video come from real files */
 document.addEventListener('change',e=>{const el=e.target,file=el.files&&el.files[0];if(!file)return;
   if(el.dataset.area){const a=el.dataset.area,fr=new FileReader();fr.onload=()=>{S.photos[a].push(fr.result);render()};fr.readAsDataURL(file)}
-  else if('video' in el.dataset){VIDEO=file;S.video=file.name;render()}});
+  else if('video' in el.dataset){VIDEO=file;S.video=file.name;render()}
+  else if('proof' in el.dataset){el.value='';
+    if(!/^image\/|^application\/pdf$/.test(file.type))return Rentlet.toast('Add a photo or a PDF.');
+    if(file.size>=10*1024*1024)return Rentlet.toast('That file is over 10 MB. Try a smaller photo or PDF.');
+    if(PROOF.length<3){PROOF.push(file);render()}}});
 render();
 </script>
 <script type="module" src="/src/rentlet.ts"></script>

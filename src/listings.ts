@@ -120,7 +120,7 @@ async function hostName(uid: string, displayName: string | null): Promise<string
   return firstName(displayName);
 }
 
-export async function publishListing(S: PostState, video: File | null, onStep?: (s: PublishStep) => void): Promise<string> {
+export async function publishListing(S: PostState, video: File | null, proof: File[], onStep?: (s: PublishStep) => void): Promise<string> {
   const user = auth.currentUser;
   if (!user) throw new PublishError('signin');
 
@@ -210,6 +210,17 @@ export async function publishListing(S: PostState, video: File | null, onStep?: 
     showOnMap: true,
     zip: spot.zip,
   });
+  // lease proof: private files (the host and the Rentlet team only, storage.rules) and a host-only note of them
+  if (S.proof === 'lease' && proof.length) {
+    const files: string[] = [];
+    for (const [i, file] of proof.slice(0, 3).entries()) {
+      const ext = file.type === 'application/pdf' ? 'pdf' : (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
+      const path = `proofs/${user.uid}/${code}-${i + 1}.${ext}`;
+      await uploadBytes(ref(storage, path), file, { contentType: file.type || 'application/octet-stream' });
+      files.push(path);
+    }
+    await setDoc(doc(db, 'listings', code, 'private', 'proof'), { kind: 'lease', files, sentAt: serverTimestamp() });
+  }
   return code;
 }
 

@@ -35,6 +35,16 @@ service firebase.storage {
       allow update: if false;
     }
 
+    // lease proof for a listing (private): only the host can open or remove it; the Rentlet team reads it
+    // in the Firebase console. Photos or PDFs, under 10 MB.
+    match /proofs/{uid}/{fileName} {
+      allow read, delete: if mine(uid);
+      allow create: if isNU() && mine(uid)
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*|application/pdf');
+      allow update: if false;
+    }
+
     // chat photos: chats/{conversationId}/{uid}/{fileName}. Each person uploads only into their own
     // folder. The message that shows a photo is checked by firestore.rules (the sender must be in that
     // conversation and the link must point into their own folder there), and both people open the photo

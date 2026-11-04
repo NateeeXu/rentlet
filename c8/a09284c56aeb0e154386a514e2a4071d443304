@@ -1,0 +1,20 @@
+index.html
+  s_be34d9248a3bf7::t_11d5a2c777cf61 372,396,433,485-486
+  s_be34d9248a3bf7::t_c9ab83b5e6fb3e 430-432
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c8a09284c56aeb0e154386a514e2a4071d443304",
+  "prompts": {},
+  "sessions": {
+    "s_be34d9248a3bf7": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a1a857-5465-7355-b8d1-331119fce468",
+        "model": "deepseek-v4.1-flash"
+      },
+      "human_author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}

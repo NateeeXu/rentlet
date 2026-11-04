@@ -183,6 +183,8 @@ async function publish(btn){
   if(BUSY)return;
   if(!RL.authed&&!(await RL.signIn()))return;
   if(!window.RentletListings){Rentlet.toast('Still loading. Try again in a moment.');return}
+  /* the step dots and a restored draft can skip step 12's check, so publishing checks again */
+  if(S.proof==='lease'&&!PROOF.length){Rentlet.toast('Add a photo of the lease or the landlord’s email, or choose Student verification.');S.step=STEPS.findIndex(x=>x.q==='Prove it’s yours');render();window.scrollTo(0,0);return}
   BUSY=true;const label=btn.textContent;btn.disabled=true;btn.textContent='Uploading photos…';
   try{
     S.code=await RentletListings.publishListing(S,VIDEO,PROOF,s=>{const b=document.querySelector('[data-next]');if(b)b.textContent=s==='photos'?'Uploading photos…':'Publishing…'});

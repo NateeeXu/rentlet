@@ -147,6 +147,18 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
   }
   if (!photos.length) throw new PublishError('photos');
 
+  // lease proof: private files (the host and the Rentlet team only, storage.rules), uploaded before the
+  // listing goes live so a failed upload never leaves a live listing behind a "Couldn't publish"
+  const proofFiles: string[] = [];
+  if (S.proof === 'lease') {
+    for (const [i, file] of proof.slice(0, 3).entries()) {
+      const ext = file.type === 'application/pdf' ? 'pdf' : (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
+      const path = `proofs/${user.uid}/${code}-${i + 1}.${ext}`;
+      await uploadBytes(ref(storage, path), file, { contentType: file.type || 'application/octet-stream' });
+      proofFiles.push(path);
+    }
+  }
+
   let videoUrl: string | null = null;
   if (video) {
     const ext = (video.name.split('.').pop() || 'mp4').toLowerCase();
@@ -210,16 +222,13 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
     showOnMap: true,
     zip: spot.zip,
   });
-  // lease proof: private files (the host and the Rentlet team only, storage.rules) and a host-only note of them
-  if (S.proof === 'lease' && proof.length) {
-    const files: string[] = [];
-    for (const [i, file] of proof.slice(0, 3).entries()) {
-      const ext = file.type === 'application/pdf' ? 'pdf' : (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
-      const path = `proofs/${user.uid}/${code}-${i + 1}.${ext}`;
-      await uploadBytes(ref(storage, path), file, { contentType: file.type || 'application/octet-stream' });
-      files.push(path);
+  // lease proof: a host-only note of the files uploaded above (the listing doc must exist first for this rule)
+  if (proofFiles.length) {
+    try {
+      await setDoc(doc(db, 'listings', code, 'private', 'proof'), { kind: 'lease', files: proofFiles, sentAt: serverTimestamp() });
+    } catch {
+      /* the files are already in Storage under the listing's code; the listing itself is live */
     }
-    await setDoc(doc(db, 'listings', code, 'private', 'proof'), { kind: 'lease', files, sentAt: serverTimestamp() });
   }
   return code;
 }

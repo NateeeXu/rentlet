@@ -147,12 +147,22 @@ const AMEN_KEY: Record<string, string> = {
   'Package room': 'package',
   Parking: 'parking',
 };
-const PREF_KEY: Record<string, string> = {
-  'No smoking': 'smoking',
-  'No pets': 'pets',
-  'OK with notice': 'visitors',
-  'Cooking often is fine': 'cooking',
-  'Weekly clean-up': 'cleaning',
+// House rules as the host chose them on the post form, in a fixed order, each with its category icon.
+const PREF_ORDER = ['Smoking', 'Pets', 'Cooking', 'Cleaning', 'Visitors'] as const;
+const PREF_ICON: Record<string, string> = { Smoking: 'smoking', Pets: 'pets', Cooking: 'cooking', Cleaning: 'cleaning', Visitors: 'visitors' };
+const PREF_TEXT: Record<string, string> = {
+  'No smoking': 'No smoking',
+  'Outside only': 'Smoking outside only',
+  'No pets': 'No pets',
+  'Pets OK': 'Pets OK',
+  'Let’s talk': 'Pets: ask the host',
+  'Cooking often is fine': 'Cooking OK',
+  'Less smoke, please': 'Light cooking',
+  'Weekly clean-up': 'Weekly clean-up',
+  'Clean after use': 'Clean up after use',
+  'Basically tidy': 'Keep it tidy',
+  'No overnight guests': 'No overnight guests',
+  'OK with notice': 'Guests with notice',
 };
 
 const ordinal = (n: number) => {
@@ -232,7 +242,7 @@ export function toRoom(d: ListingDoc) {
         ? `${mates} ${who ? who.toLowerCase() : `roommate${mates > 1 ? 's' : ''}`}${f.multi.habits.length ? `, ${f.multi.habits.join(', ').toLowerCase()}` : ''}.`
         : 'Just you.',
     ),
-    prefs: Object.values(f.prefs).map((v) => PREF_KEY[v]).filter(Boolean),
+    prefs: PREF_ORDER.filter((c) => PREF_TEXT[f.prefs?.[c]]).map((c) => ({ k: PREF_ICON[c], t: PREF_TEXT[f.prefs[c]] })),
     util: num(f.f.extra),
     deposit,
     utilText: 'Other costs',

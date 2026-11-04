@@ -98,7 +98,11 @@ describe('page shapes', () => {
     expect(r.util).toBe(60);
     expect(r.included).toBe('Wi-Fi + Heat');
     expect(r.furn).toEqual(['bedframe', 'desk']);
-    expect(r.prefs).toEqual(['smoking', 'visitors']);
+    expect(r.prefs).toEqual([
+      { k: 'smoking', t: 'No smoking' },
+      { k: 'pets', t: 'Pets OK' },
+      { k: 'visitors', t: 'Guests with notice' },
+    ]);
     expect(r.matesText).toBe('1 grad student, quiet weeknights.');
     expect(r.facts[0]).toEqual(['info-layout', '1 of 2 beds', '~140 sq ft']);
     expect(r.orig).toBe(1400);

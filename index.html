@@ -467,11 +467,9 @@ button{cursor:pointer}
 
 @container (max-width:700px){.r4body{grid-template-columns:minmax(0,1fr)}.fly4-card{border-radius:28px}.fly4-card .rk,.fly4-card .tg{display:none}}
 /* the reel: a flat, horizontal strip of rooms under the search bar (Founder, Nov 4: no tilt).
-   Every card has the same height; the widths take turns (square, portrait, landscape). */
-.h-a4 .sq{height:300px;margin-top:0;border-radius:28px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 10px 28px rgba(0,0,0,.12)}
-.h-a4 .sq.m0{width:300px}
-.h-a4 .sq.m1{width:236px}
-.h-a4 .sq.m2{width:420px}
+   Each card keeps its cover photo's shape and size tier (a4Card sets --w and --h in px); every card
+   sits centred on one line (Founder, Nov 4), and --k scales the whole strip down on phones. */
+.h-a4 .sq{width:calc(var(--w) * var(--k,1) * 1px);height:calc(var(--h) * var(--k,1) * 1px);margin-top:0;border-radius:28px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 10px 28px rgba(0,0,0,.12)}
 .h-a4 .sq:hover{transform:translateY(-6px)}
 .h-a4 .sq .sq-chip{font-size:14px;font-weight:650;padding:7px 13px}
 @container (max-width:1000px){.h-a4{padding-top:56px}}
@@ -508,13 +506,14 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .h-a4 .reel{z-index:1;position:relative;left:auto;right:auto;top:auto;bottom:auto;width:auto;height:auto;margin:40px calc(50% - 50vw) 0;padding:14px 0 34px;perspective:none;
   -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 64px,#000 calc(100% - 64px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 64px,#000 calc(100% - 64px),transparent)}
 .h-a4 .reel-plane{position:relative;left:0;top:0;transform:none;transform-style:flat}
-.h-a4 .reel-track{align-items:stretch;gap:20px;transform-style:flat;padding-left:32px}
+.h-a4 .reel-track{align-items:center;gap:20px;transform-style:flat;padding-left:32px}
 @container (max-width:860px){
   /* phones: smaller cards; the pause button sits under the strip, not on a card */
   .h-a4 .reel{margin-top:28px;padding:10px 0 72px}
   .h-a4 .reel-track{padding-left:16px;gap:14px}
-  .h-a4 .sq{height:230px;border-radius:24px}
-  .h-a4 .sq.m0{width:230px}.h-a4 .sq.m1{width:180px}.h-a4 .sq.m2{width:320px}
+  .h-a4 .reel{--k:.66}
+  .h-a4 .sq{border-radius:24px}
+  .h-a4 .sq .sq-chip{left:10px;bottom:10px;font-size:12px;padding:6px 10px}
 }
 /* 2 · frosted glass: the reel shows through, blurred */
 .bar4[data-skin=glass]{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.14),0 2px 6px rgba(30,25,40,.06)}
@@ -1159,7 +1158,7 @@ const RATIO=[16/9,3/4,4/3,1,16/9,3/4,4/3],TIER=[350,320,285];
 const ratioOf=(p,i)=>Math.max(.75,Math.min(16/9,p.ratio||RATIO[i%RATIO.length]));
 const roomsHere=()=>CAMPUS_ROOMS[plan.school]||[];
 function a4Card(p,i,dup){const h=TIER[i%3],w=Math.round(h*ratioOf(p,i));
-  return `<a class="sq m${i%3}" style="width:${w}px;height:${h}px" href="room.html?room=${p.key}" data-a4room="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${p.title}, ${p.area}. ${wl(p.start,p.end)}. ${money(p.price)} per month."><img src="${pic(p.img)}" alt="" class="${p.flip?'flip':''}"><span class="sq-chip">${wl(p.start,p.end)}</span></a>`} /* the room's own dates, in the site's one format; the old "their move-out → your move-in" chip is gone with the hand-off motif */
+  return `<a class="sq m${i%3}" style="--w:${w};--h:${h}" href="room.html?room=${p.key}" data-a4room="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${p.title}, ${p.area}. ${wl(p.start,p.end)}. ${money(p.price)} per month."><img src="${pic(p.img)}" alt="" class="${p.flip?'flip':''}"><span class="sq-chip">${wl(p.start,p.end)}</span></a>`} /* the room's own dates, in the site's one format; the old "their move-out → your move-in" chip is gone with the hand-off motif */
 /* three identical copies so one straight reel can cross the page */
 const a4Track=()=>{const R=roomsHere(),one=dup=>R.map((p,i)=>a4Card(p,i,dup)).join('');return one()+one(1)+one(1)};
 const SPARK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/><path d="M19 15.5c.2 1.8 1.2 2.8 3 3-1.8.2-2.8 1.2-3 3-.2-1.8-1.2-2.8-3-3 1.8-.2 2.8-1.2 3-3z"/></svg>';

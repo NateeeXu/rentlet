@@ -52,3 +52,13 @@ Deploy rules with `npx firebase-tools deploy --only firestore:rules`.
 
 The web config in `src/firebase.ts` identifies the project and is meant to be public; access is
 enforced by the rules above.
+
+## Shared scripts in public/
+
+`public/rentlet-boot.js`, `when-picker.js`, `where-search.js` and `budget-picker.js` are served as they are, so
+each page loads them with a `?v=` version (the first 8 characters of the file's SHA-1). After changing one, update
+its `?v=` in every page, or browsers may pair a new page with an old script:
+
+```bash
+shasum public/rentlet-boot.js | cut -c1-8
+```

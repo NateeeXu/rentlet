@@ -136,7 +136,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js"></script>
+<script src="/rentlet-boot.js?v=4610d86b"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -184,7 +184,7 @@ async function publish(btn){
     BUSY=false;const b=document.querySelector('[data-next]');if(b&&!S.done){b.disabled=false;b.textContent=label}
   }
 }
-const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}${RL.authed?`${RL.msgs()}<a class="me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button type="button" class="btn sec" data-rl-signin>Sign in</button>`}</div></div></header>`;
+const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}${RL.authed?`${RL.msgs?RL.msgs():''}<a class="me" href="profile.html" aria-label="Your page">${RL.me()}</a>`:`<button type="button" class="btn sec" data-rl-signin>Sign in</button>`}</div></div></header>`;
 const opt=(on,b,s,attrs='')=>`<button type="button" class="opt ${on?'on':''}" ${attrs}><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div><span class="tk">${on?'✓':''}</span></button>`;
 const chip=(t,on,attrs='')=>`<span class="chip ${on?'on':''}" ${attrs}>${t}</span>`;
 const one=(key,list)=>list.map(([v,t])=>chip(t,S[key]===v,`data-one="${key}:${v}"`)).join('');            /* single choice */

@@ -201,7 +201,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js"></script>
+<script src="/rentlet-boot.js?v=4610d86b"></script>
 </head>
 <body>
 <div class="site" id="site"></div>
@@ -338,7 +338,7 @@ const header=()=>{const BADGE=badge();return `<header class="hdr"><div class="wr
   <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
   <nav class="nav" aria-label="Main"><a href="index.html">Find a place</a><a href="requests.html" aria-current="page">Requests${BADGE?`<span class="badge" aria-label="${BADGE} matches for your listing">${BADGE}</span>`:''}</a><a href="shuttle.html">Shuttle</a></nav>
   <div class="hdr-right"><a class="btn btn-secondary hide-m" href="post.html">Post a listing</a><a class="btn btn-secondary hide-m" href="request.html">Post a request</a>
-    <button class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu>${ic('menu')}</button>${RL.authed?`${RL.msgs()}<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn btn-secondary" data-rl-signin>Sign in</button>`}</div>
+    <button class="icon-btn" aria-label="Menu" aria-expanded="false" aria-controls="hmenu" data-hmenu>${ic('menu')}</button>${RL.authed?`${RL.msgs?RL.msgs():''}<a class="me" href="profile.html" aria-label="Your profile">${RL.me()}</a>`:`<button type="button" class="btn btn-secondary" data-rl-signin>Sign in</button>`}</div>
   <nav class="hmenu" id="hmenu" aria-label="Menu" hidden><a href="index.html">Find a place</a><a href="requests.html" aria-current="page">Requests${BADGE?`<span class="badge">${BADGE}</span>`:''}</a><a href="shuttle.html">Shuttle</a><hr><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></nav></div></header>`};
 const footer=()=>`<footer class="foot"><div class="wrap"><div class="fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>

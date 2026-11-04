@@ -9,7 +9,7 @@
 <style>
 /* Post a listing: one question per screen (flow A from post-options.html). The page is one screen tall; each step
    centres when it is short and scrolls inside when it is long; the header and the Back / Next bar never move. */
-:root{--canvas:#f7f7f7;--soft:#f2f2f4;--ink:#222;--ink2:#484848;--muted:#717171;--faint:#9a9aa0;--line:#dddddd;--hair:#e8e8e8;--ok:#1a7f37;--serif:"Newsreader",Georgia,serif;--ctl:52px}
+:root{--canvas:#f7f7f7;--soft:#f2f2f4;--ink:#222;--ink2:#484848;--muted:#717171;--faint:#9a9aa0;--line:#dddddd;--hair:#e8e8e8;--ok:#1a7f37;--warn:#8a5200;--serif:"Newsreader",Georgia,serif;--ctl:52px}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%}
 body{background:var(--canvas);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
@@ -43,7 +43,16 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 .in.pk{width:100%;text-align:left;cursor:pointer;justify-content:space-between;font-variant-numeric:tabular-nums}
 .in.pk:hover,.in.ws:hover{border-color:#b8b8bd}
 .in.pk[aria-expanded=true],.in.pk.act{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.in.pk .pkph{color:var(--muted)}
+.in .pkph{color:var(--muted)}
+/* the rent fields: a typed amount, with the homepage price picker one tap away for comparing */
+.in.num{cursor:text}
+.in .pkb{flex:none;width:44px;height:44px;margin:0 -10px 0 0;padding:0;border:0;border-radius:50%;background:none;display:grid;place-items:center;color:var(--muted)}
+.in .pkb:hover{background:var(--soft);color:var(--ink)}
+.in .pkb[aria-expanded=true]{color:var(--ink)}
+/* an answer the step still needs, shown after Next or Publish found it missing */
+.need{margin:8px 0 0;font-size:14px;font-weight:600;line-height:1.4;color:var(--warn)}
+.need.top{margin:0 0 10px}
+.ns{color:var(--warn)}
 .cal{margin-top:16px}
 .in svg.ch{width:16px;height:16px;flex:none;color:var(--muted)}
 .in.ws{cursor:pointer}
@@ -109,6 +118,7 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 .a-steps button{width:32px;height:32px;border-radius:50%;border:1px solid var(--hair);background:#fff;font-size:12px;color:var(--muted);padding:0}
 .a-steps button.on{border-color:var(--ink);color:var(--ink);font-weight:650}
 .a-steps button.done{background:var(--soft);border-color:var(--soft);color:var(--ink2)}
+.a-steps button:disabled{opacity:.4;cursor:default}
 .review{display:grid;margin-top:8px}
 .rrow{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:14px;padding:12px 0;border-top:1px solid var(--hair);font-size:14px;align-items:start}
 .rrow:first-child{border-top:0}
@@ -157,20 +167,28 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
 <script src="budget-picker.js?v=552d4e21"></script>
 <script>
 const $=s=>document.querySelector(s);
-/* everything the form knows, so a click anywhere can redraw the screen without losing anything */
+/* everything the form knows, so a click anywhere can redraw the screen without losing anything. Every fact starts
+   unanswered (null or empty), so a listing only shows what the host chose; act (which date the calendar sets next)
+   and map (every listing shows on the map) are not answers. */
 const S={step:0,done:false,f:{},
-  subletType:'sublet',transferChannel:'official',dep:'amount',refund:true,map:true,hasRoommates:'yes',gender:'Mixed',shuttle:'covered',route:'Intercampus Shuttle',layout:'3B2B',
-  start:'2026-12-20',end:'2027-03-15',act:'in',rent:1480,orig:1600,unit:'room',bath:'shared',furn:'full',neg:'little',view:'Courtyard',terms:null,proof:'student',
-  campus:'Northwestern · Evanston',campusId:'nu-evn',video:null,
-  multi:{fees:['Wi-Fi','Heat'],amen:['Elevator','Package room'],habits:['Quiet weeknights','Non-smoking'],items:['Bed frame','Mattress','Bedding','Desk','Chair','Lamp']},
-  prefs:{Cleaning:'Weekly clean-up',Cooking:'Cooking often is fine',Smoking:'No smoking',Pets:'No pets',Visitors:'OK with notice'},
+  subletType:null,transferChannel:null,dep:null,refund:null,map:true,hasRoommates:null,gender:null,shuttle:null,route:null,layout:null,
+  start:null,end:null,act:'in',rent:null,orig:null,unit:null,bath:null,furn:null,neg:null,view:null,terms:null,proof:null,
+  campus:'',campusId:null,video:null,
+  multi:{fees:[],amen:[],habits:[],items:[]},
+  prefs:{},
   photos:{bedroom:[],living:[],bath:[],kitchen:[],building:[]}};
-/* the campus the visitor searched on the homepage, and a draft they saved and left */
+/* the campus the visitor picked on the homepage (their own choice), and a draft they saved and left */
 try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&WhereSearch.SCHOOLS.find(x=>x[0]===p.school);if(row){S.campusId=row[0];S.campus=row[1]}}catch(_){}
-try{const d=JSON.parse(sessionStorage.getItem('cs-post-draft')||'null');if(d)Object.assign(S,d,{done:false,map:true})}catch(_){} /* every listing shows on the map */
+try{const d=JSON.parse(sessionStorage.getItem('rl-post-draft-v2')||'null');if(d)Object.assign(S,d,{done:false,map:true,video:null})}catch(_){} /* the video file isn't kept in a draft */
 const money=v=>'$'+v.toLocaleString('en-US');
 const val=(k,d)=>k in S.f?S.f[k]:d;
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+/* a typed dollar amount: "1,480" -> 1480; blank or not a number -> null */
+const dollars=v=>{const n=Math.round(parseFloat(String(v??'').replace(/[^\d.]/g,'')));return n>0?n:null};
+const depAmt=()=>dollars(val('dep',''));
+const TODAY=(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date());
+const MAXPH=20; /* firestore.rules: at most 20 photos a listing */
+const toast=m=>{if(window.Rentlet&&Rentlet.toast)Rentlet.toast(m)};
 /* what rooms near this campus ask, for the rent picker's histogram (the real site uses the live listings) */
 const PRICES=[950,1050,1100,1150,1180,1200,1200,1250,1280,1300,1300,1320,1350,1380,1400,1400,1420,1450,1450,1480,1500,1500,1520,1550,1580,1600,1600,1650,1700,1700,1750,1800,1850,1900,1950,2000,2100,2200,2400,2800];
 const CHEV=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>`;
@@ -181,33 +199,43 @@ let VIDEO=null,BUSY=false,PROOF=[]; /* PROOF: lease-proof files (photos or PDFs)
 window.RL_onAuth=()=>render();
 async function publish(btn){
   if(BUSY)return;
+  /* the step dots and a restored draft can skip a step's check, so publishing checks every answer again */
+  const gap=firstGap();if(gap){showNeed(gap[0],gap[1]);return}
   if(!RL.authed&&!(await RL.signIn()))return;
-  if(!window.RentletListings){Rentlet.toast('Still loading. Try again in a moment.');return}
-  /* the step dots and a restored draft can skip step 12's check, so publishing checks again */
-  if(S.proof==='lease'&&!PROOF.length){Rentlet.toast('Add a photo of the lease or the landlord’s email, or choose Student verification.');S.step=STEPS.findIndex(x=>x.q==='Prove it’s yours');render();window.scrollTo(0,0);return}
+  if(!window.RentletListings){toast('Still loading. Try again in a moment.');return}
   BUSY=true;const label=btn.textContent;btn.disabled=true;btn.textContent='Uploading photos…';
   try{
     S.code=await RentletListings.publishListing(S,VIDEO,PROOF,s=>{const b=document.querySelector('[data-next]');if(b)b.textContent=s==='photos'?'Uploading photos…':'Publishing…'});
-    S.done=true;try{sessionStorage.removeItem('cs-post-draft')}catch(_){}
+    S.done=true;try{sessionStorage.removeItem('rl-post-draft-v2')}catch(_){}
     render();window.scrollTo(0,0);
   }catch(e){
-    const r=e&&e.reason;
-    Rentlet.toast(r==='limit'?'You already have 3 listings live. Mark one as taken first.':r==='photos'?'Add at least one photo of the place before publishing.':r==='signin'?'Sign in with your Northwestern account to publish.':'Couldn’t publish. Check your connection and try again.');
+    const r=e&&e.reason,gap=r==='invalid'&&firstGap();
+    if(gap){showNeed(gap[0],gap[1]);return}
+    toast(r==='limit'?'You already have 3 listings live. Mark one as taken first.':r==='photos'?'Add at least one photo of the place before publishing.':r==='signin'?'Sign in with your Northwestern account to publish.':r==='invalid'?'Something on the form needs another look. Check the steps and try again.':'Couldn’t publish. Check your connection and try again.');
     if(r==='photos'){S.step=STEPS.findIndex(x=>x.q==='Photos');render();window.scrollTo(0,0)}
   }finally{
     BUSY=false;const b=document.querySelector('[data-next]');if(b&&!S.done){b.disabled=false;b.textContent=label}
   }
 }
 const header=(right='')=>`<header class="hd"><div class="wrap"><a href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="r">${right}${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div></header>`;
-const opt=(on,b,s,attrs='')=>`<button type="button" class="opt ${on?'on':''}" ${attrs}><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div><span class="tk">${on?'✓':''}</span></button>`;
-const chip=(t,on,attrs='')=>`<span class="chip ${on?'on':''}" ${attrs}>${t}</span>`;
+const opt=(on,b,s,attrs='')=>`<button type="button" class="opt ${on?'on':''}" aria-pressed="${!!on}" ${attrs}><div><b>${b}</b>${s?`<span>${s}</span>`:''}</div><span class="tk">${on?'✓':''}</span></button>`;
+const chip=(t,on,attrs='')=>`<button type="button" class="chip ${on?'on':''}" aria-pressed="${!!on}" ${attrs}>${t}</button>`;
 const one=(key,list)=>list.map(([v,t])=>chip(t,S[key]===v,`data-one="${key}:${v}"`)).join('');            /* single choice */
 const multi=(g,list)=>list.map(t=>chip(t,S.multi[g].includes(t),`data-multi="${g}:${t}"`)).join('');       /* any number */
-const grp=(label,inner,small='')=>`<div class="grp"><span class="lbl">${label}${small?`<small>${small}</small>`:''}</span>${inner}</div>`;
-const inp=(k,d,u='',pre='',ph='')=>`<label class="in">${pre?`<span class="pre">${pre}</span>`:''}<input value="${esc(val(k,''))}" placeholder="${esc(ph||d)}" data-f="${k}">${u?`<span class="u">${u}</span>`:''}</label>`;
+/* optional single choices: tapping the chosen one again clears it */
+const CLEARABLE=['view','neg','route','gender','transferChannel'];
+/* key: the answer this group holds, so a missing-answer line can find it and focus its first control */
+const grp=(label,inner,small='',key='')=>`<div class="grp"${key?` data-need="${key}"`:''}><span class="lbl">${label}${small?`<small>${small}</small>`:''}</span>${inner}</div>`;
+const inp=(k,d,u='',pre='',ph='',ex='')=>`<label class="in">${pre?`<span class="pre">${pre}</span>`:''}<input value="${esc(val(k,''))}" placeholder="${esc(ph||d)}" data-f="${k}" ${ex}>${u?`<span class="u">${u}</span>`:''}</label>`;
 const ta=(k,d,ph='')=>`<label class="in ta"><textarea rows="2" placeholder="${esc(ph||d)}" data-f="${k}">${esc(val(k,''))}</textarea></label>`;
-const pk=(kind,text,u='')=>`<button type="button" class="in pk" data-pk="${kind}" aria-haspopup="dialog" aria-expanded="false"><span>${text}${u?` <span class="u">${u}</span>`:''}</span>${CHEV}</button>`;
-const sw=k=>`<button type="button" class="sw ${S[k]?'':'off'}" data-sw="${k}" role="switch" aria-checked="${S[k]}"></button>`;
+/* a rent field: any amount typed, or picked on the price picker (whose slider covers $800 to $2,600) */
+const PKI=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 13.5h11M4 11V8.5M7 11V4.5M10 11V6.5M13 11V9"/></svg>`;
+const moneyIn=(k,label,ph)=>`<div class="in num"><span class="pre">$</span><input inputmode="numeric" autocomplete="off" maxlength="9" value="${S[k]?S[k].toLocaleString('en-US'):''}" placeholder="${ph}" data-num="${k}" aria-label="${label}"><span class="u">/ mo</span><button type="button" class="pkb" data-pk="${k}" aria-haspopup="dialog" aria-expanded="false" aria-label="Compare with rooms nearby" title="Compare with rooms nearby">${PKI}</button></div>`;
+/* the line under a field that Next or Publish found unanswered; it goes as soon as the answer is there */
+let NEED=null; /* {step, key, msg} */
+const nm=(k,top)=>NEED&&NEED.step===S.step&&NEED.key===k?`<p class="need${top?' top':''}" id="need-msg">${esc(NEED.msg)}</p>`:'';
+const NS='<span class="ns">Not set</span>';
+const line=(parts,ok=true)=>{const p=parts.filter(Boolean).join(' · ');return ok?p||NS:(p?p+' · ':'')+NS};
 /* the two date fields always show the year, and pick which side the inline calendar sets next */
 const fullDay=s=>{const d=WhenPicker.day(s);return d.includes(',')?d:`${d}, ${s.slice(0,4)}`};
 const side=(k,s)=>`<button type="button" class="in pk ${S.act===k?'act':''}" data-side="${k}"><span data-side-t="${k}">${s?fullDay(s):'<span class="pkph">Pick a day</span>'}</span></button>`;
@@ -228,17 +256,19 @@ const PRESETS=[['Winter quarter','2027-01-03','2027-03-20'],['Winter + spring','
 
 /* step 12: the files that prove the lease (up to 3 photos or PDFs, 10 MB each) */
 const kb=n=>n>=1048576?`${(n/1048576).toFixed(1)} MB`:`${Math.max(1,Math.round(n/1024))} KB`;
-const proofHtml=()=>`<div class="pf"><p class="pf-h">Lease page or landlord’s email</p>${PROOF.map((f,i)=>`<div class="pf-row"><span class="pf-ic" aria-hidden="true">${f.type==='application/pdf'?'PDF':'IMG'}</span><span class="pf-n">${esc(f.name)}</span><span class="pf-s">${kb(f.size)}</span><button type="button" class="x" data-rmproof="${i}" aria-label="Remove ${esc(f.name)}">×</button></div>`).join('')}${PROOF.length<3?`<label class="pf-add"><input type="file" accept="image/*,application/pdf" data-proof hidden><b>+ Add a photo or PDF</b><span>Up to 3 files, 10 MB each</span></label>`:''}<p class="pf-note">Only you and the Rentlet team can open these files. Renters see that lease proof was sent, not the files.</p></div>`;
+const proofHtml=()=>`<div class="pf"><p class="pf-h">Lease page or landlord’s email</p>${PROOF.map((f,i)=>`<div class="pf-row"><span class="pf-ic" aria-hidden="true">${f.type==='application/pdf'?'PDF':'IMG'}</span><span class="pf-n">${esc(f.name)}</span><span class="pf-s">${kb(f.size)}</span><button type="button" class="x" data-rmproof="${i}" aria-label="Remove ${esc(f.name)}">×</button></div>`).join('')}${PROOF.length<3?`<label class="pf-add" tabindex="0" role="button"><input type="file" accept="image/*,application/pdf" data-proof hidden><b>+ Add a photo or PDF</b><span>Up to 3 files, 10 MB each</span></label>`:''}<p class="pf-note">Only you and the Rentlet team can open these files. Renters see that lease proof was sent, not the files.</p></div>`;
 const photoCount=()=>Object.values(S.photos).reduce((n,a)=>n+a.length,0);
 const areasDone=()=>AREAS.filter(([k,,min])=>S.photos[k].length>=min).length;
-const terms=()=>S.terms||(S.subletType==='takeover'?'gift':'use');
 const unitName=()=>S.unit==='whole'?'Whole place':'Private room';
 const typeName=()=>S.subletType==='takeover'?'Lease takeover':'Short sublet';
 const town=()=>S.campus.split(' · ')[1]||S.campus;
-const depLine=()=>S.dep==='amount'?`${money(+String(val('dep','')).replace(/\D/g,'')||0)} deposit${S.refund?', refundable':''}`:'no deposit';
+const layoutName=()=>S.layout==='Other'?String(val('layoutOther','')).trim().toUpperCase()||'Other':S.layout||'';
+/* empty until the host answers: no deposit line at all, rather than a made-up one */
+const depLine=()=>S.dep==='amount'?(depAmt()?`${money(depAmt())} deposit${S.refund===true?', refundable':S.refund===false?', non-refundable':''}`:''):S.dep==='none'?'no deposit':'';
 const list=a=>{const w=a.map(f=>f==='Wi-Fi'?f:f.toLowerCase());return w.length>1?w.slice(0,-1).join(', ')+' and '+w[w.length-1]:w[0]||''};
-const photosHtml=()=>`<div class="photos">${AREAS.map(([k,name])=>S.photos[k].map((src,i)=>{const [u,f]=src.split('|');return `<div class="ph has"><img src="${u}" alt="" class="${f||''}"><em>${name}</em><button type="button" class="x" data-rm="${k}:${i}" aria-label="Remove">×</button></div>`}).join('')+`<label class="ph"><input type="file" accept="image/*" data-area="${k}" hidden><b>+ Add</b>${name}</label>`).join('')}</div>`;
-const card=()=>`<div class="rcard"><img src="${(Object.values(S.photos).flat()[0]||'data:image/gif;base64,R0lGODlhAQABAAAAACw=').split('|')[0]}" alt=""><div class="rc"><h3>${unitName()} · ${S.layout==='Other'?val('layoutOther','')||'Other':S.layout}</h3><p>${town()} · ${typeName()} · ${WhenPicker.label(S.start,S.end)}</p><div class="pr">${money(S.rent)} <small>/ mo · ${depLine()}${S.multi.fees.length&&!S.multi.fees.includes('Nothing extra')?` · ${list(S.multi.fees)} included`:''}</small></div></div></div>`;
+const photosHtml=()=>`<div class="photos">${AREAS.map(([k,name])=>S.photos[k].map((src,i)=>{const [u,f]=src.split('|');return `<div class="ph has"><img src="${u}" alt="" class="${f||''}"><em>${name}</em><button type="button" class="x" data-rm="${k}:${i}" aria-label="Remove">×</button></div>`}).join('')+`<label class="ph" tabindex="0" role="button" aria-label="Add a photo: ${name}"><input type="file" accept="image/*" data-area="${k}" hidden><b>+ Add</b>${name}</label>`).join('')}</div>`;
+const card=()=>{const fees=S.multi.fees.length&&!S.multi.fees.includes('Nothing extra')?`${list(S.multi.fees)} included`:'';
+  return `<div class="rcard"><img src="${(Object.values(S.photos).flat()[0]||'data:image/gif;base64,R0lGODlhAQABAAAAACw=').split('|')[0]}" alt=""><div class="rc"><h3>${S.unit?unitName():'Room'}${S.layout?` · ${esc(layoutName())}`:''}</h3><p>${[S.campus&&town(),S.subletType&&typeName(),S.start&&S.end&&WhenPicker.label(S.start,S.end)].filter(Boolean).join(' · ')||'&nbsp;'}</p><div class="pr">${S.rent?money(S.rent):'<span class="ns">Rent not set</span>'} <small>${[S.rent&&'/ mo',depLine(),fees].filter(Boolean).join(' · ')}</small></div></div></div>`};
 
 /* ---------- Where is it?: the Building field lists the apartment directory (src/lib/apartments.ts); the Street
    address field lists full addresses from HERE (src/place.ts, through Rentlet's Cloud Functions). A pick keeps
@@ -256,12 +286,13 @@ function placeNote(){
   if(PL_BUSY)return 'Finding the area…';
   if(p){const area=p.area||plArea(p.label),walk=p.campusId===S.campusId&&p.walk!=null?`${p.walk} min walk to campus`:'',t=[area&&`Area: ${area}`,walk].filter(Boolean).join(' · ');if(t)return t}
   if(PL_FAILED&&plNorm(PL_FAILED)===plNorm(addr)&&plArea(addr))return `Area: ${plArea(addr)}`;
+  if(!S.campusId)return 'Choose the campus first; the suggestions start from it.';
   if(!RL.authed)return 'Suggestions by HERE once you sign in.';
   if(addr&&PL_HAD)return 'Pick your address from the list to show its area and walking time.';
   return 'Suggestions by HERE.'}
 const plShowNote=()=>{const n=$('[data-place-note]');if(n)n.textContent=placeNote()};
 addEventListener('rentlet:ready',plShowNote);
-const plSet=(k,v)=>{S.f[k]=v;const el=$(`[data-f=${k}]`);if(el)el.value=v};
+const plSet=(k,v)=>{S.f[k]=v;const el=$(`[data-f=${k}]`);if(el)el.value=v;clearNeed()};
 /* a HERE address: its point, area, ZIP and walk */
 async function plLookup(id,label){
   if(!window.RentletPlace)return;PL_BUSY=true;PL_FAILED=null;plShowNote();
@@ -334,103 +365,169 @@ function placeField(el){
 addEventListener('scroll',()=>{if(PL_OPEN)PL_OPEN()},true);addEventListener('resize',()=>{if(PL_OPEN)PL_OPEN()});
 if(window.visualViewport)visualViewport.addEventListener('resize',()=>{if(PL_OPEN)PL_OPEN()});
 
-/* the screens; each one maps onto the mini program's listing form fields */
+/* the screens; each one maps onto the mini program's listing form fields. need() lists the answers a step still
+   lacks, in screen order, as [key, message]: Next stops on the first one, and Publish checks every step again. */
 const STEPS=[
- {q:'What are you leaving?',h:'This sets the rules for dates and the hand-over.',body:()=>`<div class="opts" style="margin-top:28px">${opt(S.subletType==='sublet','Short sublet','You keep the lease and come back. They stay for a fixed stretch.','data-set="subletType:sublet"')}${opt(S.subletType==='takeover','Lease takeover','They take over your lease until it ends. The landlord signs the transfer.','data-set="subletType:takeover"')}</div>`},
- {q:'Where is it?',h:'Campus first, then the building. Your place shows on the map. The full street address is shared after you both agree.',body:()=>
-   grp('Campus',`<form data-wform><div class="in ws" data-wseg><span data-wval>${S.campus}</span>${CHEV}</div></form>`)+
-   grp('Building',inp('building','Evanston Place','','','Start typing; the apartment directory fills the rest'),'from the apartment directory, or type your own')+
-   grp('Street address',inp('addr','1890 Maple Ave, Evanston, IL')+`<p class="note" style="margin-top:8px" data-place-note>${esc(placeNote())}</p>`)+
-   grp('Apartment website',inp('site','','','','https://'),'optional')},
- {q:'When is it free?',h:'Move-in is the first night they can sleep there. Dates can’t start before today.',body:()=>`<div class="grp"><div class="row2"><div><span class="lbl">Move in</span>${side('in',S.start)}</div><div><span class="lbl">Move out</span>${side('out',S.end)}</div></div></div><div class="grp"><div class="chips">${PRESETS.map(([t,s,e])=>chip(t,S.start===s&&S.end===e,`data-dates="${s}:${e}"`)).join('')}</div><div class="cal" data-cal></div></div>`},
- {q:'Money',h:'Rent, deposit and what the rent includes. Money goes to you, never through Rentlet.',body:()=>
-   `<div class="grp"><div class="row2"><div><span class="lbl">Rent per month</span>${pk('rent',money(S.rent),'/ mo')}</div><div><span class="lbl">Original rent<small>what you pay now</small></span>${pk('orig',money(S.orig),'/ mo')}</div></div></div>`+
-   grp('Deposit',`<div class="opts two">${opt(S.dep==='none','No deposit','','data-set="dep:none"')}${opt(S.dep==='amount','A deposit','Paid to you, returned at move-out','data-set="dep:amount"')}</div>${S.dep==='amount'?`<div class="row2" style="margin-top:10px"><div>${inp('dep','600','one-time','$')}</div><div class="tog" style="min-height:var(--ctl);padding:0 16px"><b>Refundable</b>${sw('refund')}</div></div>`:''}`)+
+ {q:'What are you leaving?',h:'This sets the rules for dates and the hand-over.',
+  need:()=>S.subletType?[]:[['type','Choose a short sublet or a lease takeover.']],
+  body:()=>`<div data-need="type"><div class="opts" style="margin-top:28px">${opt(S.subletType==='sublet','Short sublet','You keep the lease and come back. They stay for a fixed stretch.','data-set="subletType:sublet"')}${opt(S.subletType==='takeover','Lease takeover','They take over your lease until it ends. The landlord signs the transfer.','data-set="subletType:takeover"')}</div>${nm('type')}</div>`},
+ {q:'Where is it?',h:'Campus first, then the building. Your place shows on the map. The full street address is shared after you both agree.',
+  need:()=>{const m=[],a=String(S.f.addr||'').trim();if(!S.campusId)m.push(['campus','Choose the campus.']);if(a.length<5)m.push(['addr',a?'Add the full street address.':'Add the street address.']);return m},
+  body:()=>
+   grp('Campus',`<form data-wform><div class="in ws" data-wseg><span data-wval>${esc(S.campus||'')}</span>${CHEV}</div></form>${nm('campus')}`,'','campus')+
+   grp('Building',inp('building','','','','Start typing; the apartment directory fills the rest'),'optional · from the apartment directory, or type your own')+
+   grp('Street address',inp('addr','','','','e.g. 1890 Maple Ave, Evanston')+nm('addr')+`<p class="note" style="margin-top:8px" data-place-note>${esc(placeNote())}</p>`,'','addr')+
+   grp('Apartment website',inp('site','','','','Paste the building’s website'),'optional')},
+ {q:'When is it free?',h:'Move-in is the first night they can sleep there. Dates can’t start before today.',
+  need:()=>!S.start?[['dates','Pick the move-in day.']]:S.start<TODAY?[['dates','Move-in can’t be before today. Pick a new move-in day.']]:!S.end?[['dates','Pick the move-out day.']]:S.end<=S.start?[['dates','Move-out has to be after move-in.']]:[],
+  body:()=>`<div class="grp" data-need="dates"><div class="row2"><div><span class="lbl">Move in</span>${side('in',S.start)}</div><div><span class="lbl">Move out</span>${side('out',S.end)}</div></div>${nm('dates')}</div><div class="grp"><div class="chips">${PRESETS.map(([t,s,e])=>chip(t,S.start===s&&S.end===e,`data-dates="${s}:${e}"`)).join('')}</div><div class="cal" data-cal></div></div>`},
+ {q:'Money',h:'Rent, deposit and what the rent includes. Money goes to you, never through Rentlet.',
+  need:()=>{const m=[];if(!S.rent)m.push(['rent','Add the monthly rent.']);else if(S.rent>20000)m.push(['rent','Rent can be up to $20,000 a month.']);if(!S.dep)m.push(['depc','Choose No deposit or A deposit.']);if(S.dep==='amount'&&!depAmt())m.push(['dep','Add the deposit amount, or choose No deposit.']);if(S.dep==='amount'&&typeof S.refund!=='boolean')m.push(['refund','Choose whether the deposit is refundable.']);return m},
+  body:()=>
+   `<div class="grp"><div class="row2"><div data-need="rent"><span class="lbl">Rent per month</span>${moneyIn('rent','Rent per month, in dollars','e.g. 1,450')}${nm('rent')}</div><div><span class="lbl">Original rent<small>optional · what you pay now</small></span>${moneyIn('orig','Original rent per month, in dollars','e.g. 1,600')}</div></div></div>`+
+   grp('Deposit',`<div class="opts two" data-need="depc">${opt(S.dep==='none','No deposit','','data-set="dep:none"')}${opt(S.dep==='amount','A deposit','Paid to you','data-set="dep:amount"')}</div>${nm('depc')}${S.dep==='amount'?`<div class="row2" style="margin-top:10px"><div>${inp('dep','','one-time','$','e.g. 600','inputmode="decimal" autocomplete="off"')}</div><div class="chips" style="min-height:var(--ctl);align-items:center" data-need="refund">${chip('Refundable',S.refund===true,'data-refund="1"')}${chip('Non-refundable',S.refund===false,'data-refund="0"')}</div></div>`:''}${nm('dep')}${nm('refund')}`,'','dep')+
    grp('Rent includes',`<div class="chips">${multi('fees',FEES)}</div>`)+
-   `<div class="grp"><div class="row2"><div><span class="lbl">Other costs<small>about, per month</small></span>${inp('extra','60','','$','utilities, parking…')}</div><div><span class="lbl">Negotiable?</span><div class="chips" style="height:var(--ctl);align-items:center">${one('neg',[['little','A little'],['no','No']])}</div></div></div></div>`+
+   `<div class="grp"><div class="row2"><div><span class="lbl">Other costs<small>about, per month</small></span>${inp('extra','','','$','e.g. 60 for utilities','inputmode="decimal" autocomplete="off"')}</div><div><span class="lbl">Negotiable?</span><div class="chips" style="height:var(--ctl);align-items:center">${one('neg',[['little','A little'],['no','No']])}</div></div></div></div>`+
    grp(S.subletType==='takeover'?'How the lease transfers':'How the sublet is arranged',`<div class="opts">${opt(S.transferChannel==='official','Through the building or landlord','The official process, with a transfer fee if they charge one','data-set="transferChannel:official"')}${opt(S.transferChannel==='private','Privately, between us','Not registered with the building. People are warned of the risk.','data-set="transferChannel:private"')}</div>`)},
- {q:'The room',h:'What people compare first.',body:()=>
-   grp('Renting out',`<div class="opts two">${opt(S.unit==='room','A private room','In a shared place','data-set="unit:room"')}${opt(S.unit==='whole','The whole place','Studio or apartment','data-set="unit:whole"')}</div>`)+
-   grp('Layout',`<div class="chips">${LAYOUTS.map(l=>chip(l,l===S.layout,`data-set="layout:${l}"`)).join('')}</div>${S.layout==='Other'?`<div style="margin-top:10px">${inp('layoutOther','','','','e.g. 4B2B')}</div>`:''}<p class="note">The first number counts bedrooms, the second bathrooms.</p>`)+
-   grp('Bathroom',`<div class="chips">${one('bath',[['private','Private'],['shared','Shared']])}</div>`)+
-   `<div class="grp"><div class="row2"><div><span class="lbl">Size<small>optional</small></span>${inp('sqft','140','sq ft')}</div><div><span class="lbl">Floor<small>optional</small></span>${inp('floor','3')}</div></div></div>`+
+ {q:'The room',h:'What people compare first.',
+  need:()=>{const m=[];if(!S.unit)m.push(['unit','Choose a private room or the whole place.']);if(!S.layout)m.push(['layout','Choose the layout.']);else if(S.layout==='Other'&&!String(val('layoutOther','')).trim())m.push(['layout','Type the layout, e.g. 4B2B.']);if(!S.bath)m.push(['bath','Choose a private or shared bathroom.']);return m},
+  body:()=>
+   grp('Renting out',`<div class="opts two">${opt(S.unit==='room','A private room','In a shared place','data-set="unit:room"')}${opt(S.unit==='whole','The whole place','Studio or apartment','data-set="unit:whole"')}</div>${nm('unit')}`,'','unit')+
+   grp('Layout',`<div class="chips">${LAYOUTS.map(l=>chip(l,l===S.layout,`data-set="layout:${l}"`)).join('')}</div>${S.layout==='Other'?`<div style="margin-top:10px">${inp('layoutOther','','','','e.g. 4B2B')}</div>`:''}${nm('layout')}<p class="note">The first number counts bedrooms, the second bathrooms.</p>`,'','layout')+
+   grp('Bathroom',`<div class="chips">${one('bath',[['private','Private'],['shared','Shared']])}</div>${nm('bath')}`,'','bath')+
+   `<div class="grp"><div class="row2"><div><span class="lbl">Size<small>optional</small></span>${inp('sqft','','sq ft','','e.g. 140','inputmode="numeric" autocomplete="off"')}</div><div><span class="lbl">Floor<small>optional</small></span>${inp('floor','','','','e.g. 3','inputmode="numeric" autocomplete="off"')}</div></div></div>`+
    grp('View',`<div class="chips">${one('view',['Street','Courtyard','Lake','Garden'].map(v=>[v,v]))}</div>`,'optional')},
- {q:'Who lives there?',h:'Roommates, if any, and how the home runs.',body:()=>
-   grp('Roommates',`<div class="opts two">${opt(S.hasRoommates==='no','Just them','','data-set="hasRoommates:no"')}${opt(S.hasRoommates==='yes','Yes, roommates','','data-set="hasRoommates:yes"')}</div>`)+
-   (S.hasRoommates==='yes'?`<div class="grp"><div class="row2"><div><span class="lbl">How many</span>${inp('rmN','2')}</div><div><span class="lbl">Who</span>${inp('rmWho','Grad students')}</div></div></div>`+grp('Gender',`<div class="chips">${one('gender',GENDER.map(g=>[g,g]))}</div>`)+grp('Schedule and habits',`<div class="chips">${multi('habits',['Early risers','Quiet weeknights','Cook most nights','Non-smoking','Guests on weekends'])}</div>`)+grp('Anything else',ta('rmNote','','Two grad students, quiet weeknights.'),'optional'):'')},
- {q:'Getting to campus',h:'Does the school shuttle cover this address?',body:()=>grp('Shuttle',`<div class="opts">${opt(S.shuttle==='covered','Yes, covered','','data-set="shuttle:covered"')}${opt(S.shuttle==='not_covered','Not covered','','data-set="shuttle:not_covered"')}${opt(S.shuttle==='unknown','Not sure','We’ll say “not confirmed” on the listing','data-set="shuttle:unknown"')}</div>`)+(S.shuttle==='covered'?grp('Route',`<div class="chips">${one('route',ROUTES.map(r=>[r,r]))}</div>`):'')},
- {q:'In the building',h:'Pick at least one.',body:()=>grp('Amenities',`<div class="chips">${multi('amen',AMEN)}</div>`)},
- {q:'What stays?',h:'Furniture that will be there, and on what terms.',body:()=>
-   grp('Furnished',`<div class="chips">${one('furn',[['full','Fully'],['part','Partly'],['none','Not furnished']])}</div>`)+
-   (S.furn==='none'?'':`<div class="grp"><span class="lbl">Items</span>${FURN.map(([g,items],gi)=>`<p class="sub" style="margin-top:${gi?12:0}px">${g}</p><div class="chips">${multi('items',items)}</div>`).join('')}</div>`+
-   grp('Terms',`<div class="opts two">${opt(terms()==='use','Use during the stay','Left as found','data-set="terms:use"')}${opt(terms()==='gift','Theirs to keep','Usual for takeovers','data-set="terms:gift"')}</div>`))+
-   grp('Also staying, or please note',ta('furnNote','A monitor and a desk mat. The monitor stays on the desk.'),'optional')},
- {q:'House rules',h:'What you ask of the person moving in.',body:()=>PREFS.map(([g,items])=>grp(g,`<div class="chips">${items.map(t=>chip(t,S.prefs[g]===t,`data-pref="${g}:${t}"`)).join('')}</div>`)).join('')+grp('Anything else',ta('ruleNote','','Quiet after 10 pm, please.'),'optional')},
- {q:'Photos',h:'At least 2 of the bedroom and 1 of each other area. Phone photos in daylight are fine.',body:()=>`<div class="grp">${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?S.video:'Optional · up to 60 seconds'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk"><input type="file" accept="video/*" data-video hidden>Add</label>`}</div></div><p class="note">${areasDone()} of ${AREAS.length} areas done. Anyone can report a photo that doesn’t match the place.</p>`},
- {q:'Prove it’s yours',h:'Your Northwestern sign-in counts as student verification. A badge shows what was checked; it is not a guarantee.',body:()=>`<div class="opts" style="margin-top:28px">${opt(S.proof==='student','Student verification','Verified with your Northwestern account','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}`},
- {q:'Check and publish',h:'This is how it will look. Edit anything, any time.',body:()=>`<div class="grp">${card()}</div>
+ {q:'Who lives there?',h:'Roommates, if any, and how the home runs.',
+  need:()=>!S.hasRoommates?[['mates','Choose whether there are roommates.']]:S.hasRoommates==='yes'&&!(parseInt(String(val('rmN','')).replace(/\D/g,''),10)>0)?[['rmN','Add how many roommates.']]:[],
+  body:()=>
+   grp('Roommates',`<div class="opts two">${opt(S.hasRoommates==='no','Just them','','data-set="hasRoommates:no"')}${opt(S.hasRoommates==='yes','Yes, roommates','','data-set="hasRoommates:yes"')}</div>${nm('mates')}`,'','mates')+
+   (S.hasRoommates==='yes'?`<div class="grp" data-need="rmN"><div class="row2"><div><span class="lbl">How many</span>${inp('rmN','','','','e.g. 2','inputmode="numeric" autocomplete="off"')}</div><div><span class="lbl">Who<small>optional</small></span>${inp('rmWho','','','','e.g. grad students')}</div></div>${nm('rmN')}</div>`+grp('Gender',`<div class="chips">${one('gender',GENDER.map(g=>[g,g]))}</div>`,'optional')+grp('Schedule and habits',`<div class="chips">${multi('habits',['Early risers','Quiet weeknights','Cook most nights','Non-smoking','Guests on weekends'])}</div>`,'optional')+grp('Anything else',ta('rmNote','','e.g. Two grad students, quiet weeknights'),'optional'):'')},
+ {q:'Getting to campus',h:'Does the school shuttle cover this address?',
+  need:()=>S.shuttle?[]:[['shuttle','Choose whether the shuttle covers this address.']],
+  body:()=>grp('Shuttle',`<div class="opts">${opt(S.shuttle==='covered','Yes, covered','','data-set="shuttle:covered"')}${opt(S.shuttle==='not_covered','Not covered','','data-set="shuttle:not_covered"')}${opt(S.shuttle==='unknown','Not sure','We’ll say “not confirmed” on the listing','data-set="shuttle:unknown"')}</div>${nm('shuttle')}`,'','shuttle')+(S.shuttle==='covered'?grp('Route',`<div class="chips">${one('route',ROUTES.map(r=>[r,r]))}</div>`,'optional'):'')},
+ {q:'In the building',h:'Optional. Pick any the building has.',body:()=>grp('Amenities',`<div class="chips">${multi('amen',AMEN)}</div>`)},
+ {q:'What stays?',h:'Furniture that will be there, and on what terms.',
+  need:()=>{if(!S.furn)return [['furn','Choose how furnished it is.']];const m=[];if(S.furn==='none')return m;
+    if(!S.multi.items.length)m.push(['items','Pick at least one item that stays, or choose Not furnished.']);
+    if(!S.terms)m.push(['terms','Choose whether the furniture is for use during the stay or theirs to keep.']);return m},
+  body:()=>
+   grp('Furnished',`<div class="chips">${one('furn',[['full','Fully'],['part','Partly'],['none','Not furnished']])}</div>${nm('furn')}`,'','furn')+
+   (S.furn==='full'||S.furn==='part'?`<div class="grp" data-need="items"><span class="lbl">Items</span>${nm('items',1)}${FURN.map(([g,items],gi)=>`<p class="sub" style="margin-top:${gi?12:0}px">${g}</p><div class="chips">${multi('items',items)}</div>`).join('')}</div>`+
+   grp('Terms',`<div class="opts two">${opt(S.terms==='use','Use during the stay','Left as found','data-set="terms:use"')}${opt(S.terms==='gift','Theirs to keep','Usual for takeovers','data-set="terms:gift"')}</div>${nm('terms')}`,'','terms'):'')+
+   grp('Also staying, or please note',ta('furnNote','','e.g. A monitor and a desk mat'),'optional')},
+ {q:'House rules',h:'What you ask of the person moving in. Pick only what applies; tap again to clear.',body:()=>PREFS.map(([g,items])=>grp(g,`<div class="chips">${items.map(t=>chip(t,S.prefs[g]===t,`data-pref="${g}:${t}"`)).join('')}</div>`)).join('')+grp('Anything else',ta('ruleNote','','e.g. Quiet after 10 pm'),'optional')},
+ {q:'Photos',h:`At least one of the bedroom. Best with 2 of the bedroom and 1 of each other area, up to ${MAXPH} photos. Phone photos in daylight are fine.`,
+  need:()=>!S.photos.bedroom.length?[['photos','Add at least one photo of the bedroom.']]:photoCount()>MAXPH?[['photos',`Remove photos until there are ${MAXPH} or fewer.`]]:[],
+  body:()=>`<div class="grp" data-need="photos">${nm('photos',1)}${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?esc(S.video):'Optional · MP4, MOV or WebM, up to 60 MB'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk" tabindex="0" role="button"><input type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" data-video hidden>Add</label>`}</div></div><p class="note">${photoCount()} of ${MAXPH} photos · ${areasDone()} of ${AREAS.length} areas done. Anyone can report a photo that doesn’t match the place.</p>`},
+ {q:'Prove it’s yours',h:'Your Northwestern sign-in counts as student verification. A badge shows what was checked; it is not a guarantee.',
+  need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length?[['proof','Add a photo of the lease or the landlord’s email, or choose Student verification.']]:[],
+  body:()=>`<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','Student verification','Verified with your Northwestern account','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>`},
+ {q:'Check and publish',h:'This is how it will look. After publishing, you can rename it, mark it as taken or take it down from your page.',body:()=>{
+   const ok=i=>!missing(i).length,where=String(val('building','')||val('addr','')).trim(),rmN=String(val('rmN','')).trim(),who=String(val('rmWho','')).trim(),extra=dollars(val('extra','')),items=S.multi.items.length,pc=photoCount();
+   return `<div class="grp">${card()}</div>
    <dl class="review grp">${[
-     ['Where',val('building','')||val('addr','')?`${esc(val('building','')||val('addr',''))} · on the map`:'Address not added yet',1],
-     ['Dates',WhenPicker.label(S.start,S.end),2],
-     ['Money',`${money(S.rent)} / mo · was ${money(S.orig)} · ${depLine()} · ~$${esc(val('extra','')||'0')} other costs`,3],
-     ['Room',`${unitName()} · ${S.layout} · ${S.bath} bath${val('sqft','')?` · ${esc(val('sqft',''))} sq ft`:''}`,4],
-     ['Roommates',S.hasRoommates==='no'?'Just them':`${esc(val('rmN','')||'Some')} ${esc((val('rmWho','')||'roommates').toLowerCase())} · ${S.gender.toLowerCase()}`,5],
-     ['What stays',S.furn==='none'?'Not furnished':`${S.furn==='full'?'Fully':'Partly'} furnished · ${S.multi.items.length} items · ${terms()==='gift'?'theirs to keep':'use during the stay'}`,8],
+     ['Type',line([S.subletType&&typeName()],ok(0)),0],
+     ['Where',line([S.campus&&esc(S.campus),where&&`${esc(where)} · on the map`],ok(1)),1],
+     ['Dates',ok(2)?WhenPicker.label(S.start,S.end):S.start&&S.end?'<span class="ns">Pick new dates</span>':NS,2],
+     ['Money',line([S.rent&&`${money(S.rent)} / mo`,S.orig&&`was ${money(S.orig)}`,depLine(),extra&&`~${money(extra)} other costs`],ok(3)),3],
+     ['Room',line([S.unit&&unitName(),S.layout&&esc(layoutName()),S.bath&&`${S.bath} bath`,val('sqft','')&&`${esc(val('sqft',''))} sq ft`],ok(4)),4],
+     ['Roommates',S.hasRoommates==='no'?'Just them':S.hasRoommates==='yes'?line([`${esc(rmN||'Some')} ${esc((who||'roommates').toLowerCase())}`,S.gender&&S.gender.toLowerCase()],ok(5)):NS,5],
+     ['Shuttle',S.shuttle==='covered'?line(['Covered',S.route]):S.shuttle==='not_covered'?'Not covered':S.shuttle==='unknown'?'Not sure':NS,6],
+     ['Amenities',S.multi.amen.join(' · ')||'None picked',7],
+     ['What stays',S.furn==='none'?'Not furnished':S.furn?line([`${S.furn==='full'?'Fully':'Partly'} furnished`,items&&`${items} item${items===1?'':'s'}`,S.terms==='gift'?'theirs to keep':S.terms==='use'?'use during the stay':''],ok(8)):NS,8],
      ['Rules',Object.values(S.prefs).filter(Boolean).join(' · ')||'None set',9],
-     ['Photos',`${photoCount()} photos · ${areasDone()} of ${AREAS.length} areas${S.video?' · video':''}`,10],
-     ['Verification',S.proof==='student'?'Student ✓':`Student ✓ · lease proof (${PROOF.length} file${PROOF.length===1?'':'s'})`,11]
+     ['Photos',line([`${pc} photo${pc===1?'':'s'}`,`${areasDone()} of ${AREAS.length} areas`,S.video&&'video'],ok(10)),10],
+     ['Verification',S.proof==='student'?'Student ✓':S.proof==='lease'?line([`Student ✓ · lease proof (${PROOF.length} file${PROOF.length===1?'':'s'})`],ok(11)):NS,11]
    ].map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
-   ${grp('A note for the listing',ta('note','I’m away for winter quarter. Small but very efficient room with a proper desk nook. Five minutes to the train.'),'optional · shows as a quote')}
-   <p class="note">Goes live as soon as you publish, with a listing number. Up to 3 listings at a time.</p>`}];
+   ${grp('A note for the listing',ta('note','','e.g. I’m away for winter quarter. Quiet room with a proper desk.'),'optional · shows as a quote')}
+   <p class="note">Goes live as soon as you publish, with a listing number. Up to 3 listings at a time.</p>`}}];
+/* what a step still needs, and the first step (from the top) that still needs something */
+const missing=i=>STEPS[i]&&STEPS[i].need?STEPS[i].need():[];
+const firstGap=()=>{for(let i=0;i<STEPS.length;i++){const m=missing(i);if(m.length)return [i,m[0]]}return null};
+/* the step dots go back anywhere, and forward past answered steps up to the first one that still needs something */
+const reach=()=>{for(let k=S.step;k<STEPS.length;k++)if(missing(k).length)return k;return STEPS.length-1};
 
 const page=()=>{const n=STEPS.length,i=Math.min(S.step,n-1),s=STEPS[i];
   if(S.done)return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Your listing is live</h2><p class="hint">Listing #${S.code}. Northwestern students can find it now, and you can mark it as taken from your page.</p><div class="grp" style="text-align:left">${card()}</div><div class="acts"><a class="btn sec" href="room.html?room=${S.code}">See your listing</a><a class="btn" href="index.html">Back to home</a></div></div></div>`;
   return `${header('<button type="button" class="save" data-save>Save and exit</button>')}<div class="a-top"><i style="width:${(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">Step ${i+1} of ${n}</p><h2 class="q">${s.q}</h2><p class="hint">${s.h}</p>${s.body()}</div></div>
-  <div class="a-foot"><div class="wrap"><button class="btn lnk" data-back ${i===0?'disabled':''}>Back</button><div class="a-steps">${STEPS.map((x,k)=>`<button data-go="${k}" class="${k===i?'on':k<i?'done':''}" title="${x.q}">${k+1}</button>`).join('')}</div><button class="btn" data-next>${i===n-1?'Publish':'Next'}</button></div></div>`};
+  <div class="a-foot"><div class="wrap"><button class="btn lnk" data-back ${i===0?'disabled':''}>Back</button><div class="a-steps">${STEPS.map((x,k)=>`<button type="button" data-go="${k}" aria-label="Step ${k+1}: ${x.q}"${k===i?' aria-current="step"':''}>${k+1}</button>`).join('')}</div><button class="btn" data-next>${i===n-1?'Publish':'Next'}</button></div></div>`};
+/* the dots' state follows the answers, also while one is being typed (typing doesn't redraw the step) */
+function syncDots(){const i=S.step,r=reach();document.querySelectorAll('.a-steps [data-go]').forEach(b=>{const k=+b.dataset.go;
+  b.className=k===i?'on':k<i&&!missing(k).length?'done':'';b.disabled=k>r;b.title=k>r?`Finish step ${r+1} first`:STEPS[k].q})}
+
+/* the missing-answer line stays only while that answer is still missing on this step */
+const stillNeeded=()=>NEED&&NEED.step===S.step&&missing(NEED.step).some(([k,m])=>k===NEED.key&&m===NEED.msg);
+function clearNeed(){if(NEED&&!stillNeeded()){NEED=null;const m=$('#need-msg');if(m)m.remove()}syncDots()}
+const FOCUSABLE='input:not([type=file]),textarea,button:not([disabled]),[tabindex]:not([tabindex="-1"])';
+/* Next or Publish found a missing answer: go to its step, say what's missing under the field, and focus the field */
+function showNeed(i,[key,msg]){
+  if(key==='dates')S.act=S.start&&S.start>=TODAY?'out':'in'; /* the calendar sets the day that's missing */
+  S.step=i;NEED={step:i,key,msg};render();toast(msg);
+  const box=$(`[data-need="${key}"]`),sel={dates:`[data-side=${S.act}]`,dep:'[data-f=dep]',layout:S.layout==='Other'?'[data-f=layoutOther]':'',proof:S.proof==='lease'?'.pf-add':''}[key];
+  let f=(sel&&$(sel))||(box&&(box.matches(FOCUSABLE)?box:box.querySelector(FOCUSABLE)));
+  if(!f&&box){box.tabIndex=-1;f=box}
+  if(f){f.focus();f.setAttribute('aria-describedby','need-msg')}
+  const m=$('#need-msg');if(m)m.scrollIntoView({block:'nearest'})}
 
 function render(){
   if(window.BudgetPicker)BudgetPicker.close();
+  if(NEED&&!stillNeeded())NEED=null;
   const st=$('#stage');st.innerHTML=page();
-  /* the dates step carries the homepage calendar itself; a pick updates the two fields and the chips in place */
-  calApi=null;st.querySelectorAll('[data-cal]').forEach(m=>{calApi=WhenPicker.mount({mount:m,start:S.start,end:S.end,act:S.act,onChange:(s,e,act)=>{S.act=act;if(s&&e&&e>s){S.start=s;S.end=e}syncDates(s,e)}})});
+  /* the dates step carries the homepage calendar itself; a pick updates the two fields and the chips in place
+     (a first tap sets move-in and clears move-out until the second tap) */
+  calApi=null;st.querySelectorAll('[data-cal]').forEach(m=>{calApi=WhenPicker.mount({mount:m,start:S.start,end:S.end,act:S.act,onChange:(s,e,act)=>{S.act=act;S.start=s||null;S.end=s&&e&&e>s?e:null;syncDates(S.start,S.end);clearNeed()}})});
   /* the campus field is the homepage's city → campus list */
   document.querySelectorAll('.ws-pop').forEach(p=>p.remove());
-  st.querySelectorAll('[data-wform]').forEach(f=>{f.addEventListener('submit',e=>e.preventDefault());
-    WhereSearch.attach({form:f,seg:f.querySelector('[data-wseg]'),valueEl:f.querySelector('[data-wval]'),current:S.campus,onCampus:(v,name)=>{S.campusId=v;S.campus=name;placeCampus();render()}})});
+  st.querySelectorAll('[data-wform]').forEach(f=>{f.addEventListener('submit',e=>e.preventDefault());const out=f.querySelector('[data-wval]');
+    WhereSearch.attach({form:f,seg:f.querySelector('[data-wseg]'),valueEl:out,current:S.campus,onCampus:(v,name)=>{S.campusId=v;S.campus=name;placeCampus();render()}});
+    if(!S.campus)out.innerHTML='<span class="pkph">Choose a campus</span>'});
   /* the building field lists the apartment directory, the street address field HERE addresses */
-  PL_OPEN=null;st.querySelectorAll('[data-f=building],[data-f=addr]').forEach(placeField)}
-const draft=()=>{try{const {photos,...rest}=S;sessionStorage.setItem('cs-post-draft',JSON.stringify(rest))}catch(_){}}; /* photos are files; they are not kept in the draft */
+  PL_OPEN=null;st.querySelectorAll('[data-f=building],[data-f=addr]').forEach(placeField);syncDots()}
+const draft=()=>{try{const {photos,...rest}=S;sessionStorage.setItem('rl-post-draft-v2',JSON.stringify(rest))}catch(_){}}; /* photos are files; they are not kept in the draft */
 
 document.addEventListener('click',e=>{const t=e.target;
-  if(t.closest('[data-next]')){if(STEPS[S.step].q==='Prove it’s yours'&&S.proof==='lease'&&!PROOF.length){Rentlet.toast('Add a photo of the lease or the landlord’s email, or choose Student verification.');return}
-    if(S.step>=STEPS.length-1){publish(t.closest('[data-next]'));return}S.step++;render();window.scrollTo(0,0);return}
+  const nx=t.closest('[data-next]');if(nx){if(S.step>=STEPS.length-1){publish(nx);return}
+    const m=missing(S.step)[0];if(m){showNeed(S.step,m);return}
+    S.step++;render();window.scrollTo(0,0);return}
   const rp=t.closest('[data-rmproof]');if(rp){PROOF.splice(+rp.dataset.rmproof,1);render();return}
   if(t.closest('[data-back]')){S.step=Math.max(0,S.step-1);render();return}
   if(t.closest('[data-edit]')){S.done=false;S.step=STEPS.length-1;render();return}
   if(t.closest('[data-save]')){draft();location.href='index.html';return}
-  const g=t.closest('[data-go]');if(g){S.step=+g.dataset.go;render();return}
-  const set=t.closest('[data-set]');if(set){const [k,v]=set.dataset.set.split(':');S[k]=v;render();return}
-  const o1=t.closest('[data-one]');if(o1){const [k,v]=o1.dataset.one.split(':');S[k]=v;render();return}
+  const g=t.closest('[data-go]');if(g){const k=+g.dataset.go;if(k>S.step&&k>reach())return;S.step=k;render();return}
+  /* a single choice; an optional one clears when tapped again */
+  const set=t.closest('[data-set]')||t.closest('[data-one]');if(set){const [k,v]=(set.dataset.set||set.dataset.one).split(':');S[k]=CLEARABLE.includes(k)&&S[k]===v?null:v;if(k==='dep'&&v==='none')S.refund=null;render();return}
+  const rf=t.closest('[data-refund]');if(rf){S.refund=rf.dataset.refund==='1';render();return}
   const pr=t.closest('[data-pref]');if(pr){const [k,v]=pr.dataset.pref.split(':');S.prefs[k]=S.prefs[k]===v?'':v;render();return}
   const m=t.closest('[data-multi]');if(m){const [g,v]=m.dataset.multi.split(':'),a=S.multi[g],i=a.indexOf(v);
     if(i>=0)a.splice(i,1);else{if(g==='fees'){if(v==='Nothing extra')a.length=0;else{const j=a.indexOf('Nothing extra');if(j>=0)a.splice(j,1)}}a.push(v)}render();return}
-  const dd=t.closest('[data-dates]');if(dd){[S.start,S.end]=dd.dataset.dates.split(':');S.act='in';if(calApi)calApi.set(S.start,S.end);syncDates(S.start,S.end);return}
+  const dd=t.closest('[data-dates]');if(dd){[S.start,S.end]=dd.dataset.dates.split(':');S.act='in';if(calApi)calApi.set(S.start,S.end);syncDates(S.start,S.end);clearNeed();return}
   const sd=t.closest('[data-side]');if(sd){S.act=sd.dataset.side;if(calApi)calApi.setAct(S.act);syncDates(S.start,S.end);return}
   const rm=t.closest('[data-rm]');if(rm){const [k,i]=rm.dataset.rm.split(':');S.photos[k].splice(+i,1);render();return}
   if(t.closest('[data-video-rm]')){VIDEO=null;S.video=null;render();return}
-  const w=t.closest('[data-sw]')||(t.closest('.tog')&&t.closest('.tog').querySelector('[data-sw]'));if(w&&!t.closest('.lk,label,input')){S[w.dataset.sw]=!S[w.dataset.sw];render();return} /* the whole row toggles its switch */
-  /* the homepage price picker, in its rent mode, opened from the two rent fields */
+  /* a full set of photos: the file chooser doesn't open */
+  if(t.closest('label.ph')&&photoCount()>=MAXPH){e.preventDefault();toast(`You can add up to ${MAXPH} photos. Remove one to add another.`);return}
+  /* the price picker, in its rent mode, from the chart button inside each rent field */
   const p=t.closest('[data-pk]');if(p){const k=p.dataset.pk;
-    return BudgetPicker.open({anchor:p,mode:'rent',value:S[k],prices:PRICES,title:k==='orig'?'What you pay now':'Your rent a month',note:k==='orig'?'Shown struck through next to your rent.':'You can change it any time.',onDone:v=>{S[k]=v;render()}})}});
-/* typed text survives every redraw */
-document.addEventListener('input',e=>{const k=e.target.dataset.f;if(k)S.f[k]=e.target.value});
-/* photos and the video come from real files */
+    return BudgetPicker.open({anchor:p,mode:'rent',value:S[k]||0,prices:PRICES,title:k==='orig'?'What you pay now':'Your rent a month',note:k==='orig'?'Shown struck through next to your rent.':'Or type any amount in the field.',onDone:v=>{S[k]=v;render()}})}
+  const nb=t.closest('.in.num');if(nb&&!t.closest('input,button'))nb.querySelector('input').focus()});
+/* the photo and file tiles open their file chooser from the keyboard too */
+document.addEventListener('keydown',e=>{const l=e.target.closest&&e.target.closest('label[tabindex]');if(l&&(e.key==='Enter'||e.key===' ')){e.preventDefault();l.click()}});
+/* typed text survives every redraw; a rent field keeps a whole number of dollars */
+document.addEventListener('input',e=>{const el=e.target,k=el.dataset.f,n=el.dataset.num;if(k)S.f[k]=el.value;if(n)S[n]=dollars(el.value);if(k||n)clearNeed()});
+/* photos and the video come from real files, checked here so nothing fails only at Publish */
+const VIDEO_OK=f=>/^video\/(mp4|quicktime|webm)$/.test(f.type)||(!f.type&&/\.(mp4|m4v|mov|webm)$/i.test(f.name));
 document.addEventListener('change',e=>{const el=e.target,file=el.files&&el.files[0];if(!file)return;
-  if(el.dataset.area){const a=el.dataset.area,fr=new FileReader();fr.onload=()=>{S.photos[a].push(fr.result);render()};fr.readAsDataURL(file)}
-  else if('video' in el.dataset){VIDEO=file;S.video=file.name;render()}
+  if(el.dataset.area){el.value='';const a=el.dataset.area,full=`You can add up to ${MAXPH} photos. Remove one to add another.`;
+    if(photoCount()>=MAXPH)return toast(full);
+    if(!/^image\//.test(file.type))return toast('Add a photo (JPG, PNG or WebP).');
+    const fr=new FileReader();fr.onload=()=>{if(photoCount()>=MAXPH)return toast(full);S.photos[a].push(fr.result);render()};fr.readAsDataURL(file)}
+  else if('video' in el.dataset){el.value='';
+    if(!VIDEO_OK(file))return toast('Add the video as an MP4, MOV or WebM file.');
+    if(file.size>=60*1024*1024)return toast('That video is over 60 MB. Try a shorter clip.');
+    VIDEO=file;S.video=file.name;render()}
   else if('proof' in el.dataset){el.value='';
-    if(!/^image\/|^application\/pdf$/.test(file.type))return Rentlet.toast('Add a photo or a PDF.');
-    if(file.size>=10*1024*1024)return Rentlet.toast('That file is over 10 MB. Try a smaller photo or PDF.');
+    if(!/^image\/|^application\/pdf$/.test(file.type))return toast('Add a photo or a PDF.');
+    if(file.size>=10*1024*1024)return toast('That file is over 10 MB. Try a smaller photo or PDF.');
     if(PROOF.length<3){PROOF.push(file);render()}}});
 render();
 </script>

@@ -109,3 +109,126 @@ describe('page shapes', () => {
     expect(r.about).toBe('Away for my summer internship.');
   });
 });
+
+// What a host must answer on the post form; everything else left empty, as the form now stores it.
+const required: PostForm = {
+  subletType: 'sublet',
+  transferChannel: 'official',
+  dep: 'none',
+  refund: null,
+  map: true,
+  hasRoommates: 'yes',
+  gender: '',
+  shuttle: 'unknown',
+  route: '',
+  layout: '3B2B',
+  start: '2027-06-01',
+  end: '2027-08-31',
+  rent: 1300,
+  orig: null,
+  unit: 'room',
+  bath: 'shared',
+  furn: 'full',
+  neg: null,
+  view: null,
+  terms: null,
+  proof: 'student',
+  campus: 'Northwestern · Evanston',
+  campusId: 'nu-evn',
+  multi: { fees: [], amen: [], habits: [], items: [] },
+  prefs: {},
+  f: { rmN: '2' },
+};
+const bare: ListingDoc = { ...listing, price: 1300, form: required };
+
+describe('a listing with only the required answers', () => {
+  const r = toRoom(bare);
+  it('invents no facts the host did not give', () => {
+    expect(r.orig).toBe(0);
+    expect(r.neg).toBe(false);
+    expect(r.util).toBeNull();
+    expect(r.deposit).toBe(0);
+    expect(r.refund).toBe('');
+    expect(r.included).toBe('');
+    expect(r.rentOnly).toBe(false);
+    expect(r.amen).toEqual([]);
+    expect(r.furn).toEqual([]);
+    expect(r.furnMore).toEqual([]);
+    expect(r.prefs).toEqual([]);
+    expect(r.about).toBe('');
+    expect(r.extra).toBe('');
+    expect(r.usage).toBe('');
+    expect(r.sqft).toBeNull();
+  });
+  it('leaves unanswered facts blank or asks the host', () => {
+    expect(r.facts).toEqual([
+      ['info-layout', '1 of 3 beds', ''],
+      ['info-bathroom', 'Shared bath', 'With 2 roommates'],
+      ['info-floor', 'Floor', 'Ask the host'],
+      ['wash', 'Laundry', 'Ask the host'],
+    ]);
+    expect(r.mates).toEqual(['R', 'R']);
+    expect(r.matesText).toBe('2 roommates.');
+    expect(r.mate).toEqual({ gender: '', identity: '', schedule: 'Ask the host', cooking: 'Ask the host', clean: 'Ask the host', guests: 'Ask the host', note: '' });
+  });
+  it('keeps what the host chose for the furniture', () => {
+    expect(r.furnished).toBe('Fully furnished');
+    expect(r.terms).toBe('use');
+    expect(toRoom({ ...bare, form: { ...required, furn: 'none' } }).terms).toBeNull();
+    const some = toRoom({ ...bare, form: { ...required, furn: 'part', multi: { ...required.multi, items: ['Desk', 'Sofa', 'TV'] } } });
+    expect(some.furn).toEqual(['desk']);
+    expect(some.furnMore).toEqual(['Sofa', 'TV']);
+  });
+  it('copes with a form missing the optional groups altogether', () => {
+    const thin = { ...required } as Partial<PostForm>;
+    delete thin.multi;
+    delete thin.prefs;
+    const t = toRoom({ ...bare, form: thin as PostForm });
+    expect(t.prefs).toEqual([]);
+    expect(t.amen).toEqual([]);
+    expect(toCard({ ...bare, form: thin as PostForm }).laundry).toBe(false);
+  });
+});
+
+describe('room page answers', () => {
+  it('says refundable or non-refundable only as the host answered', () => {
+    const dep = (refund: boolean | null, amount = '$600') => toRoom({ ...bare, form: { ...required, dep: 'amount', refund, f: { ...required.f, dep: amount } } });
+    expect(dep(true)).toMatchObject({ deposit: 600, refund: 'yes' });
+    expect(dep(false)).toMatchObject({ deposit: 600, refund: 'no' });
+    expect(dep(null)).toMatchObject({ deposit: 600, refund: '' });
+    expect(dep(true, '')).toMatchObject({ deposit: null, refund: '' });
+    expect(toRoom({ ...bare, form: { ...required, refund: true } })).toMatchObject({ deposit: 0, refund: '' });
+  });
+  it('shows only verification something backs', () => {
+    expect(toRoom(bare).ver).toEqual({ student: 'ok', lease: 'none', landlord: 'none' });
+    expect(toRoom({ ...bare, form: { ...required, proof: 'lease' } }).ver).toEqual({ student: 'ok', lease: 'pending', landlord: 'none' });
+    expect(toRoom(listing).ver.landlord).toBe('none');
+  });
+  it('shows the view whether or not there is an elevator', () => {
+    const v = (amen: string[], view: string | null, floor = '') =>
+      toRoom({ ...bare, form: { ...required, view, multi: { ...required.multi, amen }, f: { ...required.f, floor } } }).facts[2];
+    expect(v(['Elevator'], 'Lake', '5')).toEqual(['info-floor', '5th floor', 'Elevator · Lake view']);
+    expect(v([], 'Lake')).toEqual(['info-floor', 'Floor', 'Lake view']);
+    expect(v(['Elevator'], null)).toEqual(['info-floor', 'Floor', 'Elevator']);
+    expect(v([], null, '2')).toEqual(['info-floor', '2nd floor', '']);
+    expect(v([], '<b>')[2]).toBe('&lt;b&gt; view');
+  });
+  it('marks the rent negotiable only when the host said so', () => {
+    expect(toRoom({ ...bare, form: { ...required, neg: 'little' } }).neg).toBe(true);
+    expect(toRoom({ ...bare, form: { ...required, neg: 'no' } }).neg).toBe(false);
+  });
+  it('reads other costs, what the rent includes and the original rent as given', () => {
+    const r = (f: Partial<PostForm>, extra?: string) => toRoom({ ...bare, form: { ...required, ...f, f: { ...required.f, ...(extra === undefined ? {} : { extra }) } } });
+    expect(r({}, '0').util).toBe(0);
+    expect(r({}, '$75').util).toBe(75);
+    expect(r({ multi: { ...required.multi, fees: ['Nothing extra'] } })).toMatchObject({ included: '', rentOnly: true });
+    expect(r({ multi: { ...required.multi, fees: ['Water', 'Heat'] } })).toMatchObject({ included: 'Water + Heat', rentOnly: false });
+    expect(r({ orig: 1500 }).orig).toBe(1500);
+    expect(r({ orig: 1200 }).orig).toBe(0);
+  });
+  it('shows the roommate note and the house-rules note, escaped', () => {
+    const r = toRoom({ ...bare, form: { ...required, gender: 'Mixed', f: { ...required.f, rmWho: 'Grad students', rmNote: 'Both <quiet>', ruleNote: 'No shoes & no smoke' } } });
+    expect(r.mate).toMatchObject({ gender: 'Mixed', identity: 'Grad students', note: 'Both &lt;quiet&gt;' });
+    expect(r.usage).toBe('No shoes &amp; no smoke');
+  });
+});

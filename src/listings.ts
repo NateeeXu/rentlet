@@ -42,9 +42,38 @@ const PRIVATE_FIELDS = ['addr', 'building', 'site'];
 export type PublishStep = 'photos' | 'saving';
 
 export class PublishError extends Error {
-  constructor(public reason: 'signin' | 'limit' | 'photos' | 'failed') {
+  constructor(public reason: 'signin' | 'limit' | 'photos' | 'invalid' | 'failed') {
     super(reason);
   }
+}
+
+// What firestore.rules and storage.rules accept, checked before anything uploads, so a listing the rules
+// would refuse never leaves orphaned photos behind. The post form checks the same answers step by step.
+const MAX_PHOTOS = 20;
+const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
+const isDay = (s: unknown): s is string => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+// The video's type; a file the system didn't label is read from its extension.
+function videoType(video: File): string {
+  if (video.type) return video.type;
+  const ext = (video.name.split('.').pop() || '').toLowerCase();
+  return ext === 'mov' ? 'video/quicktime' : ext === 'webm' ? 'video/webm' : 'video/mp4';
+}
+
+function ready(S: PostState, video: File | null): boolean {
+  const price = Math.round(Number(S.rent));
+  const photos = Object.values(S.photos || {}).reduce((n, list) => n + (list || []).filter((p) => p.startsWith('data:image/')).length, 0);
+  return (
+    (S.subletType === 'sublet' || S.subletType === 'takeover') &&
+    price > 0 &&
+    price <= 20_000 &&
+    isDay(S.start) &&
+    isDay(S.end) &&
+    S.start < S.end &&
+    photos > 0 &&
+    photos <= MAX_PHOTOS &&
+    (!video || (/^video\/(mp4|quicktime|webm)$/.test(videoType(video)) && video.size < MAX_VIDEO_BYTES))
+  );
 }
 
 function fromDoc(id: string, data: DocumentData): ListingDoc {
@@ -123,6 +152,7 @@ async function hostName(uid: string, displayName: string | null): Promise<string
 export async function publishListing(S: PostState, video: File | null, proof: File[], onStep?: (s: PublishStep) => void): Promise<string> {
   const user = auth.currentUser;
   if (!user) throw new PublishError('signin');
+  if (!ready(S, video)) throw new PublishError('invalid');
 
   const mine = await getDocs(query(collection(db, 'listings'), where('ownerId', '==', user.uid), where('status', '==', 'active')));
   if (mine.size >= MAX_ACTIVE) throw new PublishError('limit');
@@ -163,7 +193,7 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
   if (video) {
     const ext = (video.name.split('.').pop() || 'mp4').toLowerCase();
     const r = ref(storage, `videos/${user.uid}/${code}.${ext}`);
-    await uploadBytes(r, video, { contentType: video.type || 'video/mp4' });
+    await uploadBytes(r, video, { contentType: videoType(video) });
     videoUrl = await getDownloadURL(r);
   }
 
@@ -180,6 +210,17 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
   );
   const campusId = (S.campusId in CAMPUS_KEY ? S.campusId : 'nu-evn') as CampusId;
   form.campusId = campusId;
+  // Answers the host skipped stay empty (null, or [] for the lists); the same field names and shapes as before.
+  // Rents are whole dollars; no original rent is 0, so the room page shows no "was" price.
+  const price = Math.round(Number(S.rent) || 0);
+  form.rent = price;
+  form.orig = Number(S.orig) > 0 ? Math.round(Number(S.orig)) : 0;
+  const multi: Partial<PostForm['multi']> = S.multi ?? {};
+  form.multi = { fees: multi.fees ?? [], amen: multi.amen ?? [], habits: multi.habits ?? [], items: multi.items ?? [] };
+  form.prefs = S.prefs ?? {};
+  // refundable only means something with a deposit, and furniture terms only with furniture
+  if (form.dep !== 'amount') (form as { refund: boolean | null }).refund = null;
+  if (form.furn !== 'full' && form.furn !== 'part') form.terms = null;
   // every listing shows at its spot on the map; the street address, building and website stay host-only
   form.map = true;
   const spot = listingPlace(await placing, location.addr || '', campusId);
@@ -202,7 +243,7 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
     kind: S.subletType,
     title: titleOf(form),
     area: spot.area,
-    price: Math.round(Number(S.rent) || 0),
+    price,
     start: S.start,
     end: S.end,
     photos,

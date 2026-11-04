@@ -12,12 +12,14 @@ export const CAMPUS_NAME: Record<CampusId, string> = {
 };
 
 // Everything the 13-screen post form collects (post.html's S), minus screen state and the
-// private location fields, which are stored separately.
+// private location fields, which are stored separately. The form no longer pre-fills answers, so any
+// optional answer (original rent, fees, amenities, habits, house rules, items, view, size, floor, notes,
+// roommate details beyond yes/no and how many) can be empty or missing; the mappers below never fill one in.
 export interface PostForm {
   subletType: 'sublet' | 'takeover';
   transferChannel: 'official' | 'private';
   dep: 'none' | 'amount';
-  refund: boolean;
+  refund: boolean | null;
   map: boolean;
   hasRoommates: 'yes' | 'no';
   gender: string;
@@ -27,11 +29,11 @@ export interface PostForm {
   start: string;
   end: string;
   rent: number;
-  orig: number;
+  orig: number | null;
   unit: 'room' | 'whole';
   bath: 'private' | 'shared';
   furn: 'full' | 'part' | 'none';
-  neg: 'little' | 'no';
+  neg: 'little' | 'no' | null;
   view: string | null;
   terms: 'use' | 'gift' | null;
   proof: 'student' | 'lease';
@@ -191,23 +193,34 @@ export function toCard(d: ListingDoc) {
     school: d.campusId,
     furnished: d.form.furn !== 'none',
     bath: d.form.bath,
-    laundry: d.form.multi.amen.includes('Washer & dryer'),
+    laundry: (d.form.multi?.amen ?? []).includes('Washer & dryer'),
     layout: html(layoutCode(d.form)),
     createdAtMs: d.createdAtMs ?? 0,
   };
 }
 
-// room.html ROOM object
+// room.html ROOM object. An answer the host left empty is left empty here (null, '' or []), and the
+// room page hides that row or says "Ask the host"; nothing is filled in from a default.
 export function toRoom(d: ListingDoc) {
   const f = d.form;
-  const code = layoutCode(f);
+  const ff: Record<string, string> = f.f ?? {};
+  const multi = { fees: f.multi?.fees ?? [], amen: f.multi?.amen ?? [], habits: f.multi?.habits ?? [], items: f.multi?.items ?? [] };
+  const prefs: Record<string, string> = f.prefs ?? {};
+  const text = (k: string) => String(ff[k] ?? '').trim();
+  const code = layoutCode({ layout: f.layout, f: ff });
   const beds = bedrooms(code);
-  const mates = f.hasRoommates === 'yes' ? Math.max(1, Math.round(num(f.f.rmN)) || 1) : 0;
-  const who = (f.f.rmWho || '').trim();
-  const sqft = num(f.f.sqft);
-  const floor = Math.round(num(f.f.floor));
-  const deposit = f.dep === 'amount' ? num(f.f.dep) : 0;
-  const fees = f.multi.fees.filter((x) => x !== 'Nothing extra');
+  const mates = f.hasRoommates === 'yes' ? Math.max(1, Math.round(num(ff.rmN)) || 1) : 0;
+  const who = text('rmWho');
+  const sqft = Math.round(num(ff.sqft));
+  const floor = Math.round(num(ff.floor));
+  // 0 with no deposit; null when the host chose a deposit but gave no amount
+  const deposit = f.dep === 'amount' ? (/\d/.test(text('dep')) ? num(text('dep')) : null) : 0;
+  const fees = multi.fees.filter((x) => x !== 'Nothing extra');
+  const elevator = multi.amen.includes('Elevator');
+  const view = String(f.view ?? '').trim();
+  const floorMore = [elevator ? 'Elevator' : '', view ? `${html(view)} view` : ''].filter(Boolean).join(' · ');
+  const orig = num(f.orig);
+  const furnished = f.furn === 'full' || f.furn === 'part';
   const photos = d.photos.map((url, i) => [html(url), html(d.captions[i] || 'Photo')]);
   return {
     who: html(d.ownerName),
@@ -217,55 +230,69 @@ export function toRoom(d: ListingDoc) {
     area: html(d.area),
     walk: d.walk ?? null,
     price: d.price,
+    // the host said the rent is open to a little negotiation
+    neg: f.neg === 'little',
     start: d.start,
     end: d.end,
     type: KIND_LABEL[d.kind],
     school: d.campusId,
     photos,
     video: d.video ? html(d.video) : null,
-    about: html((f.f.note || '').trim()),
+    about: html(text('note')),
+    // [icon, label, detail]; an empty detail is not shown
     facts: [
       [
         'info-layout',
         f.unit === 'whole' ? (code === 'Studio' ? 'Studio' : beds ? `Entire ${beds}-bed` : 'Entire place') : beds ? `1 of ${beds} beds` : 'Private room',
-        sqft ? `~${sqft} sq ft` : html(code),
+        sqft ? `~${sqft} sq ft` : '',
       ],
       ['info-bathroom', f.bath === 'private' ? 'Own bath' : 'Shared bath', f.bath === 'private' ? 'Private' : mates ? `With ${mates} roommate${mates > 1 ? 's' : ''}` : 'Shared'],
-      ['info-floor', floor ? `${ordinal(floor)} floor` : 'Floor', f.multi.amen.includes('Elevator') ? 'Elevator' : f.view ? `${f.view} view` : 'Ask the host'],
-      ['wash', 'Laundry', f.multi.amen.includes('Washer & dryer') ? 'In the building' : 'Ask the host'],
+      ['info-floor', floor ? `${ordinal(floor)} floor` : 'Floor', floorMore || (floor ? '' : 'Ask the host')],
+      ['wash', 'Laundry', multi.amen.includes('Washer & dryer') ? 'In the building' : 'Ask the host'],
     ],
-    furn: f.furn === 'none' ? [] : f.multi.items.map((x) => FURN_KEY[x]).filter(Boolean),
-    terms: f.terms || (f.subletType === 'takeover' ? 'gift' : 'use'),
+    sqft: sqft || null,
+    // items with an icon on the room page, and the rest by name
+    furn: furnished ? multi.items.map((x) => FURN_KEY[x]).filter(Boolean) : [],
+    furnMore: furnished ? multi.items.filter((x) => !FURN_KEY[x]).map((x) => html(x)) : [],
+    // what happens to the furniture; nothing when the place is not furnished
+    terms: furnished ? f.terms || (f.subletType === 'takeover' ? 'gift' : 'use') : null,
     mates: Array.from({ length: mates }, () => html(who ? who[0].toUpperCase() : 'R')),
     matesText: html(
       mates
-        ? `${mates} ${who ? who.toLowerCase() : `roommate${mates > 1 ? 's' : ''}`}${f.multi.habits.length ? `, ${f.multi.habits.join(', ').toLowerCase()}` : ''}.`
+        ? `${mates} ${who ? who.toLowerCase() : `roommate${mates > 1 ? 's' : ''}`}${multi.habits.length ? `, ${multi.habits.join(', ').toLowerCase()}` : ''}.`
         : 'Just you.',
     ),
-    prefs: PREF_ORDER.filter((c) => PREF_TEXT[f.prefs?.[c]]).map((c) => ({ k: PREF_ICON[c], t: PREF_TEXT[f.prefs[c]] })),
-    util: num(f.f.extra),
+    prefs: PREF_ORDER.filter((c) => PREF_TEXT[prefs[c]]).map((c) => ({ k: PREF_ICON[c], t: PREF_TEXT[prefs[c]] })),
+    // other monthly costs: null when the host left it empty (an entered 0 stays 0)
+    util: /\d/.test(text('extra')) ? num(text('extra')) : null,
     deposit,
+    // 'yes' or 'no' as the host answered for their deposit; '' with no deposit or no answer
+    refund: deposit ? (f.refund === true ? 'yes' : f.refund === false ? 'no' : '') : '',
     utilText: 'Other costs',
-    included: html(fees.length ? fees.join(' + ') : 'Nothing extra'),
-    landlord: f.transferChannel === 'official' ? 'ok' : 'wa',
+    // what the rent includes; '' when the host picked nothing, and rentOnly when they picked "Nothing extra"
+    included: html(fees.join(' + ')),
+    rentOnly: !fees.length && multi.fees.includes('Nothing extra'),
     asks: ['Video tour?', 'Still free?', f.subletType === 'takeover' ? 'Transfer fee?' : 'Flexible dates?'],
     code: d.code,
     layout: html(code),
-    orig: f.orig && f.orig !== f.rent ? f.orig : 0,
+    orig: orig > d.price ? orig : 0,
     shuttle: f.shuttle === 'covered' ? { s: 'covered', route: f.route } : { s: f.shuttle },
-    amen: f.multi.amen.map((x) => AMEN_KEY[x]).filter(Boolean),
+    amen: multi.amen.map((x) => AMEN_KEY[x]).filter(Boolean),
     furnished: f.furn === 'full' ? 'Fully furnished' : f.furn === 'part' ? 'Partly furnished' : 'Not furnished',
-    extra: html((f.f.furnNote || '').trim()),
-    usage: html((f.f.ruleNote || '').trim()),
+    extra: html(text('furnNote')),
+    usage: html(text('ruleNote')),
     mate: {
-      gender: html(f.gender),
-      identity: html(who || 'Roommates'),
-      schedule: html(f.multi.habits[0] || 'Ask the host'),
-      cooking: html(f.prefs.Cooking || 'Ask the host'),
-      clean: html(f.prefs.Cleaning || 'Ask the host'),
-      guests: html(f.prefs.Visitors || 'Ask the host'),
+      gender: html(String(f.gender ?? '').trim()),
+      identity: html(who),
+      schedule: html(multi.habits[0] || 'Ask the host'),
+      cooking: html(prefs.Cooking || 'Ask the host'),
+      clean: html(prefs.Cleaning || 'Ask the host'),
+      guests: html(prefs.Visitors || 'Ask the host'),
+      note: html(text('rmNote')),
     },
-    ver: { student: 'ok', lease: f.proof === 'lease' ? 'pending' : 'none', landlord: f.transferChannel === 'official' ? 'pending' : 'none' },
+    // only what something real backs: the Northwestern sign-in, and a lease proof the host uploaded (in review).
+    // There is no separate landlord approval yet, so that mark is always "Not submitted".
+    ver: { student: 'ok', lease: f.proof === 'lease' ? 'pending' : 'none', landlord: 'none' },
     // the map: the exact spot and the places saved with the listing (names are escaped when drawn)
     location: d.location ?? null,
     near: d.near ?? null,

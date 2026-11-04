@@ -35,9 +35,10 @@ describe('answers from the functions', () => {
     });
   });
   it('keeps nearby places of known kinds', () => {
-    expect(asNearby([{ kind: 'grocery', name: 'Jewel-Osco', meters: 420.2, walk: 6 }, { kind: 'bar', name: 'x', meters: 1 }])).toEqual([
-      { kind: 'grocery', name: 'Jewel-Osco', meters: 420, walk: 6 },
+    expect(asNearby([{ kind: 'grocery', name: 'Jewel-Osco', meters: 420.2, walk: 6, lat: 42.05, lng: -87.68 }, { kind: 'bar', name: 'x', meters: 1 }])).toEqual([
+      { kind: 'grocery', name: 'Jewel-Osco', meters: 420, walk: 6, lat: 42.05, lng: -87.68 },
     ]);
+    expect(asNearby([{ kind: 'food', name: 'Cafe', meters: 90, walk: null }])[0]).toMatchObject({ lat: null, lng: null });
   });
 });
 

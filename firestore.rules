@@ -64,6 +64,7 @@ service cloud.firestore {
         && d.area is string && d.area.size() <= 80
         && d.photos is list && d.photos.size() > 0 && d.photos.size() <= 20
         && (!('walk' in d) || d.walk == null || (d.walk is int && d.walk > 0 && d.walk < 1000))
+        && (!('near' in d) || (d.near is list && d.near.size() <= 12))
         && (!('location' in d) || d.location == null
           || (d.location is map && d.location.keys().hasOnly(['lat', 'lng'])
             && d.location.lat is number && d.location.lng is number

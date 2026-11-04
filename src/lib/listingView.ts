@@ -60,6 +60,8 @@ export interface ListingDoc {
   captions: string[];
   video: string | null;
   walk: number | null;
+  location?: { lat: number; lng: number } | null;
+  near?: { kind: 'transit' | 'grocery' | 'pharmacy' | 'food'; name: string; lat: number | null; lng: number | null; walk: number | null; meters: number }[];
   form: PostForm;
   createdAtMs?: number;
 }
@@ -254,5 +256,8 @@ export function toRoom(d: ListingDoc) {
       guests: html(f.prefs.Visitors || 'Ask the host'),
     },
     ver: { student: 'ok', lease: f.proof === 'lease' ? 'pending' : 'none', landlord: f.transferChannel === 'official' ? 'pending' : 'none' },
+    // the map: the exact spot and the places saved with the listing (names are escaped when drawn)
+    location: d.location ?? null,
+    near: d.near ?? null,
   };
 }

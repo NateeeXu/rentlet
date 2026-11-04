@@ -735,6 +735,8 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
+/* Getting around draws a real map (src/roommap.ts) inside .nb-map */
+.nb-lf{position:absolute;inset:0;z-index:0}.nb-map .nb-cap{z-index:500}.nb-h p a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 /* AI pick is taken down for now (Founder, Nov 4): its buttons stay in the code but are not shown */
 .aipk{display:none!important}
 .rl-me{width:44px;height:44px;border-radius:50%;background:#222;color:#fff;display:inline-grid;place-items:center;font-weight:700;font-size:15px;text-decoration:none;overflow:hidden;flex:none}
@@ -881,56 +883,35 @@ function titleDates(){return `<span class="t-when">${span(ROOM.start,ROOM.end)}<
 /* Getting around: places near the room's approximate area, by type. Minutes come from the listing's own walk time
    to main campus, scaled by distance on the street grid. The map is a drawn placeholder; in the product the places
    come from a map provider around the approximate area (never the exact address). Place names are placeholders. */
-const NEAR={
- Schools:{ic:'<path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5v4.2c1.6 1.4 3.4 2 5.5 2s3.9-.6 5.5-2v-4.2"/>',
-  list:DESTS.map(([,n,p])=>[n.split(' · ')[0],n.includes(' · ')?'Northwestern · '+n.split(' · ')[1]:'Northwestern',p])},
- Bus:{ic:'<rect x="5" y="3.5" width="14" height="14" rx="3"/><path d="M5 11h14M8 17.5V20M16 17.5V20"/><circle cx="8.5" cy="14.3" r=".6"/><circle cx="15.5" cy="14.3" r=".6"/>',
-  list:[['Davis & Chicago','CTA 201 · Pace 213',[176,112]],['Church & Maple','CTA 205',[128,90]],['Main & Hinman','CTA 206',[188,166]]]},
- Shuttle:{ic:'<path d="M3 15V9a3 3 0 0 1 3-3h9l4 4.5V15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 11h16"/><circle cx="7" cy="16.5" r="1.7"/><circle cx="16" cy="16.5" r="1.7"/>',list:null},
- Subway:{ic:'<rect x="6" y="3" width="12" height="13" rx="4"/><path d="M6 10h12M8.5 19.5 10 16M15.5 19.5 14 16"/><circle cx="9.5" cy="13" r=".6"/><circle cx="14.5" cy="13" r=".6"/>',
-  list:[['Davis','CTA Purple Line',[152,118]],['Foster','CTA Purple Line',[152,62]],['Davis St','Metra UP-N',[128,124]]]},
- Supermarkets:{ic:'<path d="M3 4h2.5l2 10.5h10l2-7.5H6.5"/><circle cx="9" cy="18.5" r="1.4"/><circle cx="16" cy="18.5" r="1.4"/>',
-  list:[['Grocery store','Open until 10 pm',[184,132]],['Corner market','Small groceries',[110,100]],['Big-box grocery','Larger store',[70,164]]]},
- Restaurants:{ic:'<path d="M7 3v8a2 2 0 0 0 2 2v8M5 3v5a2 2 0 0 0 2 2M9 3v5"/><path d="M17 21V3c-2 1.5-3 4-3 7s1 3 3 3"/>',
-  list:[['Coffee shop','Café',[160,120]],['Noodle bar','Restaurant',[136,104]],['Pizza place','Restaurant',[190,108]]]},
- Pharmacies:{ic:'<rect x="4" y="6" width="16" height="14" rx="3"/><path d="M9 6V4h6v2M12 10v6M9 13h6"/>',
-  list:[['Pharmacy','Open late',[174,138]],['Urgent care','Clinic',[92,76]]]}};
+const NEAR={Schools:{ic:'<path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5v4.2c1.6 1.4 3.4 2 5.5 2s3.9-.6 5.5-2v-4.2"/>'},Shuttle:{ic:'<path d="M3 15V9a3 3 0 0 1 3-3h9l4 4.5V15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 11h16"/><circle cx="7" cy="16.5" r="1.7"/><circle cx="16" cy="16.5" r="1.7"/>'},Transit:{ic:'<rect x="6" y="3" width="12" height="13" rx="4"/><path d="M6 10h12M8.5 19.5 10 16M15.5 19.5 14 16"/><circle cx="9.5" cy="13" r=".6"/><circle cx="14.5" cy="13" r=".6"/>'},Supermarkets:{ic:'<path d="M3 4h2.5l2 10.5h10l2-7.5H6.5"/><circle cx="9" cy="18.5" r="1.4"/><circle cx="16" cy="18.5" r="1.4"/>'},Restaurants:{ic:'<path d="M7 3v8a2 2 0 0 0 2 2v8M5 3v5a2 2 0 0 0 2 2M9 3v5"/><path d="M17 21V3c-2 1.5-3 4-3 7s1 3 3 3"/>'},Pharmacies:{ic:'<rect x="4" y="6" width="16" height="14" rx="3"/><path d="M9 6V4h6v2M12 10v6M9 13h6"/>'}};
 /* transit is not a mode here: Bus, Shuttle and Subway are their own tabs, timed as the walk to the stop */
 const NMODE={Walk:w=>w,Bike:w=>Math.max(1,Math.round(w/3.2)),Drive:w=>Math.max(2,Math.round(w*.3+2))};
 const NBY={Walk:'on foot',Bike:'by bike',Drive:'by car'};
-const NSTOPS=['Bus','Shuttle','Subway'];
+const NSTOPS=['Shuttle','Transit'];
 const nb={cat:'Schools',mode:'Walk',on:0};
 const nIc=(c,sz=16)=>`<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NEAR[c].ic}</svg>`;
-function nearList(){const h=home(),k=ROOM.walk/Math.max(1,plen(pathPts(h,DESTS[0][2]))),sh=ROOM.shuttle||{s:'unknown'};
-  const mk=([n,sub,p])=>{const w=Math.max(1,Math.round(plen(pathPts(h,p))*k));return {n,sub,p,w,mi:(w*.05).toFixed(1)}};
-  if(nb.cat==='Shuttle')return sh.s==='covered'?[mk(['Nearest stop',`${sh.route} · about ${sh.min} min to campus`,[h[0]+8,h[1]-10]])]:[];
-  return NEAR[nb.cat].list.map(mk).sort((a,b)=>a.w-b.w)}
-function nearNote(){const sh=ROOM.shuttle||{s:'unknown'};if(nb.cat!=='Shuttle'||sh.s==='covered')return '';
-  return sh.s==='not_covered'?`<p class="nb-note"><b>No campus shuttle here</b>This area is outside the shuttle routes. Walk, bike or take transit instead.</p>`:`<p class="nb-note"><b>Shuttle not confirmed</b>${ROOM.who} hasn’t confirmed whether a shuttle stops nearby. Ask before you decide.</p>`}
+/* rows come from src/roommap.ts: the campus, the nearest shuttle stops, and the places saved with the listing */
+function nearList(){return window.RentletRoomMap?RentletRoomMap.rows(nb.cat,ROOM):[]}
+function nearNote(L){if(L.length)return '';
+  if(nb.cat==='Shuttle')return `<p class="nb-note"><b>No campus shuttle stop nearby</b>The nearest Northwestern shuttle stop is more than a 20-minute walk away. <a href="shuttle.html">See the shuttle map</a></p>`;
+  return `<p class="nb-note"><b>Nothing to show here yet</b>${RL.authed?'No places of this kind came up within a short walk.':'Sign in with your Northwestern account to see places nearby.'}</p>`}
 /* the drawing uses the same 300 × 180 plan as the area spots, scaled to 800 × 420 */
 const NX=8/3,NY=7/3,nP=([x,y])=>[+(x*NX).toFixed(1),+(y*NY).toFixed(1)];
-function nearMap(L){const h=nP(home()),sel=L[nb.on];let g='';for(let x=21;x<800;x+=80)g+=`<path d="M${x} 0V420"/>`;for(let y=14;y<420;y+=70)g+=`<path d="M0 ${y}H800"/>`;
-  const pins=L.map((x,i)=>{const [px,py]=nP(x.p),on=i===nb.on;return `<g class="nb-pin${on?' on':''}" transform="translate(${px} ${py})"><circle r="${on?19:15}"/><g transform="translate(${on?-10:-8.5} ${on?-10:-8.5}) scale(${on?.83:.7})">${nIc(nb.cat,24)}</g></g>`}).join('');
-  let route='',lab='';if(sel){const pts=pathPts(home(),sel.p).map(nP);route=`<path d="M${pts.map(q=>q.join(' ')).join(' L ')}" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/><path d="M${pts.map(q=>q.join(' ')).join(' L ')}" fill="none" stroke="#222" stroke-width="3.5" stroke-dasharray="1 8" stroke-linecap="round" stroke-linejoin="round"/>`;
-    /* the chosen place's name sits beside its pin, on the side away from the room */
-    const [px,py]=nP(sel.p),left=px>=h[0];lab=`<text class="nb-lb" x="${left?px+28:px-28}" y="${py+5}" text-anchor="${left?'start':'end'}">${sel.n}</text>`}
-  /* narrow screens get a closer crop around the room and the chosen place, so labels and pins stay readable */
-  const narrow=site.clientWidth<=760,cx=sel?(h[0]+nP(sel.p)[0])/2:h[0],x0=narrow?Math.round(Math.max(0,Math.min(400,cx-200))):0,vb=narrow?`${x0} 0 400 420`:'0 0 800 420';
-  return `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map of places near the room's approximate area">
-    <rect width="800" height="420" fill="#efeee9"/><g stroke="#fff" stroke-width="8">${g}</g>
-    <g transform="scale(${NX} ${NY})"><path d="M196 14 C230 6,250 18,258 40 L262 120 C248 126,222 118,206 104 C196 84,190 44,196 14Z" fill="#d6ead0"/><path d="M268 0 C258 40,266 80,258 120 C254 150,262 168,256 180 H300 V0Z" fill="#c6ddf0"/></g>
-    <path d="M405 0V420" stroke="#c7c3d6" stroke-width="3" stroke-dasharray="9 6"/><text x="398" y="140" font-size="12" fill="#8b88a0" font-weight="600" transform="rotate(-90 398 140)">Purple Line</text>
-    <text x="772" y="398" font-size="13" fill="#7a9bb8" font-style="italic" transform="rotate(-90 772 398)">Lake Michigan</text>
-    ${route}<circle cx="${h[0]}" cy="${h[1]}" r="38" fill="rgba(84,41,146,.12)" stroke="rgba(84,41,146,.5)" stroke-width="2"/><circle cx="${h[0]}" cy="${h[1]}" r="6" fill="#542992"/>
-    <text class="nb-lb" x="${h[0]}" y="${h[1]+(h[1]>330?-50:58)}" text-anchor="middle">${ROOM.area}</text>${pins}${lab}</svg><span class="nb-cap">Approximate area · exact address after you both agree</span>`}
+function nearMap(){return `<div class="nb-lf" id="nbMap"></div><span class="nb-cap">Exact spot · street address after you both agree</span>`}
 const nearBody=()=>{const L=nearList();if(nb.on>=L.length)nb.on=0;
   const stops=NSTOPS.includes(nb.cat),mode=stops?'Walk':nb.mode;
-  return `<div class="nb-h"><div><h2>Getting around</h2><p>${stops?'Walking time from the room’s area to each stop.':`Times from the room’s area, ${NBY[mode]}.`}</p></div><div class="nb-modes" role="group" aria-label="How you get there"${stops?' hidden':''}>${Object.keys(NMODE).map(m=>`<button type="button" data-nmode="${m}" aria-pressed="${m===mode}">${m}</button>`).join('')}</div></div>
+  return `<div class="nb-h"><div><h2>Getting around</h2><p>${stops?`Walking time from the room to each stop.${nb.cat==='Shuttle'?' <a href="shuttle.html">Live shuttle map</a>':''}`:`Times from the room, ${NBY[mode]}.`}</p></div><div class="nb-modes" role="group" aria-label="How you get there"${stops?' hidden':''}>${Object.keys(NMODE).map(m=>`<button type="button" data-nmode="${m}" aria-pressed="${m===mode}">${m}</button>`).join('')}</div></div>
   <div class="nb-box"><div class="nb-cats" role="tablist" aria-label="Place types">${Object.keys(NEAR).map(c=>`<button type="button" role="tab" data-ncat="${c}" aria-selected="${c===nb.cat}">${nIc(c)}${c}</button>`).join('')}</div>
-    <div class="nb-map">${nearMap(L)}</div>
-    <div class="nb-list">${L.map((x,i)=>`<button type="button" class="nb-row${i===nb.on?' on':''}" data-non="${i}"><span class="nb-i">${nIc(nb.cat,15)}</span><span class="nb-t"><b>${x.n}</b><small>${x.sub} · ${x.mi} mi</small></span><em>${NMODE[mode](x.w)} min</em></button>`).join('')}${nearNote()}</div></div>`};
+    <div class="nb-map">${nearMap()}</div>
+    <div class="nb-list">${L.map((x,i)=>`<button type="button" class="nb-row${i===nb.on?' on':''}" data-non="${i}"><span class="nb-i">${nIc(nb.cat,15)}</span><span class="nb-t"><b>${x.n}</b><small>${x.sub} · ${x.mi} mi</small></span><em>${NMODE[mode](x.w)} min</em></button>`).join('')}${nearNote(L)}</div></div>`};
 const nearSection=()=>`<section class="near" id="near" aria-label="Getting around">${nearBody()}</section>`;
-function drawNear(){const n=$('#near');if(n)n.innerHTML=nearBody();nbFade()}
+/* the map stays put; the header, tabs and list are redrawn around it */
+function drawNear(){const n=$('#near');if(!n)return;if(!$('#nbMap',n)){n.innerHTML=nearBody()}else{const t=document.createElement('div');t.innerHTML=nearBody();
+  ['.nb-h','.nb-cats','.nb-list'].forEach(c=>{const a=$(c,n),b=$(c,t);if(a&&b)a.replaceWith(b)})}
+  nbFade();drawNearMap()}
+function drawNearMap(){const el=$('#nbMap');if(el&&window.RentletRoomMap)RentletRoomMap.draw(el,ROOM,nearList(),nb.on,nb.cat)}
+window.RL_nearSelect=i=>{nb.on=i;drawNear()};
+window.RL_nearRedraw=()=>{if($('#near'))drawNear();else if(STATE==='ok'&&ROOM.location)render()};
 /* the place-type row fades on the right only while some tabs are still off screen */
 function nbFade(){const c=$('.nb-cats');if(c)c.classList.toggle('more',c.scrollLeft+c.clientWidth<c.scrollWidth-4)}
 document.addEventListener('scroll',e=>{if(e.target.classList&&e.target.classList.contains('nb-cats'))nbFade()},true);addEventListener('resize',nbFade);
@@ -1005,7 +986,7 @@ const page=()=>`${head()}<main class="wrap f2">${titlebar()}<div class="tri-wrap
     <div class="amen"><p class="tl">In the building</p><div class="amen-row">${AMEN.map(([k,l,d])=>{const on=ROOM.amen.includes(k);return `<span class="${on?'':'off'}" title="${on?l:l+': not available'}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>${l}${on?'':'<em class="sr">, not available</em>'}</span>`}).join('')}</div></div>${ROOM.about?`<blockquote class="hquote" aria-label="A note from ${ROOM.who}, the host"><p class="clamp" data-clamp>“${ROOM.about}”</p><button type="button" class="more-btn" data-more>Read more</button><cite>${byline()}</cite></blockquote>`:''}</div>${FILL==="A"?"":`<div class="blk fblk">${furnTile()}</div><div class="blk pblk">${pplTile()}</div>`}</div>
   <div class="panel rgt"><div class="blk bookc">${bookCard()}</div>${FILL==="A"?`<div class="blk fblk">${furnTile()}</div><div class="blk pblk">${pplTile()}</div>`:""}</div>
 </div></div>
-${ROOM.near?nearSection():''}
+${ROOM.location&&window.RentletRoomMap?nearSection():''}
 <section class="more"><h2>Other rooms that fit your dates <a href="index.html">See all</a></h2><div class="mrow" id="moreRooms">${moreCards()}</div></section>${below()}</main>${dock()}`;
 
 /* listings arrive from src/rentlet.ts; the room in the URL is looked up among them, or directly when it is
@@ -1064,7 +1045,7 @@ function shareMeta(){const set=(sel,attr,val)=>{let m=document.head.querySelecto
 function attachWhere(){const seg=$('.msearch .seg-w');if(!seg||!window.WhereSearch)return;
   WhereSearch.attach({form:$('.msearch'),seg,valueEl:$('[data-where]',seg),labelEl:$('small',seg),current:'Northwestern · Evanston',onCampus:(v)=>{try{sessionStorage.setItem('cs-plan',JSON.stringify({...plan,school:v}))}catch(_){}location.href='index.html'}})}
 function render(){if(STATE!=='ok')return boot();setVh();shareMeta();document.title=`${ROOM.title} · ${ROOM.area} | Rentlet`;$('#msgT').textContent=`Message ${ROOM.who}`;site.innerHTML=page();bindGal();attachWhere();requestAnimationFrame(nbFade);requestAnimationFrame(()=>{const p=$('[data-clamp]'),m=$('[data-more]');if(p&&m&&p.scrollHeight<=p.clientHeight+2)m.hidden=true});$$('[data-flip]').forEach(sizeFlip);
-  const tri=$('#tri');requestAnimationFrame(()=>requestAnimationFrame(()=>tri.classList.remove('intro')));site.scrollTop=0}
+  const tri=$('#tri');requestAnimationFrame(()=>requestAnimationFrame(()=>tri.classList.remove('intro')));site.scrollTop=0;drawNearMap()}
 $('#roomTabs').innerHTML=Object.entries(ROOMS).map(([k,R])=>`<button onclick="location.href='room.html?room=${k}'" aria-selected="${k===KEY}">${R.who}</button>`).join('');
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
 document.addEventListener('click',e=>{const t=e.target;
@@ -1124,5 +1105,6 @@ boot();
 </script>
 <script type="module" src="/src/rentlet.ts"></script>
 <script type="module" src="/src/chat.ts"></script>
+<script type="module" src="/src/roommap.ts"></script>
 </body>
 </html>

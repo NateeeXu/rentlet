@@ -26,7 +26,7 @@ import {
   type PostForm,
 } from './lib/listingView';
 import { asPlace, listingPlace, sameAddress, type PickedPlace } from './lib/place';
-import { lookupPlace } from './place';
+import { lookupPlace, nearbyPlaces } from './place';
 
 const MAX_ACTIVE = 3;
 const AREA_CAPTION: Record<string, string> = {
@@ -171,6 +171,13 @@ export async function publishListing(S: PostState, video: File | null, onStep?: 
   // every listing shows at its spot on the map; the street address, building and website stay host-only
   form.map = true;
   const spot = listingPlace(await placing, location.addr || '', campusId);
+  // places around the spot for the room page's Getting around (fails soft to none)
+  const near = spot.location
+    ? (await nearbyPlaces(spot.location.lat, spot.location.lng, campusId))
+        .filter((x) => x.lat != null && x.lng != null)
+        .slice(0, 12)
+        .map((x) => ({ kind: x.kind, name: x.name.slice(0, 80), lat: x.lat, lng: x.lng, walk: x.walk, meters: x.meters }))
+    : [];
 
   await setDoc(doc(db, 'listings', code), {
     ownerId: user.uid,
@@ -191,6 +198,7 @@ export async function publishListing(S: PostState, video: File | null, onStep?: 
     video: videoUrl,
     walk: spot.walk,
     location: spot.location, // null when no place was picked or found
+    near,
     form,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

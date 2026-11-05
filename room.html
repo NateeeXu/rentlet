@@ -1187,7 +1187,7 @@ document.addEventListener('click',e=>{const t=e.target;
   if(t.closest('[data-sopen]')){const c=$('#sCard');c.hidden?openSearch():closeSearch();return}
   /* the bar's search button (Founder, Nov 4): search rooms with the Where / When / Budget shown beside it.
      The homepage reads the same saved plan and budget, and scrolls to its results for ?find=1. */
-  if(t.closest('[data-findrooms]')){const school=ROOM.school||plan.school||'nu-evn';try{sessionStorage.setItem('cs-plan',JSON.stringify({...plan,school}))}catch(_){}BudgetPicker.save(BUDGET);location.href='index.html?find=1';return}
+  if(t.closest('[data-findrooms]')){const school=ROOM.school||plan.school||'nu-evn';try{sessionStorage.setItem('cs-plan',JSON.stringify({...plan,school}))}catch(_){}BudgetPicker.save(BUDGET);location.href='/?find=1';return}
   if(!t.closest('#sCard'))closeSearch();
   if(t.closest('[data-aipick]')){$('#aiCard').hidden?openAi(false):closeAi(false);return}
   const ag=t.closest('[data-aiagain]');if(ag){if(!ag.disabled)openAi(true);return}

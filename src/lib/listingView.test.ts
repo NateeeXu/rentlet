@@ -339,6 +339,24 @@ describe('hostile values', () => {
     expect(toRoom(loose({ ...listing, location: { lat: '42', lng: -87 }, near: 'x' }))).toMatchObject({ location: null, near: null });
     expect(toRoom(listing).near).toBeNull();
   });
+  it('gives the homepage card its map spot only as numbers inside the map area', () => {
+    const at = (location: unknown) => {
+      const c = toCard(loose({ ...listing, location }));
+      return [c.lat, c.lng];
+    };
+    expect(at({ lat: 42.05, lng: -87.68, address: '1890 Maple Ave' })).toEqual([42.05, -87.68]);
+    expect(at(undefined)).toEqual([null, null]);
+    expect(at(null)).toEqual([null, null]);
+    expect(at({ lat: '42.05', lng: -87.68 })).toEqual([null, null]);
+    expect(at({ lat: Number.NaN, lng: -87.68 })).toEqual([null, null]);
+    expect(at({ lat: 42.05, lng: Number.POSITIVE_INFINITY })).toEqual([null, null]);
+    expect(at({ lat: 40.71, lng: -74.0 })).toEqual([null, null]); // New York: off the map
+    expect(at([42.05, -87.68])).toEqual([null, null]);
+    // nothing else about the spot reaches the card
+    const c = toCard(loose({ ...listing, location: { lat: 42.05, lng: -87.68, address: '<b>1890 Maple Ave</b>' } }));
+    expect(c).not.toHaveProperty('location');
+    expect(JSON.stringify(c)).not.toContain('Maple');
+  });
 });
 
 describe('malformed listings', () => {

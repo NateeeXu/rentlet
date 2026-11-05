@@ -237,6 +237,14 @@ function spotOf(v: unknown): { lat: number; lng: number } | null {
   return lat != null && lng != null && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
 }
 
+// The area the site's map serves (src/map.ts SERVICE_BOUNDS): Chicago, Evanston and around. The homepage
+// pins a listing only when its spot is a real point inside it.
+const MAP_AREA = { south: 41.4, north: 42.5, west: -88.4, east: -87.2 };
+function mapSpotOf(v: unknown): { lat: number; lng: number } | null {
+  const p = spotOf(v);
+  return p && p.lat >= MAP_AREA.south && p.lat <= MAP_AREA.north && p.lng >= MAP_AREA.west && p.lng <= MAP_AREA.east ? p : null;
+}
+
 // Places saved with the listing, cleaned to the shape src/roommap.ts draws (it escapes the names when it
 // draws them). null when none were saved, so the room map can look them up itself.
 function nearOf(v: unknown): NearPlace[] | null {
@@ -274,8 +282,9 @@ export function usableListing(d: unknown): boolean {
   );
 }
 
-// index.html card row: {id, key, title, area, walk, price, start, end, type, who, img, school}
+// index.html card row: {id, key, title, area, walk, price, start, end, type, who, img, school, lat, lng}
 // Never throws: a field that is missing or odd comes out blank. school is always one of our campus ids.
+// lat/lng place the listing's price pin on the homepage map: numbers inside the map's area, else null.
 export function toCard(d: ListingDoc) {
   const r = (isObj(d) ? d : {}) as Raw;
   const form = isObj(r.form) ? r.form : {};
@@ -283,6 +292,7 @@ export function toCard(d: ListingDoc) {
   const code = html(str(r.code));
   const school = campusOf(r);
   const created = finite(r.createdAtMs);
+  const spot = mapSpotOf(r.location);
   return {
     id: code,
     key: code,
@@ -303,6 +313,8 @@ export function toCard(d: ListingDoc) {
     laundry: strList(multi.amen).includes('Washer & dryer'),
     layout: html(layoutCode(form)),
     createdAtMs: created ?? 0,
+    lat: spot ? spot.lat : null,
+    lng: spot ? spot.lng : null,
   };
 }
 

@@ -639,6 +639,22 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .cx-empty{grid-column:1/-1;text-align:center;padding:28px 16px;border:1px solid var(--hair);border-radius:16px}
 .cx-empty h3{margin:0;font-size:16px}
 .cx-empty p{margin:6px 0 12px;font-size:14px;color:var(--muted)}
+/* rooms near the campus: the list beside a map of price pins (src/homemap.ts); narrow screens open the map full screen */
+.cx-cnt{margin-left:2px;font-size:15px;font-weight:500;letter-spacing:0;color:var(--muted);white-space:nowrap}
+.cx-split{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px;align-items:start}
+.cx-split.nomap{display:block}
+.cx-mapcol{position:sticky;top:88px;height:calc(100vh - 112px);min-height:420px;max-height:880px;border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--soft)}
+.cx-map{width:100%;height:100%}
+.cx-near .cx-card.pin-hot .cph{box-shadow:0 0 0 2px var(--ink)}
+.cx-mapbar{display:none}
+.cx-showmap{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:auto!important;min-width:0;flex:0 0 auto;height:48px;margin:0;padding:0 20px;border:0;border-radius:999px;background:var(--ink);color:#fff;font-size:15px;font-weight:650;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.22);cursor:pointer;pointer-events:auto;transition:transform .18s}
+.cx-showmap:active{transform:scale(.97)}
+.cx-showmap .ic{width:18px;height:18px}
+@container (min-width:901px){.cx-split:not(.nomap) .cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container (max-width:900px){
+  .cx-split{display:block}.cx-mapcol{display:none}
+  .cx-mapbar{position:sticky;z-index:6;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;margin-top:24px;pointer-events:none}
+}
 /* email alerts */
 .cx-subs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:48px;align-items:center}
 .cx-subs h2{margin:0;font-size:24px;font-weight:700;letter-spacing:-.3px}
@@ -825,7 +841,7 @@ const QALL=[],Q=[];
 const syncQ=()=>Q.splice(0,Q.length,...QALL.filter(q=>q.campusId===plan.school));
 /* redraw "People looking for a place" and the count under it in place, so the reel above keeps running */
 function cxPeopleSync(){const was=JSON.stringify(Q);syncQ();if(JSON.stringify(Q)===was)return;
-  const box=$('#cxJustBox');if(!box)return;
+  const box=$('#cxNearBox');if(!box)return;
   $$('[data-cxpeople]').forEach(x=>x.remove());if(Q.length)box.insertAdjacentHTML('afterend',cxPeople());
   $$('[data-pcount]').forEach(x=>x.innerHTML=cxCount())}
 window.RL_onRequests=rows=>{if(rows)QALL.splice(0,QALL.length,...rows);cxPeopleSync()};
@@ -965,7 +981,7 @@ const trust=()=>`<section class="trust"><div class="wrap"><h2>Safe on both sides
 const footer=()=>`<footer class="foot"><div class="wrap"><div><img src="img/rentlet-logo.png" alt="Rentlet"><p>© 2026 Rentlet · A student class project, not affiliated with Northwestern University</p></div>
   <nav aria-label="Footer"><a href="how-it-works.html">How it works</a><a href="how-it-works.html#faq">FAQ</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></nav></div></footer>`;
 
-/* ---------- below the reel (option C): rooms for your search, just posted, email alerts, people looking, leaving early, FAQ ---------- */
+/* ---------- below the reel (option C): rooms for your search, rooms near the campus with their map, email alerts, people looking, leaving early, FAQ ---------- */
 Object.assign(ICONS,{bell:'<path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',plus:'<path d="M12 5v14M5 12h14"/>'});
 /* what renters here ask first; same facts as the room pages */
 const LFACTS={1:['Furnished','Shared bath','Laundry in unit'],2:['Furnished','Private bath','Laundry in building'],3:['Partly furnished','Shared bath','Laundry in basement'],4:['Furnished','Private bath','Laundry in building'],5:['Furnished','Shared bath','Laundry in unit'],6:['Partly furnished','Shared bath','Laundry in unit']};
@@ -977,8 +993,8 @@ const ltype=l=>l.title.startsWith('Private room')?'Private room':l.title.startsW
 let CXF='All',CXS='fit',CXALR=null,CXFREQ='instant';
 const lfacts=l=>[l.furnished?'Furnished':'Not furnished',l.bath==='private'?'Private bath':'Shared bath',l.laundry?'Laundry in building':'Ask about laundry'];
 const walkTx=l=>l.walk!=null?`${l.walk} min walk`:'';
-function cxCard(l,i,sub){const f=lfacts(l);
-  return `<article class="cx-card" role="link" tabindex="0" data-cxhref="room.html?room=${l.key}" style="--i:${i}" aria-label="${l.title}, ${l.area}, ${money(l.price)} a month. ${[walkTx(l)&&walkTx(l)+' to campus',...f].filter(Boolean).join(', ')}">
+function cxCard(l,i,sub,more=''){const f=lfacts(l);
+  return `<article class="cx-card" role="link" tabindex="0" data-cxhref="room.html?room=${l.key}" ${more} style="--i:${i}" aria-label="${l.title}, ${l.area}, ${money(l.price)} a month. ${[walkTx(l)&&walkTx(l)+' to campus',...f].filter(Boolean).join(', ')}">
     <div class="cph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ctg">${wl(l.start,l.end)}</span>
       ${heartBtn(l,'csv')}
       <span class="cfx" aria-hidden="true">${l.walk!=null?`<span>${fic('walk')}${l.walk} min to campus</span>`:''}<span>${fic('sofa')}${f[0]}</span><span>${fic('bath')}${f[1]}</span><span>${fic('wash')}${f[2]}</span></span></div>
@@ -987,11 +1003,10 @@ const cxEmpty=(t,x,a='')=>`<div class="cx-empty"><h3>${t}</h3><p>${x}</p>${a}</d
 function cxPlaceInd(root=document){$$('.cx-seg',root).forEach(sg=>{const b=$('[aria-selected=true]',sg),i=$('.ind',sg);if(b&&i){i.style.width=b.offsetWidth+'px';i.style.transform=`translateX(${b.offsetLeft}px)`}})}
 /* rooms for the search in the bar */
 function cxResults(el){const p=plan,head=`<div class="cx-sh"><div><h2>Rooms opening when you arrive</h2><p>${schoolName(p.school)} · ${range(p.start,p.end)} · ${budPer(p.budget)}</p></div></div>`;
-  let shown=[];
   if(nights(p.start,p.end)<=0)el.innerHTML=head+cxEmpty('Check your dates','Your move-out date needs to be after your move-in date.');
   else if(!LOADED)el.innerHTML=head+`<div class="cx-grid">${skeleton(3)}</div>`;
   else if(!L.some(l=>l.school===p.school))el.innerHTML=head+cxEmpty(`No rooms near ${schoolName(p.school)} yet`,'Be the first to post a place here. Students and interns looking nearby will see it right away.',`<button type="button" class="cx-lnk" onclick="location.href='post.html'">Post a listing</button>`);
-  else{const all=L.filter(l=>l.school===p.school&&fit(l,p).ok);shown=all.map(l=>l.id);
+  else{const all=L.filter(l=>l.school===p.school&&fit(l,p).ok);
     if(!all.length)el.innerHTML=head+cxEmpty('Nothing lines up with these dates yet','Try moving your dates by a week or two, or raise your budget a little.',`<button type="button" class="cx-lnk" data-reset>Reset the search</button>`);
     else{const types=['All','Private room','Entire place','Studio'].filter(k=>k==='All'||all.some(l=>ltype(l)===k));if(!types.includes(CXF))CXF='All';
       const list=all.filter(l=>CXF==='All'||ltype(l)===CXF).sort((a,b)=>CXS==='price'?a.price-b.price:fit(b,p).score-fit(a,p).score);
@@ -999,16 +1014,29 @@ function cxResults(el){const p=plan,head=`<div class="cx-sh"><div><h2>Rooms open
       el.innerHTML=head+`<div class="cx-tbar"><div class="cx-chips">${types.map(k=>`<button type="button" class="cx-chip" data-cxf="${k}" aria-pressed="${CXF===k}">${k}<em>${k==='All'?all.length:all.filter(l=>ltype(l)===k).length}</em></button>`).join('')}</div>
         <div class="cx-seg"><i class="ind"></i><button type="button" data-cxs="fit" aria-selected="${CXS==='fit'}">Best fit</button><button type="button" data-cxs="price" aria-selected="${CXS==='price'}">Lowest price</button></div></div>
         <div class="cx-grid cx-swap">${list.map((l,i)=>{const r=fit(l,p);return cxCard(l,i,r.whole?'Covers your whole stay':`${Math.floor(r.ov/r.need*100)}% fits your dates`)}).join('')}</div>${over?`<p class="more-note">${plural(over,'more room')} ${over===1?'is':'are'} more than 5% over your budget.</p>`:''}`}}
-  requestAnimationFrame(()=>cxPlaceInd(el));cxJust(shown);cxCrit()}
-/* newest rooms, whatever the dates; leaves out what is already above, and hides itself when nothing is left */
-/* Just posted: the newest rooms at this campus, leaving out the ones already in the results above.
-   It never shows fewer than three: when too few are left, the newest of those above fill it up to three;
-   a campus with fewer than three rooms has no Just posted section at all. */
-const JUST_MIN=3;
-function cxJust(shown){const box=$('#cxJustBox');if(!box)return;const all=L.filter(l=>l.school===plan.school).sort((a,b)=>b.createdAtMs-a.createdAtMs).map(l=>[l,agoOf(l.createdAtMs)]);
-  const fresh=all.filter(([l])=>!shown.includes(l.id));let list=fresh.length>=JUST_MIN?fresh:fresh.concat(all.filter(([l])=>shown.includes(l.id))).slice(0,JUST_MIN);if(list.length<JUST_MIN)list=[];
-  box.innerHTML=list.length?`<section class="cx-sec"><div class="wrap"><div class="cx-sh"><div><h2>Just posted</h2><p>The newest rooms near ${schoolName(plan.school)}, whatever the dates.</p></div>${list.length>3?`<div class="cx-nav"><button type="button" class="cx-nb" data-cxrail="-1" aria-label="Scroll left">${ic('back')}</button><button type="button" class="cx-nb" data-cxrail="1" aria-label="Scroll right">${ic('arrow')}</button></div>`:''}</div>
-    <div class="cx-rail" id="cxRail">${list.map(([l,ago],i)=>cxCard(l,i,ago)).join('')}</div></div></section>`:''}
+  requestAnimationFrame(()=>cxPlaceInd(el));cxNear();cxCrit()}
+/* Rooms near the campus (option A): every live room at the campus in the search bar, newest first and whatever the
+   dates, beside a map with a price pin for each room that has a spot (src/homemap.ts). Rooms without a spot stay in
+   the list; with no pins the list stands alone. Narrow screens get one column and a Show map button that opens the
+   map full screen. With no rooms here the section is left out (the results above say "No rooms near … yet").
+   Redrawn only when the campus or its rooms change, so new dates or a new budget keep the map as it is. */
+Object.assign(ICONS,{map:'<path d="M9 4.5 3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/>'});
+let cxHot=null;
+function cxNear(){const box=$('#cxNearBox');if(!box)return;
+  const list=LOADED?L.filter(l=>l.school===plan.school).sort((a,b)=>b.createdAtMs-a.createdAtMs):[];
+  const sig=plan.school+'|'+list.map(l=>`${l.id}:${l.price}:${l.lat},${l.lng}`).join(' ');
+  if(box.dataset.sig===sig)return;box.dataset.sig=sig;cxHot=null;
+  if(!list.length){box.innerHTML='';return}
+  const pinned=list.some(l=>l.lat!=null&&l.lng!=null);
+  box.innerHTML=`<section class="cx-sec cx-near" aria-labelledby="cxNearH"><div class="wrap"><div class="cx-sh"><div><h2 id="cxNearH">Rooms near ${schoolName(plan.school)} <span class="cx-cnt">${plural(list.length,'room')}</span></h2><p>Every room listed here, whatever the dates. Prices are per month.</p></div></div>
+    <div class="cx-split${pinned?'':' nomap'}"><div class="cx-grid cx-swap">${list.map((l,i)=>cxCard(l,i,agoOf(l.createdAtMs),`data-code="${l.key}"`)).join('')}</div>${pinned?'<div class="cx-mapcol"><div class="cx-map" id="cxMap"></div></div>':''}</div>
+    ${pinned?`<div class="cx-mapbar"><button type="button" class="cx-showmap" data-cxshowmap aria-haspopup="dialog">${ic('map')}Show map</button></div>`:''}</div></section>`;
+  cxNearMap()}
+function cxNearMap(){const el=$('#cxMap');if(!el||!window.RentletHomeMap)return;
+  const rooms=L.filter(l=>l.school===plan.school&&l.lat!=null&&l.lng!=null).map(l=>({code:l.key,lat:l.lat,lng:l.lng,price:l.price,title:l.title,img:pic(l.img),dates:wl(l.start,l.end)}));
+  RentletHomeMap.draw(el,rooms,{label:`Map of rooms near ${schoolName(plan.school)}`,onHover:code=>$$('.cx-near .cx-card[data-code]').forEach(c=>c.classList.toggle('pin-hot',c.dataset.code===code))})}
+/* src/homemap.ts calls this once it has loaded, in case the list was drawn first */
+window.RL_homeMap=cxNearMap;
 /* email alerts for the search in the bar */
 const cxCritHtml=()=>`<span>${ic('home','sm')}${schoolName(plan.school)}</span><span>${ic('cal','sm')}${range(plan.start,plan.end)}</span><span>${plan.budget===Infinity?'Any price':`Up to ${money(plan.budget)} / mo`}</span>`;
 function cxCrit(){const c=$('[data-cxcrit]');if(c)c.innerHTML=cxCritHtml()}
@@ -1388,7 +1416,7 @@ function show(k,keep){
   /* the homepage has one version now: no ?opt= in the address, and an old ?opt= link is cleaned up */
   if(/[?&]opt=/.test(location.search))history.replaceState(null,'',location.pathname+location.hash);
   if(k==='c5'){site.innerHTML=`<iframe class="c5frame" src="combo.html?embed=1" title="C5 homepage"></iframe>`;return}
-  site.innerHTML=header()+`<main>${HEROES[k][0]()}<section class="results cx"><div class="wrap" id="res"></div></section><div id="cxJustBox"></div>${Q.length?cxPeople():''}${cxPost()}${cxFaq()}</main>${cxFooter()}`;
+  site.innerHTML=header()+`<main>${HEROES[k][0]()}<section class="results cx"><div class="wrap" id="res"></div></section><div id="cxNearBox"></div>${Q.length?cxPeople():''}${cxPost()}${cxFaq()}</main>${cxFooter()}`;
   HEROES[k][1]();bindSearch();results();wire(site);attachWhere();if(!keep)site.scrollTop=0;
 }
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
@@ -1396,7 +1424,7 @@ site.addEventListener('click',e=>{
   const t0=e.target;
   const cf=t0.closest('[data-cxf]');if(cf){CXF=cf.dataset.cxf;results();return}
   const cso=t0.closest('[data-cxs]');if(cso){CXS=cso.dataset.cxs;results();return}
-  const cr=t0.closest('[data-cxrail]');if(cr){const r=$('#cxRail');r.scrollBy({left:+cr.dataset.cxrail*r.clientWidth*.8,behavior:reduced?'auto':'smooth'});return}
+  const smp=t0.closest('[data-cxshowmap]');if(smp){if(window.RentletHomeMap)RentletHomeMap.open(smp);return}
   const cpp=t0.closest('[data-cxpp]');if(cpp){const r=$('#cxPpl');r.scrollBy({left:+cpp.dataset.cxpp*r.clientWidth*.75,behavior:reduced?'auto':'smooth'});return}
   const ch=t0.closest('[data-cxhref]');if(ch){location.href=ch.dataset.cxhref;return}
   const cpe=t0.closest('[data-cxperson]');if(cpe){cxSheet(+cpe.dataset.cxperson);return}
@@ -1419,6 +1447,12 @@ site.addEventListener('submit',e=>{const f=e.target.closest('[data-cxform]');if(
 addEventListener('keydown',e=>{if(e.key==='Escape')$$('.cx-mdl').forEach(m=>m.remove())});
 addEventListener('resize',()=>cxPlaceInd(site));
 site.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('[data-cxhref]'))location.href=e.target.dataset.cxhref;if(e.key==='Enter'&&e.target.matches('.card[data-id]'))e.target.click()});
+/* a card in Rooms near … under the pointer or the keyboard darkens its pin on the map */
+const cxPinOf=t=>{const c=t&&t.closest&&t.closest('.cx-near .cx-card[data-code]');return c?c.dataset.code:null};
+const cxHi=code=>{if(code===cxHot)return;cxHot=code;if(window.RentletHomeMap)RentletHomeMap.highlight(code)};
+site.addEventListener('mouseover',e=>cxHi(cxPinOf(e.target)));
+site.addEventListener('mouseleave',()=>cxHi(null));
+site.addEventListener('focusin',e=>cxHi(cxPinOf(e.target)));
 $$('[data-opt]').forEach(b=>b.onclick=()=>{if(location.hash)history.replaceState(null,'',location.pathname+location.search);show(b.dataset.opt)});
 $$('[data-skin]').forEach(b=>b.onclick=()=>{barSkin=b.dataset.skin;$$('[data-skin]').forEach(x=>x.setAttribute('aria-pressed',x===b));const br=$('#bar4');if(br)br.dataset.skin=barSkin});
 $$('[data-cs]').forEach(b=>b.onclick=()=>{cardStyle=b.dataset.cs;$$('[data-cs]').forEach(x=>x.setAttribute('aria-pressed',x===b));const re=$('#reel');if(re)re.dataset.style=cardStyle});
@@ -1443,5 +1477,6 @@ if(wantAi&&current==='orbit')setTimeout(()=>window.__a4&&window.__a4.spin(),redu
 </script>
 <script type="module" src="/src/rentlet.ts"></script>
 <script type="module" src="/src/requests.ts"></script>
+<script type="module" src="/src/homemap.ts"></script>
 </body>
 </html>

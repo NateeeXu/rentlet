@@ -54,7 +54,9 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:15px;f
 .f-date .fdl{overflow:visible}
 .f-date .fd{height:calc(100% + 2px);margin:-1px 0;border:0;background:none;display:flex;align-items:center;gap:8px;padding:0 14px;font-weight:600;font-size:14px;min-width:0;flex:1;border-radius:999px;text-align:left;font-variant-numeric:tabular-nums}
 .f-date .fx{width:32px;height:32px;margin-right:6px;border-radius:50%;border:0;background:var(--soft);font-size:16px;line-height:1;flex:none;display:grid;place-items:center;padding:0}
-.f-sort{margin-left:auto;cursor:pointer}
+.f-sort{margin-left:auto;cursor:pointer;width:44px;padding:0;justify-content:center;flex:none} /* icon only (Founder, Nov 4); the menu still names each order */
+.f-sort .fd{width:100%;justify-content:center}
+.f-sort .ic{width:18px;height:18px}
 .f-sort .fd{display:flex;align-items:center;gap:8px;height:42px;border:0;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;white-space:nowrap}
 .sort-pop{position:absolute;top:calc(100% + 8px);right:0;z-index:60;min-width:220px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.12)}
 .sort-pop button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;white-space:nowrap}
@@ -334,7 +336,7 @@ const seg=()=>`<div class="seg" role="group" aria-label="Layout">${LAYOUTS.map((
 const campusFld=()=>`<form class="f-camp" data-wform><div class="fld ws" data-wseg aria-label="Campus">${ic('pin','sm pin')}<span data-wval>${esc(campus())}</span>${ic('down','chev')}</div></form>`;
 const dateFld=()=>`<div class="fld f-date"><button type="button" class="fd" data-when aria-haspopup="dialog" aria-expanded="false" aria-label="Dates">${ic('cal','sm')}<span class="fdl">${R.start?wl(R.start,R.end):'Any dates'}</span></button>${R.start?'<button type="button" class="fx" data-clear aria-label="Clear dates">×</button>':''}</div>`;
 /* sort: a button whose options open in a small menu right below it */
-const sortFld=()=>`<div class="fld f-sort${R.sortOpen?' open':''}"><button type="button" class="fd" data-sortbtn aria-haspopup="listbox" aria-expanded="${R.sortOpen}" aria-label="Sort: ${SORTS.find(s=>s[0]===R.sort)[1]}">${ic('sort','sm')}<span class="st">${SORTS.find(s=>s[0]===R.sort)[1]}</span>${ic('down','chev')}</button>`
+const sortFld=()=>`<div class="fld f-sort${R.sortOpen?' open':''}"><button type="button" class="fd" data-sortbtn aria-haspopup="listbox" aria-expanded="${R.sortOpen}" aria-label="Sort: ${SORTS.find(s=>s[0]===R.sort)[1]}" title="Sort: ${SORTS.find(s=>s[0]===R.sort)[1]}">${ic('sort')}</button>`
   +(R.sortOpen?`<div class="sort-pop" role="listbox" aria-label="Sort">${SORTS.map(([v,t])=>`<button type="button" role="option" aria-selected="${R.sort===v}" data-one="sort:${v}">${R.sort===v?ic('check','sm'):'<span class="sp-gap"></span>'}${t}</button>`).join('')}</div>`:'')+`</div>`;
 const nf=()=>(R.start?1:0)+(R.layout!=='any'?1:0);
 

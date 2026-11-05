@@ -646,6 +646,12 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .cx-mapcol{position:sticky;top:88px;height:calc(100vh - 112px);min-height:420px;max-height:880px;border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--soft)}
 .cx-map{width:100%;height:100%}
 .cx-near .cx-card.pin-hot .cph{box-shadow:0 0 0 2px var(--ink)}
+/* the way into the shuttle map (Founder, Nov 4): top-left on the map, beside the close button when full screen */
+.cx-shuttle{position:absolute;top:12px;left:12px;z-index:900;display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 14px 0 12px;border-radius:999px;background:rgba(255,255,255,.94);box-shadow:0 2px 8px rgba(0,0,0,.18);font-size:14px;font-weight:650;color:#222;text-decoration:none;white-space:nowrap}
+.cx-shuttle:hover{background:#fff}
+.leaflet-container a.cx-shuttle{color:#222} /* Leaflet colours every link in a map blue */
+.cx-shuttle svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.hm-full .cx-shuttle{top:calc(12px + env(safe-area-inset-top,0px));left:calc(64px + env(safe-area-inset-left,0px));height:44px}
 .cx-mapbar{display:none}
 .cx-showmap{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:auto!important;min-width:0;flex:0 0 auto;height:48px;margin:0;padding:0 20px;border:0;border-radius:999px;background:var(--ink);color:#fff;font-size:15px;font-weight:650;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.22);cursor:pointer;pointer-events:auto;transition:transform .18s}
 .cx-showmap:active{transform:scale(.97)}
@@ -1029,7 +1035,7 @@ function cxNear(){const box=$('#cxNearBox');if(!box)return;
   if(!list.length){box.innerHTML='';return}
   const pinned=list.some(l=>l.lat!=null&&l.lng!=null);
   box.innerHTML=`<section class="cx-sec cx-near" aria-labelledby="cxNearH"><div class="wrap"><div class="cx-sh"><div><h2 id="cxNearH">Rooms near ${schoolName(plan.school)} <span class="cx-cnt">${plural(list.length,'room')}</span></h2><p>Every room listed here, whatever the dates. Prices are per month.</p></div></div>
-    <div class="cx-split${pinned?'':' nomap'}"><div class="cx-grid cx-swap">${list.map((l,i)=>cxCard(l,i,agoOf(l.createdAtMs),`data-code="${l.key}"`)).join('')}</div>${pinned?'<div class="cx-mapcol"><div class="cx-map" id="cxMap"></div></div>':''}</div>
+    <div class="cx-split${pinned?'':' nomap'}"><div class="cx-grid cx-swap">${list.map((l,i)=>cxCard(l,i,agoOf(l.createdAtMs),`data-code="${l.key}"`)).join('')}</div>${pinned?`<div class="cx-mapcol"><div class="cx-map" id="cxMap"><a class="cx-shuttle" href="shuttle.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15.5V9a3 3 0 0 1 3-3h9.5l4.5 4.5v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M3.5 11h17M9.5 6v5M14.5 6v5"/><circle cx="8" cy="17.5" r="1.7"/><circle cx="16" cy="17.5" r="1.7"/></svg>Shuttle map</a></div></div>`:''}</div>
     ${pinned?`<div class="cx-mapbar"><button type="button" class="cx-showmap" data-cxshowmap aria-haspopup="dialog">${ic('map')}Show map</button></div>`:''}</div></section>`;
   cxNearMap()}
 function cxNearMap(){const el=$('#cxMap');if(!el||!window.RentletHomeMap)return;

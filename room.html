@@ -86,11 +86,6 @@ button{cursor:pointer}
 @keyframes aispin{to{transform:rotate(360deg)}}
 @keyframes aisweep{from{background-position:130% 0}to{background-position:-30% 0}}
 /* page states */
-.st-load{min-height:calc(var(--vh,100vh) - 220px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--muted);font-size:14px}
-.st-load .dots{display:flex;gap:7px}
-.st-load .dots i{width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,#7b61ff,#542992);animation:stdot 1.1s ease-in-out infinite}
-.st-load .dots i:nth-child(2){animation-delay:.15s}.st-load .dots i:nth-child(3){animation-delay:.3s}
-@keyframes stdot{0%,60%,100%{transform:translateY(0);opacity:.55}30%{transform:translateY(-7px);opacity:1}}
 .st-box{max-width:460px;margin:72px auto 48px;text-align:center;display:flex;flex-direction:column;align-items:center}
 .st-ic{width:56px;height:56px;border-radius:16px;background:#f1eefb;display:grid;place-items:center}
 .st-ic svg{width:26px;height:26px;fill:none;stroke:#542992;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
@@ -592,12 +587,6 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .panel .blk:first-child{border-top:0;padding-top:0}
 .panel .blk:last-child{padding-bottom:0}
 .tri-wrap{position:relative;margin-bottom:28px}
-/* opening: the photo settles first, then the two side columns slide out from behind it */
-.tri .panel.mid{transition:opacity .6s var(--ease),transform .8s var(--ease)}
-.tri .panel.rgt{transition:opacity .7s var(--ease) .18s,transform .9s var(--ease) .12s}
-.tri.intro .panel.mid{opacity:0;transform:scale(.97)}
-.tri.intro .panel.rgt{opacity:0;transform:translateX(-28%)}
-.tri.intro .panel.rgt{z-index:0}
 
 /* friendly date fields: the native picker sits invisibly on top */
 .yours label{position:relative}
@@ -721,7 +710,6 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 @keyframes rise{from{opacity:0;transform:translateY(14px) scale(.98)}}
 
 @container (max-width:1000px){
-  .tri.intro .panel.rgt{transform:translateY(24px)}
   .tri{grid-template-columns:minmax(0,1fr);height:auto}
   .panel.mid{order:-1;border-radius:28px 28px 0 0}
   .facts4{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -746,7 +734,6 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
   .tri .bookc{padding:16px;border:1px solid var(--hair);border-radius:16px;background:#fff}
   .tri .about{padding-left:4px;padding-right:4px}
   .site:not(.flat) .tri>.panel>.blk,.site:not(.flat) .tri .about{background:#fff;border-top:0;border-radius:22px;padding:22px 18px;margin-top:12px}
-  .tri.intro .panel.rgt,.tri.intro .panel.mid{opacity:1;transform:none}
   /* room facts as a clean 2 × 2 grid */
   .tri .thumbs,.gal .cap{display:none}
   .gal{touch-action:pan-y}
@@ -788,6 +775,27 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .nb-lf{position:absolute;inset:0;z-index:0}.nb-map .nb-cap{z-index:500}.nb-h p a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 /* AI pick is taken down for now (Founder, Nov 4): its buttons stay in the code but are not shown */
 .aipk{display:none!important}
+/* the room page while it loads: grey blocks in the page's own layout, so nothing moves when the room arrives */
+.sk{display:block;background:linear-gradient(90deg,#e9e9ec 25%,#f2f2f4 50%,#e9e9ec 75%);background-size:200% 100%;animation:sksh 1.5s linear infinite}
+@keyframes sksh{from{background-position:100% 0}to{background-position:-100% 0}}
+.sk-b{border-radius:7px;flex:none;max-width:100%}
+.sk-page .titlebar h1{height:1.1em;display:flex;align-items:center}
+.sk-page .titlebar p{align-items:center;min-height:22px}
+.sk-act{width:84px;height:36px;border-radius:999px}
+.panel.mid .gal.sk,.panel.mid .gal.sk:hover{box-shadow:none;transform:none}
+.gal.sk::before,.gal.sk::after{display:none}
+.sk-fh{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:24px}
+.thumbs .sk{aspect-ratio:16/10;border-radius:12px}
+.amen-row .sk{height:30px;border-radius:99px}
+.sk-q{display:grid;gap:9px}
+.sk-est{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;align-items:center}
+.sk-in{animation:skin .28s ease-out}
+@keyframes skin{from{opacity:.4}}
+@container (max-width:640px){
+  .sk-act{width:28px;height:28px;border-radius:50%;margin:8px}
+  .sk-act:nth-child(3){display:none}
+  .sk-page .titlebar p{min-height:55px;align-content:flex-start;row-gap:9px}
+}
 /* Rentlet: the review chrome around the approved designs is hidden; the page itself is unchanged. */
 .rv,.review-foot,.rv-note,.rv-toggle{display:none!important}
 html,body{background:#f7f7f7}
@@ -1077,7 +1085,7 @@ const titlebar=()=>`<div class="titlebar"><div><h1>${ROOM.title}</h1><p class="t
 const below=()=>`<div class="below"><details><summary>Room details ${ic('down')}</summary><div class="in">${ROOM.facts.map(f=>f[2]?`${f[1]} (${f[2]})`:f[1]).join(' · ')}.</div></details><details><summary>About ${ROOM.type==='Lease takeover'?'taking over the lease':'this sublet'} ${ic('down')}</summary><div class="in">${ROOM.type==='Lease takeover'?`You take over ${ROOM.who}’s lease until ${mdy(ROOM.end)}. The landlord signs the transfer; ask about any transfer fee.`:`You sublet from ${ROOM.who} until ${mdy(ROOM.end)}. ${ROOM.who} stays on the lease.`}</div></details><details><summary>Safety ${ic('down')}</summary><div class="in">Never pay before you’ve seen the room and the lease. <button class="chip" data-report>Report this listing</button></div></details></div>`;
 /* an ended listing has no Message here either: the bar says when it ended and leads back to search */
 const dock=()=>`<div class="dock"><div class="dock-in"><div class="dp"><b>${money(ROOM.price)}</b><span>/ mo</span><small>${ended()?`Ended ${mdy(ROOM.end)}`:span(ROOM.start,ROOM.end)}</small></div>${ended()?`<a class="btn btn-secondary btn-sm" href="index.html">Search rooms</a>`:`<button class="btn btn-primary btn-sm" data-msg>${ic('chat','sm')}<span>Message<span class="dk-who"> ${ROOM.who}</span></span></button>`}</div></div>`;
-const page=()=>`${head()}<main class="wrap f2">${titlebar()}<div class="tri-wrap"><div class="tri intro" id="tri">
+const page=()=>`${head()}<main class="wrap f2">${titlebar()}<div class="tri-wrap"><div class="tri">
   <div class="panel mid">${gallery()}
     <div class="thumbs">${MEDIA().map((m,i)=>`<button class="${i?'':'on'} ${m.t==='video'?'vid':''}" data-thumb="${i}" aria-label="Show ${m.cap}"><img src="${m.t==='img'?m.src:m.poster}" alt="" class="${m.flip?'flip':''}">${m.t==='video'?`<span class="vb">${ic2('play')}</span>`:''}</button>`).join('')}</div>
     <div class="about"><div class="facts4">${ROOM.facts.map((f,i)=>{const sub=i?f[2]:[f[1]===ROOM.layout?'':f[1],f[2]].filter(Boolean).join(' · '),sp=sub?`<span>${sub}</span>`:'';return i?`<div>${factIcon(f)}<b>${f[1]}</b>${sp}</div>`:`<div class="lgc">${factIcon(f)}<b>${ROOM.layout}<button type="button" class="lgb" data-layout aria-expanded="false" aria-label="How to read ${ROOM.layout}">${ic2('info')}</button></b>${sp}<div class="lgpop" role="dialog" aria-label="How to read ${ROOM.layout}"><b>How to read ${ROOM.layout}</b><p>${LAYOUT_EN[ROOM.layout]||LAYOUT_RULE}</p><p>${ROOM.layout==='Studio'?LAYOUT_RULE:LAYOUT_EN.Studio}</p>${ROOM.sqft?`<p>${ROOM.sqft} sq ft is about ${Math.round(ROOM.sqft*0.093)} m². 1 sq ft ≈ 0.093 m².</p>`:''}</div></div>`}).join('')}</div>
@@ -1116,12 +1124,32 @@ function retryLoad(){if(!KEY)return setState('missing');const n=++retryN;retryin
   const mine=()=>{if(n!==retryN)return false;retrying=false;return true};
   listingsApi().then(L=>{if(liveDown){liveDown=false;L.subscribeActive(window.RL_onListings,()=>window.RL_onListings(null))}return L.getListing(KEY)})
     .then(r=>{if(mine()&&(r&&r.state==='ok'||STATE==='loading'))showLookup(r)},()=>{if(mine()&&STATE==='loading')setState('error')})}
-/* page states: the real page waits for data (three dots), and can find the listing gone, ended, unknown, or fail to load */
+/* page states: the real page waits for data (the skeleton), and can find the listing gone, ended, unknown, or fail to load */
 const QS=new URLSearchParams(location.search),QROOM=QS.get('room');
 let STATE=KEY?'loading':'missing';
 const ST_ICON={removed:'<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/>',expired:'<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4M9.5 14.5l5 3M14.5 14.5l-5 3"/>',missing:'<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5M9 9l4 4M13 9l-4 4"/>',error:'<path d="M4 8.5a12 12 0 0 1 16 0M7 12a7.5 7.5 0 0 1 10 0M10 15.5a3 3 0 0 1 4 0"/><path d="M4 4l16 16"/>'};
 const stIcon=k=>`<span class="st-ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ST_ICON[k]}</svg></span>`;
-const loadingView=()=>`${head()}<main class="wrap"><div class="st-load" role="status"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><p>Loading this room…</p></div></main>`;
+/* the page's own classes with grey blocks in them: see .sk in the styles */
+const skB=(w,h=13,x='')=>`<i class="sk sk-b" style="width:${w};height:${h}px;${x}"></i>`;
+const skN=(n,f)=>Array.from({length:n},f).join('');
+const loadingView=()=>`${head()}<main class="wrap f2 sk-page" role="status" aria-busy="true" aria-label="Loading this room">
+<div class="titlebar" aria-hidden="true"><div><h1>${skB('min(520px,78%)',30,'border-radius:9px')}</h1><p>${skB('130px')}${skB('92px')}${skB('150px')}${skB('112px')}</p></div><div class="tb-acts">${skN(3,()=>'<i class="sk sk-act"></i>')}</div></div>
+<div class="tri-wrap" aria-hidden="true"><div class="tri">
+  <div class="panel mid"><div class="sqr gal sk"></div>
+    <div class="thumbs">${skN(6,()=>'<i class="sk"></i>')}</div>
+    <div class="about"><div class="facts4">${skN(4,()=>`<div>${skB('20px',20,'border-radius:6px;margin-bottom:9px')}${skB('62%',14)}${skB('42%',12,'margin-top:7px')}</div>`)}</div>
+      <div class="amen">${skB('92px',11)}<div class="amen-row">${[84,96,72,104,88,76].map(w=>`<i class="sk" style="width:${w}px"></i>`).join('')}</div></div>
+      <div class="hquote sk-q">${skB('96%',16)}${skB('88%',16)}${skB('58%',16)}</div></div></div>
+  <div class="panel rgt"><div class="blk bookc">
+      <div class="host"><div class="avatar sk"></div><div style="min-width:0;flex:1">${skB('44%',15)}${skB('66%',12,'margin-top:7px')}</div></div>
+      <hr class="bk-hr"><div class="bk-pr">${skB('148px',36,'border-radius:10px')}</div><p class="bk-save">${skB('64%',14,'margin:4px 0 3px')}</p>
+      <div class="bk-dates">${skN(2,()=>`<div>${skB('56%',11)}${skB('82%',14,'margin-top:7px')}</div>`)}</div>
+      <i class="sk bk-msg" style="border-radius:999px"></i>
+      <div class="asks">${skB('128px',32,'border-radius:999px')}${skB('96px',32,'border-radius:999px')}</div>
+      <div class="sk-est">${skB('46%',14)}${skB('22%',14)}</div>${skB('72%',12,'margin:18px auto 3px')}</div>
+    <div class="blk fblk"><div class="sk-fh">${skB('56%',14)}${skB('26%',14)}</div><div class="fl">${skN(8,()=>`<span>${skB('20px',20,'border-radius:6px')}${skB('62%',13,'flex:1')}</span>`)}</div>${skB('86%',13,'margin-top:18px')}</div></div>
+</div></div></main>
+<div class="dock" aria-hidden="true"><div class="dock-in"><div>${skB('96px',17)}${skB('132px',12,'margin-top:6px')}</div><i class="sk" style="width:116px;height:44px;border-radius:999px;flex:none"></i></div></div>`;
 function stateView(){const yd=span(plan.start,plan.end);
   const box={
     removed:[`This listing is no longer available`,`The host took it down, or it was rented. The rooms below fit your dates (${yd}).`,`<a class="st-link" href="index.html">Search all rooms</a>`],
@@ -1134,10 +1162,10 @@ function setState(k){STATE=k;const u=new URL(location.href);if(k==='ok')u.search
 function boot(){setVh();clearTimeout(boot.w);
   /* never draw a room that hasn't loaded: wait for it, or say it couldn't load */
   if(STATE==='ok'&&!loaded())return setState(Object.keys(ROOM).length?'error':'loading');
-  /* the dots never spin forever: with no answer in 20 s the page offers Try again (a late answer still shows the room) */
+  /* the skeleton never stays forever: with no answer in 20 s the page offers Try again (a late answer still shows the room) */
   if(STATE==='loading'){site.innerHTML=loadingView();boot.w=setTimeout(()=>{if(STATE==='loading')setState('error')},20000);return}
   if(STATE!=='ok'){document.title='Rentlet';site.innerHTML=stateView();return}
-  site.innerHTML=loadingView();clearTimeout(boot.t);boot.t=setTimeout(render,reduced?0:650)}
+  render()}
 /* sign-in gate: messaging, quick questions, saving and reporting need an account */
 const GATE={get message(){return[`Sign in to message ${ROOM.who}`,'Messages stay in Rentlet. Contact details are shared only when you both agree.']},
   report:['Sign in to report this listing','We may need to reach you about what you found.']};
@@ -1162,10 +1190,10 @@ function shareMeta(){const set=(sel,attr,val)=>{let m=document.head.querySelecto
 function attachWhere(){const seg=$('.msearch .seg-w');if(!seg||!window.WhereSearch)return;
   WhereSearch.attach({form:$('.msearch'),seg,valueEl:$('[data-where]',seg),labelEl:$('small',seg),current:whereName(),onCampus:(v)=>{try{sessionStorage.setItem('cs-plan',JSON.stringify({...plan,school:v}))}catch(_){}location.href='index.html'}})}
 function render(){if(STATE!=='ok'||!loaded())return boot();
-  /* a listing the page can't draw shows Couldn't load (with Try again) instead of leaving the dots spinning */
+  /* a listing the page can't draw shows Couldn't load (with Try again) instead of leaving the skeleton up */
   let html;try{html=page()}catch(e){console.error(e);return setState('error')}
-  setVh();shareMeta();document.title=`${ROOM.title} · ${ROOM.area} | Rentlet`;$('#msgT').textContent=`Message ${ROOM.who}`;site.innerHTML=html;bindGal();attachWhere();requestAnimationFrame(nbFade);requestAnimationFrame(()=>{const p=$('[data-clamp]'),m=$('[data-more]');if(p&&m&&p.scrollHeight<=p.clientHeight+2)m.hidden=true});$$('[data-flip]').forEach(sizeFlip);
-  const tri=$('#tri');requestAnimationFrame(()=>requestAnimationFrame(()=>tri.classList.remove('intro')));site.scrollTop=0;drawNearMap()}
+  setVh();shareMeta();document.title=`${ROOM.title} · ${ROOM.area} | Rentlet`;$('#msgT').textContent=`Message ${ROOM.who}`;const fromSk=!!$('.sk-page',site);site.innerHTML=html;if(fromSk)$('main',site).classList.add('sk-in');bindGal();attachWhere();requestAnimationFrame(nbFade);requestAnimationFrame(()=>{const p=$('[data-clamp]'),m=$('[data-more]');if(p&&m&&p.scrollHeight<=p.clientHeight+2)m.hidden=true});$$('[data-flip]').forEach(sizeFlip);
+  site.scrollTop=0;drawNearMap()}
 $('#roomTabs').innerHTML=Object.entries(ROOMS).map(([k,R])=>`<button onclick="location.href='room.html?room=${k}'" aria-selected="${k===KEY}">${R.who}</button>`).join('');
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
 document.addEventListener('click',e=>{const t=e.target;
@@ -1234,6 +1262,8 @@ $('#stTabs').innerHTML=[['ok','Normal'],['loading','Loading'],['removed','Taken 
 $$('[data-st]').forEach(b=>b.onclick=()=>setState(b.dataset.st));
 $$('[data-auth]').forEach(b=>{b.setAttribute('aria-pressed',(b.dataset.auth==='in')===AUTH);b.onclick=()=>{AUTH=b.dataset.auth==='in';try{localStorage.setItem('cs-web-auth',AUTH?'in':'guest')}catch(_){}$$('[data-auth]').forEach(x=>x.setAttribute('aria-pressed',x===b));const h=$('.hdr');if(h){h.outerHTML=head();attachWhere()}}});
 addEventListener('resize',setVh);
+/* module scripts have all run by DOMContentLoaded: a room drawn before the map module gets its Getting around now */
+addEventListener('DOMContentLoaded',()=>{if(STATE==='ok'&&ROOM.location&&window.RentletRoomMap&&!$('#near'))render()});
 boot();
 </script>
 <script type="module" src="/src/rentlet.ts"></script>

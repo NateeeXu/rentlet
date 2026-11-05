@@ -83,12 +83,12 @@
       };
       var n = R.unread || 0;
       var req = opts.requests ? '<span class="rl-n">' + esc(opts.requests) + '<span class="rl-sr"> ' + (opts.requests == 1 ? 'match' : 'matches') + ' for your listing</span></span>' : '';
-      var pages = link('index.html', 'Find a place') + link('requests.html', 'Requests', '', req) + link('shuttle.html', 'Shuttle');
+      var pages = link('requests.html', 'Requests', '', req) + link('shuttle.html', 'Shuttle');
       var items = R.authed
         ? link('post.html', 'Post a listing', 'rl-b') + link('request.html', 'Post a request', 'rl-b') + '<hr>'
           + '<a href="messages.html" data-rl-msgs' + (here === 'messages' ? ' aria-current="page"' : '') + '><span>Messages</span><span class="rl-msgs-n"' + (n ? '' : ' hidden') + '>' + (n > 9 ? '9+' : n) + '</span></a>'
           + link('saved.html', 'Saved') + '<hr>' + pages + '<hr>'
-          + link('profile.html', 'Your page') + '<button type="button" data-rl-signout>Sign out</button>'
+          + link('profile.html', 'Profile') + '<button type="button" data-rl-signout>Sign out</button>'
         : '<button type="button" class="rl-b" data-rl-signin>Sign in</button><hr>'
           + link('post.html', 'Post a listing') + link('request.html', 'Post a request') + '<hr>' + pages;
       var av = R.authed ? '<span class="rl-mav">' + R.me() + '</span>' : '<span class="rl-mav out">' + PERSON + '</span>';

@@ -4,20 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Northwestern shuttles · Rentlet</title>
-<meta name="description" content="Northwestern’s Intercampus shuttle and evening Loop on a map: routes, stops, service hours and live buses from the university’s shuttle system.">
+<meta name="description" content="Northwestern’s Intercampus shuttle and evening Loop on a map: routes, stops, service hours, live buses from the university’s shuttle system, and the rooms near the stops.">
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
 <style>
-:root{--canvas:#f7f7f7;--soft:#f2f2f2;--ink:#222;--ink2:#484848;--muted:#717171;--line:#dddddd;--hair:#e8e8e8;--serif:"Newsreader",Georgia,"Times New Roman",serif;--ease:cubic-bezier(.22,1,.36,1);--hdr:72px;--c:#4E2A84}
+:root{--canvas:#f7f7f7;--soft:#f2f2f2;--ink:#222;--ink2:#484848;--muted:#717171;--line:#dddddd;--hair:#e8e8e8;--ease:cubic-bezier(.22,1,.36,1);--hdr:72px;--live:#00a699}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--canvas);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;cursor:pointer}
 img{display:block}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.site{container-type:inline-size;overflow-x:clip;min-height:100vh}
+.site{container:site/inline-size;overflow-x:clip;min-height:100vh}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 /* header (from how-it-works.html) */
 .hdr{background:#fff;border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:20}
@@ -25,47 +24,104 @@ img{display:block}
 .logo{display:flex;align-items:center;min-height:44px}
 .logo img{height:30px}
 .hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;border-radius:999px;border:1px solid transparent;font-size:15px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;text-decoration:none;color:var(--ink);transition:border-color .15s,background .15s}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 18px;border-radius:999px;border:1px solid transparent;font-size:15px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;text-decoration:none;color:var(--ink);transition:border-color .15s,background .15s}
 .btn-primary{background:var(--ink);border-color:var(--ink);color:#fff}
 .btn-primary:hover{background:#000}
-.btn-secondary{background:#fff;border-color:var(--line)}
-.btn-secondary:hover{border-color:var(--ink)}
-.btn-ghost{padding:0 14px}
-.btn-ghost:hover{background:var(--soft)}
+.btn-secondary{background:rgba(255,255,255,.7);border-color:rgba(0,0,0,.14)}
+.btn-secondary:hover{border-color:var(--ink);background:#fff}
 
-/* the shuttle map: side panel and map on wide screens, the map above its panel on phones */
-.app{display:grid;grid-template-columns:400px minmax(0,1fr);align-items:start;background:#fff;border-bottom:1px solid var(--hair)}
-.panel{grid-column:1;grid-row:1;padding:32px 28px 28px;border-right:1px solid var(--hair);min-height:calc(100svh - var(--hdr));display:flex;flex-direction:column}
-.mapbox{grid-column:2;grid-row:1;position:sticky;top:var(--hdr);height:calc(100svh - var(--hdr));background:var(--soft);isolation:isolate}
-#map{position:absolute;inset:0}
-.panel h1{font-family:var(--serif);font-size:32px;font-weight:500;line-height:1.1;letter-spacing:-.5px;margin:0}
-.lede{margin:10px 0 0;font-size:15px;line-height:1.55;color:var(--ink2)}
-.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;margin:22px 0 0;padding:4px;border:1px solid var(--line);border-radius:999px;background:#fff}
-.seg button{width:100%!important;min-width:0;margin:0;height:44px;display:flex;align-items:center;justify-content:center;border:0;border-radius:999px;background:none;font-size:15px;font-weight:600;color:var(--ink2);white-space:nowrap}
-.seg button:hover{background:var(--soft);color:var(--ink)}
+/* The map fills the page under the header; everything else floats on it in frosted glass (the homepage
+   search bar's material), as on the CloudSublet mini program's campus transit map. Wide screens: the
+   line card, the route chips and the sheet in one column on the left, the map buttons on the right.
+   Phones (860 px and less): the card and chips across the top, the sheet at the bottom (it collapses). */
+.stage{position:relative;height:calc(100svh - var(--hdr));min-height:520px;overflow:hidden;isolation:isolate;background:#eef0f3;--gap:20px;--col:460px}
+#map{position:absolute;inset:0;z-index:0}
+.glass{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.14),0 2px 6px rgba(30,25,40,.06)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.glass{background:rgba(255,255,255,.92)}}
+
+/* 1 · the line card: where the route runs, what is running, and the line switch */
+.top{position:absolute;z-index:3;top:var(--gap);left:var(--gap);width:var(--col);display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.top>*{pointer-events:auto}
+.bar{display:flex;align-items:center;gap:12px;min-height:62px;padding:6px 6px 6px 20px;border-radius:31px}
+.bar-copy{flex:1 1 auto;min-width:0}
+.bar-title{margin:0;font-size:15px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.bar-live{display:flex;align-items:flex-start;gap:7px;margin:2px 0 0;min-width:0;font-size:13px;line-height:1.35;color:var(--ink2)}
+.bar-live .live-copy{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-variant-numeric:tabular-nums}
+.live-dot{display:none;width:8px;height:8px;margin-top:4.5px;border-radius:50%;background:var(--live);flex:none}
+.bar-live[data-tone=live] .live-dot{display:block;animation:pulse 1.6s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,166,153,.55)}70%{box-shadow:0 0 0 6px rgba(0,166,153,0)}100%{box-shadow:0 0 0 0 rgba(0,166,153,0)}}
+.seg{flex:none;display:grid;grid-template-columns:auto auto;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.seg button{width:auto!important;min-width:0;margin:0;height:44px;padding:0 14px;display:flex;align-items:center;justify-content:center;border:0;border-radius:999px;background:none;font-size:14px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.seg button:hover{color:var(--ink);background:rgba(255,255,255,.6)}
 .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
-.dirs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 0}
-.dir{width:100%!important;min-width:0;margin:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:15px;font-weight:600;color:var(--ink);white-space:nowrap}
-.dir:hover{border-color:var(--ink)}
-.dir[aria-pressed=true]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
-.route{margin:12px 0 0;font-size:14px;line-height:1.5;color:var(--muted)}
-.status{display:flex;align-items:center;gap:10px;margin:18px 0 0;padding:12px 14px;border:1px solid var(--hair);border-radius:12px;min-height:48px}
-.status .pulse{width:8px;height:8px;border-radius:50%;background:#b0b0b0;flex:none}
-.status[data-tone=live] .pulse{background:var(--c);box-shadow:0 0 0 0 var(--c);animation:pulse 2s var(--ease) infinite}
-.status[data-tone=off] .pulse{background:#b0b0b0}
-.status-copy{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:8px;row-gap:2px;min-width:0}
-.status-text{font-size:15px;font-weight:600;line-height:1.4}
-.status-upd{font-size:13px;color:var(--muted);line-height:1.4;font-variant-numeric:tabular-nums}
-@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--c) 45%,transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
-@media (prefers-reduced-motion:reduce){.status[data-tone=live] .pulse{animation:none}}
-.sub{margin:26px 0 0;font-size:16px;font-weight:600}
-.hours{margin:6px 0 0;font-size:15px;line-height:1.55;color:var(--ink2)}
-.stops{list-style:none;margin:10px 0 0;padding:0}
+
+/* 2 · the route chips: Route overview, then each direction (or Loop pattern) in its colour */
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:-4px -4px -10px;padding:4px 4px 10px;scroll-padding:0 4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;width:auto!important;min-width:0;margin:0;height:44px;padding:0 15px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap}
+.chip.glass{box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 4px 14px rgba(30,25,40,.12),0 1px 3px rgba(30,25,40,.06)}
+.chip:hover{background:rgba(255,255,255,.72)}
+.chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none}
+.chip[aria-pressed=true] .dot{box-shadow:0 0 0 2px #fff}
+
+/* 3 · the map buttons (Leaflet's corner, under the zoom buttons): round glass */
+#app .leaflet-top.leaflet-right{top:calc(var(--gap) - 10px)}
+#app .leaflet-right .leaflet-control{margin-right:var(--gap)}
+#app .leaflet-top .leaflet-control{margin-top:10px}
+#app .leaflet-bar,#app .rl-map-btn{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 8px 24px rgba(30,25,40,.14),0 1px 3px rgba(30,25,40,.06)}
+#app .leaflet-bar{border-radius:23px}
+#app .leaflet-bar a{background-color:transparent;color:var(--ink);border-bottom:1px solid rgba(0,0,0,.08)}
+#app .leaflet-bar a:last-child{border-bottom:0}
+#app .leaflet-bar a:hover{background-color:rgba(255,255,255,.6)}
+#app .leaflet-bar a.leaflet-disabled{background-color:transparent;color:#a3a3a3}
+#app .rl-map-btn{width:46px;height:46px;border-radius:50%;color:var(--ink)}
+#app .rl-map-btn:hover{background:rgba(255,255,255,.75)}
+#app .rl-map-btn[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+#app .rl-map-btn[aria-busy=true] svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#app .leaflet-bottom.leaflet-right{bottom:var(--attr-b,0px);transition:bottom .3s var(--ease)}
+#app .leaflet-control-attribution{background:rgba(255,255,255,.7);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+
+/* 4 · the sheet: rooms along the route, and the stops with their arrivals */
+.sheet{position:absolute;z-index:4;left:var(--gap);bottom:var(--gap);width:var(--col);max-height:calc(100% - var(--top-h,150px) - var(--gap) - 12px);display:flex;flex-direction:column;border-radius:24px;overflow:hidden}
+.sh-head{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:8px;padding:18px 14px 2px 20px}
+.grip{display:none}
+.sh-copy{min-width:0}
+.sh-copy h2{margin:0;font-size:17px;font-weight:700;line-height:1.3;letter-spacing:-.1px}
+.sh-copy p{margin:3px 0 0;font-size:14px;line-height:1.45;color:var(--ink2)}
+.lnk{width:auto!important;min-width:0;margin:-11px 0 0;min-height:44px;padding:0 8px;display:inline-flex;align-items:center;border:0;border-radius:10px;background:none;font-size:13px;font-weight:600;color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.lnk:hover{background:rgba(255,255,255,.55)}
+.sh-body{display:grid;grid-template-rows:minmax(0,1fr);min-height:0;flex:1 1 auto;transition:grid-template-rows .3s var(--ease)}
+.sh-in{container:sheet/inline-size;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:12px 20px 20px}
+.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.5);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.tabs button{width:100%!important;min-width:0;margin:0;height:44px;display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:999px;background:none;font-size:14px;font-weight:600;color:var(--ink2);white-space:nowrap}
+.tabs button:hover{color:var(--ink);background:rgba(255,255,255,.6)}
+.tabs button[aria-selected=true]{background:#fff;color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.tabs .n{font-variant-numeric:tabular-nums;color:var(--muted)}
+.pane[hidden]{display:none}
+.areas{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:14px -20px 0;padding:2px 20px 4px;scroll-padding:0 20px}
+.areas::-webkit-scrollbar{display:none}
+.areas[hidden]{display:none}
+.achip{flex:0 0 auto;width:auto!important;min-width:0;margin:0;height:44px;padding:0 14px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid rgba(0,0,0,.1);border-radius:999px;background:rgba(255,255,255,.66);font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap}
+.achip:hover{border-color:var(--ink)}
+.achip b{font-weight:700;font-variant-numeric:tabular-nums}
+.achip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.acts{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:8px;margin-top:14px}
+.acts .btn{width:100%!important;min-width:0;padding:0 14px;font-size:14px}
+@container sheet (max-width:359px){.acts{grid-template-columns:minmax(0,1fr)}}
+.sgroup+.sgroup{margin-top:18px;padding-top:16px;border-top:1px solid rgba(0,0,0,.08)}
+.sg-h{display:flex;align-items:center;gap:8px;margin:16px 0 0;font-size:15px;font-weight:700}
+.sgroup+.sgroup .sg-h{margin-top:0}
+.sg-h .dot{width:10px;height:10px;border-radius:50%;background:var(--c);flex:none}
+.sg-route{margin:2px 0 0;font-size:13px;line-height:1.45;color:var(--ink2)}
+.hours{margin:12px 0 0;font-size:14px;line-height:1.5;color:var(--ink2)}
+.hours b{display:block;color:var(--ink);font-weight:600}
+.stops{list-style:none;margin:8px 0 0;padding:0}
 .stop{position:relative}
 .stop button{width:100%!important;min-width:0;margin:0;display:grid;grid-template-columns:22px minmax(0,1fr) auto;column-gap:12px;align-items:center;min-height:52px;padding:6px 8px 6px 0;border:0;border-radius:10px;background:none;text-align:left}
-.stop button:hover{background:var(--canvas)}
-.stop button[aria-current=true]{background:var(--soft)}
+.stop button:hover{background:rgba(255,255,255,.55)}
+.stop button[aria-current=true]{background:rgba(255,255,255,.85)}
 .stop .rail{position:relative;align-self:stretch;display:flex;align-items:center;justify-content:center}
 .stop .rail::before{content:"";position:absolute;left:50%;top:-6px;bottom:-6px;width:3px;margin-left:-1.5px;background:var(--c)}
 .stop:first-child .rail::before{top:50%}
@@ -74,18 +130,57 @@ img{display:block}
 .stop .rail i{position:relative;width:11px;height:11px;border-radius:50%;background:#fff;border:2.5px solid var(--c)}
 .stop:first-child .rail i,.stop:last-child .rail i{width:13px;height:13px}
 .stop-name{display:block;font-size:15px;font-weight:600;line-height:1.35}
-.stop-area{display:block;font-size:13px;color:var(--muted);line-height:1.4;margin-top:1px}
+.stop-area{display:block;font-size:13px;color:var(--ink2);line-height:1.4;margin-top:1px}
 .eta{display:flex;flex-direction:column;align-items:flex-end;text-align:right;white-space:nowrap}
 .eta b{font-size:15px;font-weight:600;line-height:1.35;font-variant-numeric:tabular-nums}
-.eta span{font-size:13px;color:var(--muted);line-height:1.4;font-variant-numeric:tabular-nums}
-.src{margin-top:auto;padding-top:24px}
-.src p{margin:0;font-size:13px;line-height:1.6;color:var(--muted)}
-.src p+p{margin-top:6px}
+.eta span{font-size:13px;color:var(--ink2);line-height:1.4;font-variant-numeric:tabular-nums}
+.src{margin-top:18px;padding-top:12px;border-top:1px solid rgba(0,0,0,.08)}
+.src p{margin:0;font-size:13px;line-height:1.6;color:var(--ink2)}
+.src p+p{margin-top:4px}
 .src a{display:inline-flex;align-items:center;min-height:44px;color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:2px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* popups: a stop, a bus, a room's small card */
 .pop-name{display:block;font-weight:600}
 .pop-line{display:block;color:var(--muted);font-size:13px}
 .pop-next{display:block;margin-top:4px}
+.sp-pin{background:none;border:0;outline:none}
+.sp-pin .sp-pill{position:absolute;left:0;top:0;transform:translate(-50%,calc(-50% + var(--dy,0px)));display:flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;background:#fff;color:#222;font-size:13px;font-weight:700;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.18);cursor:pointer;transition:transform .15s ease,background-color .15s,color .15s,box-shadow .15s}
+.sp-pin .sp-pill::before{content:"";position:absolute;inset:-8px -4px}
+.sp-pin:hover .sp-pill{transform:translate(-50%,calc(-50% + var(--dy,0px))) scale(1.06);box-shadow:0 0 0 1px rgba(0,0,0,.14),0 4px 10px rgba(0,0,0,.22)}
+.sp-pin.on .sp-pill{background:#222;color:#fff;transform:translate(-50%,calc(-50% + var(--dy,0px))) scale(1.08);box-shadow:0 0 0 1px #222,0 4px 12px rgba(0,0,0,.28)}
+.sp-pin:focus-visible{outline:none}
+.sp-pin:focus-visible .sp-pill{outline:2px solid #222;outline-offset:2px}
+#app .rl-pop.sp-pop .leaflet-popup-content-wrapper{padding:0;overflow:hidden;border-radius:14px}
+#app .rl-pop.sp-pop .leaflet-popup-content{margin:0;min-width:0}
+#app a.sp-card{display:block;color:#222;text-decoration:none;font-size:14px;line-height:1.4}
+.sp-card .sp-ph{display:block;aspect-ratio:3/2;background:#f2f2f4;overflow:hidden}
+.sp-card img{width:100%;height:100%;object-fit:cover;display:block}
+.sp-card .sp-bd{display:grid;gap:1px;padding:10px 14px 12px;min-width:0}
+.sp-card .sp-t{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-card .sp-p b{font-weight:600}
+.sp-card .sp-p small{font-size:13px;color:#717171}
+.sp-card .sp-d{color:#717171;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-card:hover .sp-t{text-decoration:underline;text-underline-offset:3px}
+.sp-card:focus-visible{outline:2px solid #222;outline-offset:-2px}
+.sp-me{background:none;border:0}
+.sp-me i{position:absolute;left:11px;top:11px;width:18px;height:18px;border-radius:50%;background:#1c7ed6;border:3px solid #fff;box-shadow:0 0 0 6px rgba(28,126,214,.18),0 1px 4px rgba(0,0,0,.3)}
+
+.sp-toast{position:absolute;z-index:6;left:calc(50% + (var(--col) + var(--gap)) / 2);top:var(--gap);max-width:calc(100% - var(--col) - var(--gap) * 2 - 140px);transform:translate(-50%,-6px);padding:11px 16px;border-radius:14px;background:#222;color:#fff;font-size:14px;font-weight:600;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s var(--ease)}
+.sp-toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* full screen: the Fullscreen API where there is one, else the page's own (iPhone Safari) */
+.stage:fullscreen{height:100%;min-height:0}
+.stage.full{position:fixed;inset:0;z-index:100;height:auto;min-height:0}
+.stage.full .top,.stage:fullscreen .top{top:calc(var(--gap) + env(safe-area-inset-top,0px))}
+.stage.full .leaflet-top.leaflet-right,.stage:fullscreen .leaflet-top.leaflet-right{margin-top:env(safe-area-inset-top,0px)}
+html.sp-lock,html.sp-lock body{overflow:hidden}
+
+@media (prefers-reduced-motion:reduce){
+  .bar-live[data-tone=live] .live-dot{animation:none}
+  .sh-body,#app .leaflet-bottom.leaflet-right{transition:none}
+  .sp-pin .sp-pill{transition:none}
+  #app .rl-map-btn[aria-busy=true] svg{animation:none}
+}
 
 /* footer (from how-it-works.html) */
 .foot{background:var(--canvas);border-top:1px solid var(--hair);padding:40px 0 28px}
@@ -97,25 +192,54 @@ img{display:block}
 .fcols .brand p{font-size:13px;color:var(--muted);line-height:1.6;margin:10px 0 0}
 .fbot{margin-top:28px;padding-top:18px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
 
-@container (max-width:1100px){
-  .app{grid-template-columns:360px minmax(0,1fr)}
-  .panel{padding:28px 22px 24px}
-}
-@container (max-width:900px){
-  .app{grid-template-columns:minmax(0,1fr)}
-  .mapbox{grid-column:1;grid-row:1;position:relative;top:auto;height:clamp(300px,52svh,560px)}
-  .panel{grid-column:1;grid-row:2;border-right:0;min-height:0;padding:24px 24px 28px;max-width:680px;width:100%;margin:0 auto}
+@container site (max-width:900px){
   .fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.fcols .brand{grid-column:1/-1}
 }
-@container (max-width:640px){
+/* phones and narrow windows: the card and chips across the top, the sheet along the bottom; the zoom and
+   map buttons sit under the chips and the sheet never grows over them or the attribution above it
+   (--ctl-b, set by src/shuttle.ts) */
+@container site (max-width:860px){
+  .stage{--gap:10px}
+  .top{left:calc(var(--gap) + env(safe-area-inset-left,0px));right:calc(var(--gap) + env(safe-area-inset-right,0px));width:auto;max-width:600px;margin:0 auto;gap:8px}
+  .bar{padding-left:16px;gap:8px}
+  #app .leaflet-top.leaflet-right{top:calc(var(--top-h,140px) - 2px)}
+  #app .leaflet-right .leaflet-control{margin-right:calc(var(--gap) + env(safe-area-inset-right,0px))}
+  #app .rl-map-btn[data-fit]{display:none}
+  .sheet{left:calc(var(--gap) + env(safe-area-inset-left,0px));right:calc(var(--gap) + env(safe-area-inset-right,0px));bottom:calc(var(--gap) + env(safe-area-inset-bottom,0px));width:auto;max-width:600px;margin:0 auto;max-height:max(150px,calc(100% - var(--ctl-b,330px) - 36px - var(--gap) - env(safe-area-inset-bottom,0px)))}
+  .sheet:not(.drag){transition:transform .3s var(--ease)}
+  .sh-head{padding:22px 10px 2px 18px;touch-action:none;cursor:grab}
+  .grip{display:block;position:absolute;left:50%;top:0;width:96px;height:24px;margin:0 0 0 -48px;padding:0;border:0;border-radius:12px;background:none}
+  .grip::before{content:"";position:absolute;inset:-4px -8px -16px}
+  .grip i{position:absolute;left:50%;top:9px;width:40px;height:5px;margin-left:-20px;border-radius:3px;background:rgba(0,0,0,.2)}
+  .sheet[data-open=false] .sh-body{grid-template-rows:minmax(0,0fr)}
+  .sheet[data-open=false] .sh-head{padding-bottom:14px}
+  .sh-in{padding:10px 18px 16px}
+  .areas{margin:12px -18px 0;padding:2px 18px 4px;scroll-padding:0 18px}
+  .sp-toast{left:50%;top:calc(var(--top-h,140px) + 8px);max-width:calc(100% - 32px)}
+  /* the map's attribution on the left above the sheet, clear of the map buttons on the right */
+  #app .leaflet-bottom.leaflet-right{right:auto;left:calc(var(--gap) + env(safe-area-inset-left,0px))}
+  #app .leaflet-bottom .leaflet-control-attribution{margin:0 0 4px;border-radius:8px}
+  /* short screens (a map under 700 px tall, set by src/shuttle.ts): the zoom and map buttons in a row */
+  #app.short .leaflet-top .leaflet-control{clear:none;margin-right:8px}
+  #app.short .leaflet-top .leaflet-control:first-child{margin-right:calc(var(--gap) + env(safe-area-inset-right,0px))}
+  #app.short .leaflet-control-zoom{display:flex;flex-direction:row-reverse}
+  #app.short .leaflet-control-zoom a{border-bottom:0}
+  #app.short .leaflet-control-zoom a:first-child{border-left:1px solid rgba(0,0,0,.08)}
+}
+@container site (max-width:640px){
   .wrap{padding:0 16px}
   .hdr .wrap{height:64px;gap:12px}
   .logo img{height:26px}
   .hdr-right{gap:4px}
-  .panel{padding:20px 16px 24px}
-  .panel h1{font-size:28px;letter-spacing:-.4px}
-  .seg button,.dir{font-size:14px}
-  .dir{padding:0 8px;gap:6px}
+  .bar{min-height:58px;padding:5px 5px 5px 16px}
+  .bar-title{font-size:14px}
+  .seg button{padding:0 11px;font-size:13px}
+  .chip{padding:0 13px;font-size:13px}
+}
+@container site (max-width:360px){
+  .upd-w{display:none}
+  .bar-live .live-copy{-webkit-line-clamp:3}
+  .seg button{padding:0 9px}
 }
 @media (max-width:640px){:root{--hdr:64px}}
 </style>
@@ -135,34 +259,51 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
   </div>
 </div></header>
 
-<main class="app" id="app">
-  <section class="panel" aria-labelledby="title">
-    <h1 id="title">Northwestern shuttles</h1>
-    <p class="lede">The Intercampus shuttle between Evanston and Chicago, and the evening Loop around the Evanston campus, with buses live on the map.</p>
-    <div class="seg" role="group" aria-label="Shuttle">
-      <button type="button" data-line="intercampus" aria-pressed="true">Intercampus</button>
-      <button type="button" data-line="loop" aria-pressed="false">Loop</button>
+<main class="stage" id="app" aria-labelledby="title">
+  <h1 class="sr" id="title">Northwestern shuttles</h1>
+  <div class="top" data-top>
+    <section class="bar glass" aria-label="Shuttle line">
+      <div class="bar-copy">
+        <p class="bar-title" data-title>Evanston <span aria-hidden="true">↔</span><span class="sr">and</span> Chicago · Northwestern</p>
+        <p class="bar-live" data-status data-tone="wait"><span class="live-dot" aria-hidden="true"></span><span class="live-copy"><span data-status-text role="status" aria-live="polite">Checking for live buses…</span><span data-updated></span></span></p>
+      </div>
+      <div class="seg" role="group" aria-label="Line">
+        <button type="button" data-line="intercampus" aria-pressed="true">Intercampus</button>
+        <button type="button" data-line="loop" aria-pressed="false">Loop</button>
+      </div>
+    </section>
+    <div class="chips" role="group" aria-label="Route" data-views></div>
+  </div>
+  <div id="map"></div>
+  <section class="sheet glass" data-sheet data-open="true" aria-labelledby="sheet-title">
+    <div class="sh-head" data-grab>
+      <button type="button" class="grip" data-grip aria-expanded="true" aria-controls="sheet-body" aria-label="Collapse the panel"><i></i></button>
+      <div class="sh-copy"><h2 id="sheet-title" data-sheet-title>Evanston listings along the route</h2><p data-sheet-meta>Finding rooms near the stops…</p></div>
+      <button type="button" class="lnk" data-copy>Copy official link</button>
     </div>
-    <div class="dirs" role="group" aria-label="Direction" data-dirs>
-      <button type="button" class="dir" data-dir="to-chicago" aria-pressed="true"><span class="dot" aria-hidden="true"></span>To Chicago</button>
-      <button type="button" class="dir" data-dir="to-evanston" aria-pressed="false"><span class="dot" aria-hidden="true"></span>To Evanston</button>
-    </div>
-    <p class="route" data-route>Ryan Field to Ward, Chicago campus</p>
-    <div class="status" data-status data-tone="wait">
-      <span class="pulse" aria-hidden="true"></span>
-      <span class="status-copy"><span class="status-text" data-status-text role="status" aria-live="polite">Checking for live buses…</span><span class="status-upd" data-updated></span></span>
-    </div>
-    <h2 class="sub">Service hours</h2>
-    <p class="hours" data-hours>Weekdays, first bus 6:35 am and last 9:30 pm from Ryan Field. No weekend or university holiday service.</p>
-    <h2 class="sub" id="stops-h">Stops</h2>
-    <ol class="stops" aria-labelledby="stops-h" data-stops></ol>
-    <div class="src">
-      <p>Live data: Northwestern shuttle system (TripShot).</p>
-      <p data-checked>Routes and hours: Northwestern Transportation &amp; Parking. Times are Chicago time, and a Wildcard is needed to ride.</p>
-      <p><a href="https://www.northwestern.edu/transportation-parking/shuttles/routes/intercampus.html" target="_blank" rel="noopener" data-official>Official schedule</a></p>
-    </div>
+    <div class="sh-body" id="sheet-body"><div class="sh-in">
+      <div class="tabs" role="tablist" aria-label="Along the route">
+        <button type="button" role="tab" id="tab-listings" data-tab="listings" aria-selected="true" aria-controls="pane-listings">Listings <span class="n" data-n></span></button>
+        <button type="button" role="tab" id="tab-stops" data-tab="stops" aria-selected="false" aria-controls="pane-stops" tabindex="-1">Stops</button>
+      </div>
+      <div class="pane" id="pane-listings" role="tabpanel" aria-labelledby="tab-listings">
+        <div class="areas" role="group" aria-label="Areas" data-areas hidden></div>
+        <div class="acts">
+          <a class="btn btn-primary" href="index.html?find=1" data-find>See listings along the route</a>
+          <a class="btn btn-secondary" href="request.html" data-request>Post a request</a>
+        </div>
+      </div>
+      <div class="pane" id="pane-stops" role="tabpanel" aria-labelledby="tab-stops" hidden>
+        <div data-stops></div>
+        <div class="src">
+          <p>Live data: Northwestern shuttle system (TripShot).</p>
+          <p data-checked>Routes and hours: Northwestern Transportation &amp; Parking. Times are Chicago time, and a Wildcard is needed to ride.</p>
+          <p><a href="https://www.northwestern.edu/transportation-parking/shuttles/routes/intercampus.html" target="_blank" rel="noopener" data-official>Official schedule</a></p>
+        </div>
+      </div>
+    </div></div>
   </section>
-  <div class="mapbox"><div id="map"></div></div>
+  <div class="sp-toast" role="status" aria-live="polite" data-toast></div>
 </main>
 
 <footer class="foot"><div class="wrap"><div class="fcols">
@@ -173,7 +314,8 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
   <div><h4>Legal</h4><a href="how-it-works.html#verification">Safety &amp; rules</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></div></div>
   <div class="fbot"><span>© 2026 Rentlet</span><span>A student class project. Not affiliated with or endorsed by Northwestern University.</span></div></div></footer>
 </div>
-<script type="module" src="/src/rentlet.ts"></script>
+<!-- src/shuttle.ts gets the live listings whichever of the two runs first (see the end of that file) -->
 <script type="module" src="/src/shuttle.ts"></script>
+<script type="module" src="/src/rentlet.ts"></script>
 </body>
 </html>

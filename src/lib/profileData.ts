@@ -1,5 +1,6 @@
 // Pure helpers for the profile page (profile.html + src/profile.ts): field cleaning, the checks the
-// Firestore rules make before an update, and which Storage files belong to a listing. Tested.
+// Firestore rules make before an update, and which Storage files belong to a listing. Also the Saved
+// page's pieces (saved.html + src/saved.ts): what a saved card shows and when the page reloads. Tested.
 import { CAMPUS_NAME, type CampusId, type ListingDoc } from './listingView';
 import { KIND_LABEL, LAYOUTS, ROLE_LABEL } from './requestsView';
 
@@ -176,7 +177,37 @@ export function requestView(id: string, d: Record<string, unknown>, fallbackName
   };
 }
 
-// ---------- saved requests (the profile's Saved section) ----------
+// ---------- the Saved page (saved.html + src/saved.ts) ----------
+
+// What a saved room's card shows: the homepage's result card (photo, dates, title, price, area, walk).
+export interface SavedRoomCard {
+  code: string;
+  title: string;
+  area: string;
+  start: string;
+  end: string;
+  price: number;
+  img: string;
+  walk: number | null;
+  campusId: string;
+  savedAtMs: number;
+}
+
+export function savedRoomCard(l: ListingDoc, savedAtMs: number): SavedRoomCard {
+  const str = (v: unknown) => (typeof v === 'string' ? v : '');
+  return {
+    code: l.code,
+    title: str(l.title) || 'Room',
+    area: str(l.area),
+    start: isDate(l.start) ? l.start : '',
+    end: isDate(l.end) ? l.end : '',
+    price: Number(l.price) || 0,
+    img: Array.isArray(l.photos) ? str(l.photos[0]) : '',
+    walk: typeof l.walk === 'number' ? l.walk : null,
+    campusId: str(l.campusId),
+    savedAtMs,
+  };
+}
 
 // What a saved request's card shows: the same fields, labels and fallbacks as a Requests page card
 // (toRow in requestsView.ts), read defensively because the stored document is someone else's.
@@ -225,7 +256,37 @@ export function savedRequestState(
   return isDate(d.start) && d.start >= today ? 'open' : 'gone';
 }
 
-// One string for a set of saved rooms and requests, the same whatever the order, so the Saved section
+// One group of saved things (rooms or requests) after each one was looked up: a card for each that is
+// still listed or open, the ids of the ones that are gone, and how many lookups failed.
+export interface SavedGroupLoad<T> {
+  ids: string[];
+  items: T[];
+  gone: string[];
+  failed: number;
+}
+
+export function sortLookups<T>(ids: string[], found: (T | 'gone' | 'error')[]): SavedGroupLoad<T> {
+  const items: T[] = [];
+  const gone: string[] = [];
+  let failed = 0;
+  found.forEach((r, i) => {
+    if (r === 'error') failed++;
+    else if (r === 'gone') gone.push(ids[i]);
+    else items.push(r);
+  });
+  return { ids: [...ids], items, gone, failed };
+}
+
+// What a Saved tab shows: 'error' when its list couldn't be read, or when nothing is left to show and
+// some lookups failed (an empty tab would be wrong). Lookups that fail beside cards that loaded are left out.
+export type SavedGroup<T> = 'error' | { items: T[]; gone: string[] };
+
+export function savedGroup<T>(load: SavedGroupLoad<T> | null): SavedGroup<T> {
+  if (!load || (load.failed > 0 && !load.items.length && !load.gone.length)) return 'error';
+  return { items: load.items, gone: load.gone };
+}
+
+// One string for a set of saved rooms and requests, the same whatever the order, so the Saved page
 // can tell whether what it shows still matches what is saved (src/rentlet.ts's rentlet:saves event).
 export function savesKey(room: Iterable<string>, request: Iterable<string>): string {
   const sorted = (ids: Iterable<string>) => [...new Set(ids)].sort().join(',');
@@ -238,10 +299,10 @@ export interface SavedIds {
   request: string[];
 }
 
-// Keeps the profile's Saved section in step with what is saved, as src/rentlet.ts reports it after
-// every change (the rentlet:saves event), without fighting removals and undos made on the section
-// itself. src/profile.ts reports what happens; check() says when to reload the section quietly.
-//  - shown: the saved ids the section was built from (null: a group that couldn't be read), kept in
+// Keeps the Saved page in step with what is saved, as src/rentlet.ts reports it after every change
+// (the rentlet:saves event), without fighting removals and undos made on the page itself.
+// src/saved.ts reports what happens; check() says when to reload the page quietly.
+//  - shown: the saved ids the page was built from (null: a group that couldn't be read), kept in
 //    step with removals made here once Firestore has them.
 //  - While a removal or undo is in flight, or a load is running, it never asks for a reload; a quiet
 //    reload that was running while one landed has its answer dropped, then it checks again.

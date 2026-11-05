@@ -1,7 +1,7 @@
 // Saved rooms: users/{uid}/saves/{listingCode} = {savedAt}. Saved requests:
 // users/{uid}/savedRequests/{requestId} = {savedAt}. Only the signed-in owner can read or write them
 // (firestore.rules). Pages import this module; it sets no globals. The hearts on every page go through
-// window.Rentlet.toggleSave (src/rentlet.ts); the profile's Saved section uses these to remove and undo.
+// window.Rentlet.toggleSave (src/rentlet.ts); the Saved page (src/saved.ts) uses these to remove and undo.
 import {
   collection,
   deleteDoc,

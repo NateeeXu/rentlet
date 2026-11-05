@@ -37,6 +37,7 @@
     + '.rl-top{display:inline-flex;align-items:center;height:44px;padding:0 14px;border-radius:999px;font:600 14px/1 ' + F + ';color:#222;text-decoration:none;white-space:nowrap;flex:none;box-sizing:border-box}'
     + '.rl-top:hover{background:#f2f2f4}.rl-top[aria-current=page]{text-decoration:underline;text-underline-offset:6px}'
     + '.rl-top.rl-post{border:1px solid #ddd;background:#fff;margin:0 6px 0 2px}.rl-top.rl-post:hover{border-color:#222;background:#fff}'
+    + '.rl-msgs[aria-current=page]{background:#f2f2f4}.rl-saved[aria-current=page] svg{fill:currentColor}'
     + '@media (max-width:900px){.rl-top{display:none!important}}'
     + '@media (max-width:399px){.rl-saved{display:none!important}}';
   try { var st = document.createElement('style'); st.id = 'rl-msgs-css'; st.textContent = MSG_CSS; document.head.appendChild(st); } catch (_) {}
@@ -67,7 +68,7 @@
       if (!window.RL.authed) return top;
       var n = window.RL.unread || 0;
       /* Saved (heart) sits just before Messages */
-      return top + '<a class="rl-msgs rl-saved" href="profile.html#saved" aria-label="Saved">' + HEART + '</a>'
+      return top + '<a class="rl-msgs rl-saved" href="saved.html" aria-label="Saved"' + (here === 'saved' ? ' aria-current="page"' : '') + '>' + HEART + '</a>'
         + '<a class="rl-msgs" href="messages.html" data-rl-msgs aria-label="' + (n ? 'Messages, ' + n + ' unread' : 'Messages') + '"' + (current ? ' aria-current="page"' : '') + '>'
         + MSG_ICON + '<span class="rl-msgs-n"' + (n ? '' : ' hidden') + '>' + (n > 9 ? '9+' : n) + '</span></a>';
     },
@@ -86,7 +87,7 @@
       var items = R.authed
         ? link('post.html', 'Post a listing', 'rl-b') + link('request.html', 'Post a request', 'rl-b') + '<hr>'
           + '<a href="messages.html" data-rl-msgs' + (here === 'messages' ? ' aria-current="page"' : '') + '><span>Messages</span><span class="rl-msgs-n"' + (n ? '' : ' hidden') + '>' + (n > 9 ? '9+' : n) + '</span></a>'
-          + link('profile.html#saved', 'Saved') + '<hr>' + pages + '<hr>'
+          + link('saved.html', 'Saved') + '<hr>' + pages + '<hr>'
           + link('profile.html', 'Your page') + '<button type="button" data-rl-signout>Sign out</button>'
         : '<button type="button" class="rl-b" data-rl-signin>Sign in</button><hr>'
           + link('post.html', 'Post a listing') + link('request.html', 'Post a request') + '<hr>' + pages;

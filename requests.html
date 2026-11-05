@@ -218,7 +218,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=e10eccc0"></script>
+<script src="/rentlet-boot.js?v=3da2bc12"></script>
 </head>
 <body>
 <div class="site" id="site"></div>
@@ -444,7 +444,7 @@ new ResizeObserver(()=>requestAnimationFrame(()=>{if($('#site').clientWidth!==fe
 /* live data (src/requests.ts). A redraw keeps an open sheet open; while the date picker is open, it waits for it to close. */
 function refresh(){if(document.querySelector('[data-when][aria-expanded="true"]')){clearTimeout(refresh.t);refresh.t=setTimeout(refresh,400);return}
   autoCampus();const x=$('.gs .x'),had=document.activeElement===x;render();if(had){const nx=$('.gs .x');if(nx)nx.focus()}}
-/* requests.html?req=<id> (a saved request on the Profile page) opens that request once requests have loaded,
+/* requests.html?req=<id> (a saved request on the Saved page) opens that request once requests have loaded,
    at its campus; closing it takes ?req off the address. A request that is gone or closed gets a toast. */
 let WANT=QS.get('req')||null;
 function dropReq(){const u=new URL(location.href);if(!u.searchParams.has('req'))return;u.searchParams.delete('req');history.replaceState(history.state,'',u.pathname+u.search+u.hash)}

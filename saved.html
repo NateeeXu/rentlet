@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Saved · Rentlet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+/* Saved: the rooms and requests you saved, in two tabs (Airbnb's wishlists). The header's heart and the
+   menu's Saved open it; saved.html#rooms and saved.html#requests open a tab. */
+:root{--canvas:#f7f7f7;--soft:#f2f2f4;--ink:#222;--ink2:#484848;--muted:#717171;--line:#dddddd;--hair:#e8e8e8;--serif:"Newsreader",Georgia,serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--canvas);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+img{display:block}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.site{container-type:inline-size;background:var(--canvas);min-height:100vh;overflow-x:clip;display:flex;flex-direction:column}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px;width:100%}
+
+/* the site header (requests.html) */
+.hdr{background:#fff;border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:20}
+.hdr .wrap{display:flex;align-items:center;gap:16px;height:72px;position:relative}
+.logo{display:flex;align-items:center;min-height:44px}
+.logo img{height:30px;display:block}
+/* the right end: Saved and Messages (signed in), then the menu (rentlet-boot.js draws all three) */
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 18px;border-radius:999px;border:1px solid transparent;font-size:14px;font-weight:600;white-space:nowrap;width:auto;flex:0 0 auto;margin:0;background:none;text-decoration:none;color:var(--ink)}
+.btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn-primary:hover{background:#000}
+.btn-secondary{background:#fff;border-color:var(--line)}
+.btn-secondary:hover{border-color:var(--ink)}
+.lnk{font-size:14px;font-weight:650;color:var(--ink);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0 2px;margin:-13px 0;display:inline-flex;align-items:center;min-height:44px;vertical-align:baseline;line-height:inherit}
+
+/* title and tabs: the chosen tab is underlined in ink */
+.main{flex:1 0 auto;padding:32px 0 56px}
+h1{font-family:var(--serif);font-size:38px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin:0}
+.tabs{display:flex;gap:28px;margin-top:20px;border-bottom:1px solid var(--hair)}
+.tab{display:inline-flex;align-items:center;gap:7px;height:48px;margin:0 0 -1px;padding:0 2px;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;font-size:15px;font-weight:600;color:var(--muted);white-space:nowrap;width:auto;flex:0 0 auto}
+.tab:hover{color:var(--ink);border-bottom-color:var(--line)}
+.tab[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ink)}
+.tab .n{font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+.tab:focus-visible{outline-offset:-2px;border-radius:6px 6px 0 0}
+.panel{margin-top:28px}
+.panel:focus-visible{outline-offset:8px;border-radius:6px}
+.note{margin:22px 0 0;font-size:14px;color:var(--muted);line-height:1.5}
+
+/* saved rooms: the homepage result card (index.html .cx-card) */
+.cx-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px 22px}
+.cx-card{position:relative;min-width:0}
+.cx-card>a{display:block;color:inherit;text-decoration:none;outline:none}
+.cx-card .cph{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/3;background:var(--soft)}
+.cx-card .cph img{width:100%;height:100%;object-fit:cover}
+.cx-card .ctg{position:absolute;left:12px;top:12px;z-index:2;background:#fff;border-radius:99px;padding:5px 10px;font-size:12px;font-weight:600}
+/* the heart looks 34px and takes taps across a 44px square; it removes the room (Undo puts it back) */
+.cx-card .csv{position:absolute;right:5px;top:5px;z-index:3;width:44px;height:44px;border-radius:50%;border:0;background:none;display:grid;place-items:center;padding:0;margin:0;color:var(--ink)}
+.cx-card .csv::before{content:"";position:absolute;inset:5px;border-radius:50%;background:rgba(255,255,255,.94);transition:transform .15s}
+.cx-card .csv:hover::before{transform:scale(1.06)}
+.cx-card .csv .ic{position:relative;width:17px;height:17px;fill:currentColor}
+.cx-card .cbd{padding:10px 2px 0}
+.cx-card .ct{display:flex;justify-content:space-between;gap:10px;font-size:15px;font-weight:600}
+.cx-card .ct span{min-width:0;overflow-wrap:anywhere}
+.cx-card .ct b{font-weight:600;white-space:nowrap}
+.cx-card .ct b small{font-weight:500;color:var(--muted);font-size:13px}
+.cx-card .cm{font-size:14px;color:var(--muted);margin-top:2px}
+.cx-card>a:hover .ct span{text-decoration:underline;text-underline-offset:3px}
+.cx-card>a:focus-visible .cph{box-shadow:0 0 0 2px var(--ink)}
+
+/* saved requests: the Requests page card (requests.html .fc). The whole card opens the request: a bare link
+   stretched over it. The heart sits above that link, so pressing the heart never opens the request. */
+.rq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.fc{position:relative;display:block;background:#fff;border-radius:20px;padding:20px 22px;min-width:0;
+  box-shadow:0 0 0 1px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.08);transition:box-shadow .2s ease,transform .2s ease}
+.fc:hover,.fc:has(>.fco:focus-visible){box-shadow:0 0 0 1px rgba(0,0,0,.05),0 2px 4px rgba(0,0,0,.07),0 14px 34px rgba(0,0,0,.13);transform:translateY(-2px)}
+.fc:has(>.fco:active){transform:translateY(0)}
+.fco{position:absolute;inset:0;z-index:1;border-radius:inherit}
+.fco:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.fsv{position:relative;z-index:2;flex:none;width:44px;height:44px;min-width:0;margin:0 -12px 0 0;padding:0;border:0;border-radius:0;background:none;color:var(--ink);display:flex;align-items:center;justify-content:center}
+.fsv::before{content:"";position:absolute;inset:2px;border-radius:50%}
+.fsv:hover::before{background:var(--soft)}
+.fsv:focus-visible{outline:0}
+.fsv:focus-visible::before{outline:2px solid var(--ink);outline-offset:0}
+.fsv .ic{position:relative;width:20px;height:20px;stroke-width:1.8;fill:currentColor}
+.fc .fhd{display:flex;align-items:center;gap:12px;min-width:0}
+.fav{width:44px;height:44px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700;font-size:16px;flex:none;overflow:hidden}
+.fav img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.fwho{flex:1;min-width:0}
+.fwho b{display:block;font-size:17px;font-weight:650;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fwho .rl{display:block;font-size:14px;color:var(--muted);line-height:1.35;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc .fhr{height:1px;background:var(--hair);margin:16px 0 6px}
+.fc .fli{display:flex;align-items:flex-start;gap:12px;padding:6px 0;font-size:15px;line-height:1.4;min-width:0}
+.fli .ic{color:var(--ink2)}
+.fli span{min-width:0;overflow-wrap:anywhere}
+.fli .num{font-variant-numeric:tabular-nums}
+.fli b{font-weight:650}
+.fli .g{color:var(--muted)}
+
+/* loading: cards drawn in grey */
+.sk{background:linear-gradient(100deg,#eeeef1 30%,#fafafb 50%,#eeeef1 70%);background-size:300% 100%;animation:shimmer 1.5s ease-in-out infinite;border-radius:8px}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:0 0}}
+.sk-room .sk-ph{aspect-ratio:4/3;border-radius:14px}
+.sk-l{height:14px;margin-top:10px}
+.sk-room .sk-ph+.sk-l{margin-top:14px}
+.w70{width:70%}.w45{width:45%}.w30{width:30%}
+.sk-req{background:#fff;border-radius:20px;padding:20px 22px;box-shadow:0 0 0 1px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.08)}
+.sk-req .sk-hd{display:flex;gap:12px;align-items:center}
+.sk-req .sk-hd>div:last-child{flex:1}
+.sk-req .sk-hd .sk-l:first-child{margin-top:0}
+.sk-req .sk-av{width:44px;height:44px;border-radius:50%;flex:none}
+.sk-req .sk-hr{height:1px;background:var(--hair);margin:16px 0 4px}
+
+/* empty, error and signed out */
+.empty{text-align:center;padding:48px 20px;border:1px solid var(--hair);border-radius:16px;background:#fff}
+.empty h2,.gate h2{margin:0;font-size:17px;font-weight:650;line-height:1.35}
+.empty .btn,.gate .btn{margin-top:18px}
+.gate{text-align:center;padding:72px 20px 24px;max-width:420px;margin:0 auto}
+
+/* the toast: "Removed from saved." with Undo */
+.toast{position:fixed;left:50%;width:max-content;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,16px);z-index:80;background:var(--ink);color:#fff;font-size:14px;padding:0 6px 0 16px;min-height:44px;border-radius:12px;display:flex;align-items:center;gap:8px;opacity:0;visibility:hidden;pointer-events:none;max-width:calc(100% - 32px);box-shadow:0 8px 24px rgba(0,0,0,.18);transition:opacity .2s,transform .25s,visibility 0s .25s}
+.toast.on{opacity:1;visibility:visible;transform:translate(-50%,0);pointer-events:auto;transition:opacity .2s,transform .25s}
+.toast span{padding:12px 10px 12px 0}
+.toast button{height:36px;padding:0 12px;border-radius:8px;border:0;background:rgba(255,255,255,.14);color:#fff;font-weight:650;font-size:14px;width:auto;margin:0;white-space:nowrap;flex:none}
+.toast:not(.u) button{display:none}
+.toast:not(.u){padding-right:16px}
+
+/* footer (requests.html) */
+.foot{border-top:1px solid var(--hair);padding:32px 0 calc(28px + env(safe-area-inset-bottom))}
+.fcols{display:grid;grid-template-columns:1.4fr repeat(3,minmax(0,1fr));gap:24px}
+.fcols h4{margin:0 0 10px;font-size:13px}
+.fcols a{display:block;font-size:14px;color:var(--muted);text-decoration:none;padding:3px 0}
+.fcols a:hover{color:var(--ink);text-decoration:underline}
+.fcols .brand img{height:28px}
+.fcols .brand p{font-size:13px;color:var(--muted);line-height:1.6;margin:10px 0 0}
+.fbot{margin-top:24px;padding-top:16px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+
+@container (max-width:900px){
+  .cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@container (max-width:860px){
+  .fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.fcols .brand{grid-column:1/-1}
+}
+@container (max-width:640px){
+  .wrap{padding:0 16px}
+  .hdr .wrap{height:60px;gap:8px}
+  .logo img{height:24px}
+  .main{padding:24px 0 40px}
+  h1{font-size:28px;letter-spacing:-.4px}
+  .tabs{gap:24px;margin-top:12px}
+  .panel{margin-top:20px}
+  .cx-grid{grid-template-columns:minmax(0,1fr);gap:24px}
+  .gate{padding-top:48px}
+  .fcols a{display:flex;align-items:center;min-height:44px;padding:0}
+}
+@container (max-width:600px){
+  .rq-grid{grid-template-columns:minmax(0,1fr);gap:14px}
+  .fc,.sk-req{padding:18px}
+}
+@media (prefers-reduced-motion:reduce){.fc,.cx-card .csv::before{transition:none}.fc:hover,.fc:has(>.fco:focus-visible){transform:none}.sk{animation:none}.toast,.toast.on{transition:none}}
+</style>
+<link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style id="rentlet-base">
+html,body{background:#f7f7f7}
+:root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
+a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
+</style>
+<script src="/rentlet-boot.js?v=3da2bc12"></script>
+</head>
+<body>
+<div class="site" id="site"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span></span><button type="button" data-act="undo">Undo</button></div>
+<script src="where-search.js?v=50645075"></script>
+<script src="when-picker.js?v=7860cfd6"></script>
+<script>
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const money=v=>'$'+Math.round(v).toLocaleString('en-US');
+const wl=(s,e)=>s&&e&&window.WhenPicker?WhenPicker.label(s,e):'';
+const campusName=id=>(((window.WhereSearch&&WhereSearch.SCHOOLS)||[]).find(x=>x[0]===id)||[])[1]||'';
+const ICONS={
+  heart:'<path d="M12 19.5s-7-4.3-7-9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7 2.3c0 5.3-7 9.6-7 9.6z"/>',
+  /* the Requests page card's line icons */
+  home:'<path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/>',
+  cal:'<rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
+  wallet:'<rect x="3.5" y="6" width="17" height="13" rx="2.5"/><path d="M3.5 10h17M15.5 14.5h2"/>'};
+const ic=(k,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`;
+
+/* ---------- state ----------
+   rooms and reqs come from Firebase through src/saved.ts (window.RLS.update): null while loading,
+   'error' when they couldn't be loaded, else {items, gone} (gone: saved ids no longer listed or open). */
+const TABS=[['rooms','Rooms'],['requests','Requests']];
+const KEY={rooms:'rooms',requests:'reqs'};
+const tabOf=h=>{const k=String(h||'').replace(/^#/,'');return TABS.some(t=>t[0]===k)?k:''};
+const S={authed:!!RL.authed,tab:tabOf(location.hash)||'rooms',rooms:null,reqs:null};
+const ready=v=>!!v&&v!=='error';
+
+/* ---------- cards ---------- */
+/* a saved room: the homepage result card (photo with its dates and the heart, title, price, area, walk) */
+function roomCard(r){const d=wl(r.start,r.end),where=r.walk!=null?`${r.walk} min walk to campus`:esc(campusName(r.campusId));
+  return `<div class="cx-card" data-saved="${esc(r.code)}"><a href="room.html?room=${encodeURIComponent(r.code)}"><div class="cph">${r.img?`<img src="${esc(r.img)}" alt="" loading="lazy">`:''}${d?`<span class="ctg">${d}</span>`:''}</div>
+    <div class="cbd"><div class="ct"><span>${esc(r.title).replace(/-/g,'‑')}</span><b>${money(r.price)}<small> / mo</small></b></div>${r.area?`<div class="cm">${esc(r.area)}</div>`:''}${where?`<div class="cm">${where}</div>`:''}</div></a>
+    <button type="button" class="csv" data-act="unsave" data-key="${esc(r.code)}" aria-label="Remove ${esc(r.title)} from saved">${ic('heart')}</button></div>`}
+/* a saved request: the Requests page card (the person, then the room, the dates, the budget); it opens there */
+const face=q=>q.photo?`<img src="${esc(q.photo)}" alt="" referrerpolicy="no-referrer">`:esc((q.who||'?').trim().charAt(0).toUpperCase()||'?');
+const budTxt=b=>b==null?'Any price':`Up to ${money(b)} / mo`;
+const budLine=b=>b==null?'Any price':`<b class="num">Up to ${money(b)}</b> <span class="g">/ month</span>`;
+function reqCard(q){const dates=wl(q.start,q.end),lay=(q.layouts||[]).length?` · ${q.layouts.map(esc).join(' / ')}`:'';
+  return `<article class="fc" data-saved-req="${esc(q.id)}"><a class="fco" href="requests.html?req=${encodeURIComponent(q.id)}" aria-label="${esc(q.who)}, ${esc(q.role)}, verified. ${esc(q.kind)}${dates?`, ${esc(dates)}`:''}, ${budTxt(q.budget)}"></a>
+    <div class="fhd"><span class="fav" aria-hidden="true">${face(q)}</span><div class="fwho" aria-hidden="true"><b>${esc(q.who)}</b><span class="rl">${esc(q.role)} · Verified</span></div><button type="button" class="fsv" data-act="unsaveReq" data-key="${esc(q.id)}" aria-label="Remove ${esc(q.who)}’s request from saved">${ic('heart')}</button></div>
+    <div aria-hidden="true"><div class="fhr"></div>
+    <div class="fli">${ic('home')}<span>${esc(q.kind)}${lay}</span></div>${dates?`
+    <div class="fli">${ic('cal')}<span class="num">${dates}</span></div>`:''}
+    <div class="fli">${ic('wallet')}<span>${budLine(q.budget)}</span></div></div></article>`}
+const skRooms=()=>`<div class="cx-grid" aria-hidden="true">${'<div class="sk-room"><div class="sk sk-ph"></div><div class="sk sk-l w70"></div><div class="sk sk-l w45"></div><div class="sk sk-l w30"></div></div>'.repeat(3)}</div>`;
+const skReqs=()=>`<div class="rq-grid" aria-hidden="true">${'<div class="sk-req"><div class="sk-hd"><div class="sk sk-av"></div><div><div class="sk sk-l w45"></div><div class="sk sk-l w30"></div></div></div><div class="sk-hr"></div><div class="sk sk-l w70"></div><div class="sk sk-l w45"></div><div class="sk sk-l w45"></div></div>'.repeat(2)}</div>`;
+
+/* ---------- the tabs ---------- */
+const T={
+  rooms:{what:'room',state:'listed',empty:'Rooms you save show up here.',go:['index.html','Find a place'],card:roomCard,grid:'cx-grid',sk:skRooms,forget:'forgetGone'},
+  requests:{what:'request',state:'open',empty:'Requests you save show up here.',go:['requests.html','Browse requests'],card:reqCard,grid:'rq-grid',sk:skReqs,forget:'forgetGoneReq'}};
+const goneNote=(n,t)=>n?`<p class="note">${n===1?`1 saved ${t.what} is`:`${n} saved ${t.what}s are`} no longer ${t.state}. <button type="button" class="lnk" data-act="${t.forget}">Remove ${n===1?'it':'them'}</button></p>`:'';
+function panelBody(k){const V=S[KEY[k]],t=T[k];
+  if(V===null)return `<p class="sr">Loading your saved ${t.what}s…</p>${t.sk()}`;
+  if(V==='error')return `<div class="empty"><h2>Couldn’t load your saved ${t.what}s.</h2><button type="button" class="btn btn-secondary" data-act="reload">Try again</button></div>`;
+  const note=goneNote(V.gone.length,t);
+  if(!V.items.length)return `<div class="empty"><h2>${t.empty}</h2><a class="btn btn-primary" href="${t.go[0]}">${t.go[1]}</a></div>${note}`;
+  return `<div class="${t.grid}">${V.items.map(t.card).join('')}</div>${note}`}
+const tabs=()=>`<div class="tabs" role="tablist" aria-label="Saved">${TABS.map(([k,name])=>{const on=S.tab===k,V=S[KEY[k]];
+    return `<button type="button" role="tab" class="tab" id="tab-${k}" data-tab="${k}" aria-selected="${on}" aria-controls="panel-${k}" tabindex="${on?0:-1}">${name}${ready(V)?`<span class="n">${V.items.length}</span>`:''}</button>`}).join('')}</div>
+  ${TABS.map(([k])=>`<section class="panel" role="tabpanel" id="panel-${k}" aria-labelledby="tab-${k}" tabindex="0"${S.tab===k?'':' hidden'}${S[KEY[k]]===null?' aria-busy="true"':''}>${S.tab===k?panelBody(k):''}</section>`).join('')}`;
+const gate=()=>`<div class="gate"><h2>Sign in to see what you saved.</h2><button type="button" class="btn btn-primary" data-rl-signin>Sign in</button></div>`;
+
+/* ---------- page chrome ---------- */
+/* the header: the logo, then Saved and Messages (signed in) and the menu, which holds posting, the pages and
+   the account. rentlet-boot.js draws and runs all of it. */
+const header=()=>`<header class="hdr"><div class="wrap">
+  <a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a>
+  <div class="hdr-right">${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div></header>`;
+/* every redraw draws the header again; when it came out the same, the one on screen stays, so an open menu
+   stays open and keeps its focus */
+function keepHeader(old,html,focused){const h=$('#site>.hdr');if(!h)return;h._html=html;
+  if(old&&old._html===html){h.replaceWith(old);if(focused&&old.contains(focused))focused.focus({preventScroll:true})}}
+const footer=()=>`<footer class="foot"><div class="wrap"><div class="fcols">
+  <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
+  <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></div>
+  <div><h4>Post</h4><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></div>
+  <div><h4>Legal</h4><a href="how-it-works.html">Safety &amp; rules</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></div></div>
+  <div class="fbot"><span>© 2026 Rentlet</span><span>A student class project. Not affiliated with or endorsed by Northwestern University.</span></div></div></footer>`;
+
+/* ---------- render ---------- */
+/* live updates redraw the page; whatever had the focus (a tab, a heart, a card) keeps it */
+function focusSel(el){const d=el.dataset||{};
+  if(d.tab)return `[data-tab="${d.tab}"]`;
+  if(d.act)return `[data-act="${d.act}"]${d.key?`[data-key="${CSS.escape(d.key)}"]`:''}`;
+  if(el.matches('.panel'))return '#'+el.id;
+  const a=el.closest('a[href]');return a?`main a[href="${CSS.escape(a.getAttribute('href'))}"]`:''}
+function render(){
+  const site=$('#site'),ae=document.activeElement,oh=$('#site>.hdr'),hf=oh&&oh.contains(ae)?ae:null;
+  const sel=ae&&ae!==document.body&&site.contains(ae)&&!hf?focusSel(ae):'',hd=header();
+  site.innerHTML=`${hd}<main class="main"><div class="wrap"><h1>Saved</h1>${S.authed?tabs():gate()}</div></main>${footer()}`;
+  keepHeader(oh,hd,hf);
+  if(sel){const el=$(sel,site);if(el)el.focus({preventScroll:true})}}
+
+/* a tab: chosen by click, arrow keys, Home and End; the address keeps it (#rooms, #requests) */
+function setTab(k,focus){if(!T[k])return;const was=S.tab;S.tab=k;
+  if(location.hash!=='#'+k)history.replaceState(history.state,'','#'+k);
+  if(was!==k)render();if(focus){const b=$(`[data-tab="${k}"]`);if(b)b.focus()}}
+addEventListener('hashchange',()=>{const k=tabOf(location.hash);if(k&&k!==S.tab){S.tab=k;render()}});
+
+let toastT=null,undoFn=null;
+function toast(msg,undo){const t=$('#toast');if(!t||!msg)return;$('span',t).textContent=msg;undoFn=undo||null;t.classList.toggle('u',!!undo);t.classList.add('on');
+  clearTimeout(toastT);toastT=setTimeout(()=>{t.classList.remove('on');undoFn=null},undo?5000:2600)}
+/* put a removed card back after Undo (or a failed removal), into whatever the tab shows now */
+function putBack(g,key,item,i){const V=S[g];if(!ready(V))return;const L=V.items;
+  if(!L.some(x=>x[key]===item[key])){const j=item.savedAtMs?L.findIndex(x=>(x.savedAtMs||0)<item.savedAtMs):Math.min(i,L.length);L.splice(j<0?L.length:j,0,item)}
+  render()}
+/* after a heart removes its card from the keyboard, the focus moves to the next heart (or the tab's panel) */
+function focusNext(k,i){const p=$('#panel-'+k);if(!p)return;const h=$$('[data-act^="unsave"]',p);(h[i]||h[i-1]||p).focus({preventScroll:true})}
+
+/* ---------- Firebase hooks (src/saved.ts) ---------- */
+window.RLS={update(p){Object.assign(S,p);render()}};
+/* src/rentlet.ts calls this instead of reloading when sign-in changes; src/saved.ts does the rest */
+window.RL_onAuth=u=>{if(!window.RentletSaved)S.authed=!!u;render()};
+function api(){const P=window.RentletSaved;if(!P)toast('Still loading. Try again in a moment.');return P}
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{const t=e.target;if(!t.closest)return;
+  const tb=t.closest('[data-tab]');if(tb){setTab(tb.dataset.tab);return}
+  const b=t.closest('[data-act]');if(!b)return;const act=b.dataset.act;
+  switch(act){
+    /* hearts: the card goes at once; Undo saves it again with its original time */
+    case 'unsave':case 'unsaveReq':{const P=api(),room=act==='unsave',g=room?'rooms':'reqs',V=S[g];if(!P||!ready(V))return;
+      const key=room?'code':'id',k=b.dataset.key,i=V.items.findIndex(r=>r[key]===k);if(i<0)return;
+      const item=V.items[i],back=()=>putBack(g,key,item,i),off=room?P.unsave:P.unsaveRequest,on=room?P.resave:P.resaveRequest,kb=document.activeElement===b&&e.detail===0;
+      V.items.splice(i,1);render();if(kb)focusNext(room?'rooms':'requests',i);
+      off(k).then(()=>toast('Removed from saved.',()=>on(k,item.savedAtMs).then(back,()=>toast('Couldn’t save it again. Try again.'))),
+        ()=>{back();toast('Couldn’t remove it. Try again.')});return}
+    case 'forgetGone':case 'forgetGoneReq':{const P=api(),g=act==='forgetGone'?'rooms':'reqs',V=S[g];if(!P||!ready(V)||!V.gone.length)return;const ids=V.gone.slice();
+      (g==='rooms'?P.forgetSaves:P.forgetSavedRequests)(ids).then(()=>{const c=S[g];if(ready(c))c.gone=c.gone.filter(x=>!ids.includes(x));render();toast('Removed from saved.')},
+        ()=>toast('Couldn’t remove them. Try again.'));return}
+    case 'reload':{const P=api();if(P)P.reload();return}
+    case 'undo':{const f=undoFn;undoFn=null;clearTimeout(toastT);$('#toast').classList.remove('on');if(f)f();return}}});
+document.addEventListener('keydown',e=>{const t=e.target.closest&&e.target.closest('[role=tab]');if(!t)return;
+  const i=TABS.findIndex(x=>x[0]===t.dataset.tab),n=TABS.length;
+  const j=e.key==='ArrowRight'?(i+1)%n:e.key==='ArrowLeft'?(i-1+n)%n:e.key==='Home'?0:e.key==='End'?n-1:-1;
+  if(j<0)return;e.preventDefault();setTab(TABS[j][0],true)});
+render();
+</script>
+<script type="module" src="/src/rentlet.ts"></script>
+<script type="module" src="/src/saved.ts"></script>
+</body>
+</html>

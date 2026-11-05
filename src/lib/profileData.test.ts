@@ -11,14 +11,18 @@ import {
   normalizeInstagram,
   requestView,
   SavedSync,
+  savedGroup,
   savedRequestCard,
   savedRequestState,
+  savedRoomCard,
   savesKey,
+  sortLookups,
   sortOwnListings,
   storagePathFromUrl,
   validListingShape,
   validRequestShape,
 } from './profileData';
+import type { ListingDoc } from './listingView';
 
 const url = (path: string) =>
   `https://firebasestorage.googleapis.com/v0/b/rentlet-nu.firebasestorage.app/o/${encodeURIComponent(path)}?alt=media&token=abc`;
@@ -217,7 +221,7 @@ describe('saved requests', () => {
   });
 });
 
-describe('SavedSync: the Saved section follows saves made elsewhere', () => {
+describe('SavedSync: the Saved page follows saves made elsewhere', () => {
   const A = '10000001';
   const B = '20000002';
   const Q = 'aB3dE5fG7hJ9kL1mN3pQ5rS7tU9v';
@@ -302,5 +306,53 @@ describe('SavedSync: the Saved section follows saves made elsewhere', () => {
     const s = shown();
     s.reset();
     expect(s.check()).toBe(true); // nothing shown: the next load catches up
+  });
+});
+
+describe('saved rooms and the Saved tabs', () => {
+  const listing = {
+    code: '12345678',
+    title: 'Private room near Sheridan',
+    area: 'Evanston',
+    start: '2027-01-02',
+    end: '2027-03-20',
+    price: 1150,
+    photos: ['https://example.com/a.jpg', 'https://example.com/b.jpg'],
+    walk: 8,
+    campusId: 'nu-evn',
+  } as unknown as ListingDoc;
+
+  it('shows a saved room the way the homepage card does', () => {
+    expect(savedRoomCard(listing, 1700000000000)).toEqual({
+      code: '12345678',
+      title: 'Private room near Sheridan',
+      area: 'Evanston',
+      start: '2027-01-02',
+      end: '2027-03-20',
+      price: 1150,
+      img: 'https://example.com/a.jpg',
+      walk: 8,
+      campusId: 'nu-evn',
+      savedAtMs: 1700000000000,
+    });
+  });
+
+  it('falls back quietly on missing or odd fields', () => {
+    const odd = { code: '12345678', title: '', price: 'x', photos: 'a.jpg', walk: '8', start: 'soon' } as unknown as ListingDoc;
+    expect(savedRoomCard(odd, 0)).toMatchObject({ title: 'Room', area: '', start: '', end: '', price: 0, img: '', walk: null, campusId: '' });
+  });
+
+  it('sorts lookups into cards, gone ids and failures, in saved order', () => {
+    const r = sortLookups(['a', 'b', 'c', 'd'], [{ n: 1 }, 'gone', 'error', { n: 4 }]);
+    expect(r).toEqual({ ids: ['a', 'b', 'c', 'd'], items: [{ n: 1 }, { n: 4 }], gone: ['b'], failed: 1 });
+    expect(sortLookups([], [])).toEqual({ ids: [], items: [], gone: [], failed: 0 });
+  });
+
+  it('shows an error only when a tab has nothing true to show', () => {
+    expect(savedGroup(null)).toBe('error'); // the list itself couldn't be read
+    expect(savedGroup(sortLookups(['a'], ['error']))).toBe('error'); // every lookup failed
+    expect(savedGroup(sortLookups([], []))).toEqual({ items: [], gone: [] }); // nothing saved
+    expect(savedGroup(sortLookups(['a', 'b'], [{ n: 1 }, 'error']))).toEqual({ items: [{ n: 1 }], gone: [] });
+    expect(savedGroup(sortLookups(['a', 'b'], ['gone', 'error']))).toEqual({ items: [], gone: ['a'] });
   });
 });

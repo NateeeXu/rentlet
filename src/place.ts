@@ -13,11 +13,19 @@ import {
   asWalk,
   buildingById,
   buildingRow,
+  CallHealth,
+  directoryAddresses,
+  mergeAddresses,
+  movePin,
+  resetPin,
   type BuildingRow,
+  type CallState,
+  type LatLng,
   type NearbyPlace,
   type PickedPlace,
   type PlaceSuggestion,
 } from './lib/place';
+import type { PlaceMap } from './placemap';
 
 export type { BuildingRow, NearbyPlace, PickedPlace, PlaceSuggestion };
 
@@ -32,15 +40,33 @@ declare global {
       buildings: (q: string, campusId: CampusId) => BuildingRow[];
       building: typeof buildingById;
       walkEstimate: typeof walkEstimate;
+      state: (name?: string) => CallState;
+      addresses: typeof directoryAddresses;
+      merge: typeof mergeAddresses;
+      movePin: typeof movePin;
+      resetPin: typeof resetPin;
+      pinMap: (el: HTMLElement, at: LatLng, origin: LatLng) => Promise<PlaceMap>;
     };
   }
 }
 
-// Codes that mean the functions are missing (not deployed) rather than a passing problem; after one,
-// this page stops asking.
-const MISSING = new Set(['functions/not-found', 'functions/internal', 'functions/unimplemented']);
-let missing = false;
+// How each function has been answering (src/lib/place.ts CallHealth): a failure makes the next call
+// wait a little; only a function that isn't deployed stops being asked.
+const health = new Map<string, CallHealth>();
+const healthOf = (name: string) => {
+  let h = health.get(name);
+  if (!h) health.set(name, (h = new CallHealth()));
+  return h;
+};
 let functions: Promise<{ fns: Functions; mod: typeof import('firebase/functions') }> | null = null;
+// After a reload Firebase restores the session a moment after the page runs; until then currentUser
+// is null although the host is signed in.
+let authReady: Promise<void> | null = null;
+const signedIn = async () => {
+  authReady ??= auth.authStateReady().catch(() => undefined);
+  await authReady;
+  return !!auth.currentUser;
+};
 
 // The Functions SDK loads on first use, so pages that never look up a place don't download it.
 function load() {
@@ -49,22 +75,33 @@ function load() {
 }
 
 async function call<T>(name: string, data: unknown, parse: (x: unknown) => T, fallback: T, timeout: number): Promise<T> {
-  if (missing || !auth.currentUser) return fallback; // the functions only answer signed-in school (.edu) accounts
+  const h = healthOf(name);
+  if (!h.allow(Date.now())) return fallback;
+  // the functions only answer signed-in school (.edu) accounts
+  if (!(await signedIn())) {
+    h.last = 'signed-out';
+    return fallback;
+  }
   try {
     const { fns, mod } = await load();
     const res = await mod.httpsCallable(fns, name, { timeout })(data);
+    h.ok();
     return parse(res.data);
   } catch (e) {
-    if (MISSING.has((e as { code?: string }).code ?? '')) missing = true;
+    h.fail(String((e as { code?: unknown })?.code ?? ''), Date.now());
     return fallback;
   }
 }
 
-// Up to 5 full street addresses near the campus.
+// How the last call to a function went: answered ('ok', maybe with nothing), 'failed' (or waiting
+// after a failure), or 'signed-out'. The post form says which under the address field.
+export const callState = (name = 'placeSuggest'): CallState => healthOf(name).last;
+
+// Up to 5 full street addresses around the campus. The timeout leaves room for a cold start.
 export function suggestPlaces(q: string, campusId: CampusId): Promise<PlaceSuggestion[]> {
   const text = q.replace(/\s+/g, ' ').trim().slice(0, 120);
   if (text.length < 3) return Promise.resolve([]);
-  return call('placeSuggest', { q: text, campusId }, (x) => asSuggestions(x), [], 6000);
+  return call('placeSuggest', { q: text, campusId }, (x) => asSuggestions(x), [], 10000);
 }
 
 // The point, area, ZIP and minutes on foot to the campus for a suggestion id or a typed address.
@@ -96,6 +133,9 @@ export function nearbyPlaces(lat: number, lng: number, campusId: CampusId): Prom
 
 // area: the neighbourhood read from a typed address, the same fallback a listing uses without HERE.
 // buildings / building / walkEstimate: the apartment directory for the Building field.
+// state: how the last suggestion call went. addresses / merge: the directory's street addresses for the
+// Street address field, and HERE's list with them. movePin / resetPin / pinMap: the map above the street
+// address (src/placemap.ts, loaded with Leaflet only when a place is picked) and its "Adjust position".
 window.RentletPlace = {
   suggest: suggestPlaces,
   lookup: lookupPlace,
@@ -105,4 +145,10 @@ window.RentletPlace = {
   buildings: (q, campusId) => searchApartments(q, campusId).map(buildingRow),
   building: buildingById,
   walkEstimate,
+  state: callState,
+  addresses: directoryAddresses,
+  merge: mergeAddresses,
+  movePin,
+  resetPin,
+  pinMap: (el, at, origin) => import('./placemap').then((m) => m.mountPlaceMap(el, at, origin)),
 };

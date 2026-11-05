@@ -1,10 +1,10 @@
 // HERE REST requests and the small shapes Rentlet keeps from their answers. Pure (no network, no key
 // handling beyond building the URL), so it is unit-tested. Endpoints: HERE Geocoding & Search API v7
-// (autocomplete, lookup, geocode, browse) and HERE Routing API v8 (pedestrian routes).
-import type { Point } from './rules.js';
+// (autosuggest, lookup, geocode, browse) and HERE Routing API v8 (pedestrian routes).
+import { inChicagoArea, kmBetween, MAX_KM_FROM_CAMPUS, type Point } from './rules.js';
 
 export const ENDPOINT = {
-  autocomplete: 'https://autocomplete.search.hereapi.com/v1/autocomplete',
+  autosuggest: 'https://autosuggest.search.hereapi.com/v1/autosuggest',
   lookup: 'https://lookup.search.hereapi.com/v1/lookup',
   geocode: 'https://geocode.search.hereapi.com/v1/geocode',
   browse: 'https://browse.search.hereapi.com/v1/browse',
@@ -29,10 +29,14 @@ export function hereUrl(endpoint: Endpoint, params: Params, apiKey: string): str
   return u.toString();
 }
 
-// Full street addresses as the host types, biased to the campus.
+// Street addresses as the host types: HERE Autosuggest ranked from the campus, in the USA only (the
+// request the CloudSublet mini program makes, which completes "733 Col" to "733 Colfax St, Evanston").
+// The answer also holds streets, places and query completions that are dropped (toSuggestions), so it
+// asks for more than the 5 shown.
+export const SUGGEST_ASK = 10;
 export const suggestRequest = (q: string, near: Point): Request => ({
-  endpoint: 'autocomplete',
-  params: { q, at: at(near), in: 'countryCode:USA', lang: LANG, limit: '8' },
+  endpoint: 'autosuggest',
+  params: { q, at: at(near), in: 'countryCode:USA', lang: LANG, limit: String(SUGGEST_ASK) },
 });
 
 export const lookupRequest = (id: string): Request => ({ endpoint: 'lookup', params: { id, lang: LANG } });
@@ -131,16 +135,51 @@ export function streetLabel(a: HereAddress | undefined): string {
   return shortLabel(str(a?.label));
 }
 
-// Only complete addresses (a house number on a street) can be picked.
-export function toSuggestions(json: unknown, max = 5): Suggestion[] {
+const lines = (label: string) => {
+  const cut = label.indexOf(', ');
+  return cut > 0 ? { title: label.slice(0, cut), sub: label.slice(cut + 2) } : { title: label, sub: '' };
+};
+
+// Around the campus: within maxKm of it and inside the Chicago area. A result without a position is
+// judged by HERE's distance from the campus point (`at`).
+function around(it: HereItem, near: Point, maxKm: number): boolean {
+  if (isPoint(it.position)) return inChicagoArea(it.position) && kmBetween(it.position, near) <= maxKm;
+  return typeof it.distance === 'number' && Number.isFinite(it.distance) && it.distance <= maxKm * 1000;
+}
+
+export interface SuggestOptions {
+  q?: string; // what the host typed
+  max?: number;
+  maxKm?: number;
+}
+
+// Only complete addresses can be picked: a house number on a street, or, when the host types a name
+// rather than a number ("Sherman Plaza"), a building or place that has one. Streets, cities and query
+// completions are dropped, and so is anything outside the Chicago area. The same street line once.
+export function toSuggestions(json: unknown, near: Point, opts: SuggestOptions = {}): Suggestion[] {
+  const max = opts.max ?? 5;
+  const maxKm = opts.maxKm ?? MAX_KM_FROM_CAMPUS;
+  const named = !!opts.q && !/^\d/.test(opts.q.trim());
   const out: Suggestion[] = [];
+  const seen = new Set<string>();
   for (const it of items(json)) {
     const id = str(it.id);
-    if (!id.startsWith('here:') || it.resultType !== 'houseNumber') continue;
-    const label = streetLabel(it.address) || shortLabel(str(it.title));
-    if (!label) continue;
-    const cut = label.indexOf(', ');
-    out.push({ id, label, title: cut > 0 ? label.slice(0, cut) : label, sub: cut > 0 ? label.slice(cut + 2) : '' });
+    if (!id.startsWith('here:')) continue;
+    let s: Suggestion;
+    if (it.resultType === 'houseNumber') {
+      const label = streetLabel(it.address) || shortLabel(str(it.title));
+      if (!/^\d/.test(label)) continue;
+      s = { id, label, ...lines(label) };
+    } else if (it.resultType === 'place' && named && str(it.address?.houseNumber) && str(it.address?.street)) {
+      const label = streetLabel(it.address);
+      const name = str(it.title).slice(0, 120);
+      s = name ? { id, label, title: name, sub: label } : { id, label, ...lines(label) };
+    } else continue;
+    if (!around(it, near, maxKm)) continue;
+    const key = s.label.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(s);
     if (out.length >= max) break;
   }
   return out;

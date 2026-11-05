@@ -140,7 +140,8 @@ async function placeFor(S: PostState, address: string, campusId: CampusId): Prom
   let place = asPlace(S.place);
   if (place && !sameAddress(place.label, address)) place = null;
   if (place && place.campusId && place.campusId !== campusId) {
-    const again = place.id ? await lookupPlace({ id: place.id }, campusId) : null;
+    // a pin the host moved by hand keeps its spot; only an untouched address point is looked up again
+    const again = place.id && !place.origin ? await lookupPlace({ id: place.id }, campusId) : null;
     place = again ?? { ...place, walk: null, campusId };
   }
   if (!place && address.length >= 5) place = await lookupPlace({ q: address }, campusId);

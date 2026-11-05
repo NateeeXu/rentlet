@@ -91,14 +91,18 @@ async function walk(from: Point, to: Point): Promise<number | null> {
   }
 }
 
-// placeSuggest({q, campusId}) -> up to 5 full street addresses near the campus.
+// placeSuggest({q, campusId}) -> up to 5 full street addresses around the campus (HERE Autosuggest).
+// A query HERE refuses (400) has no suggestions; any other HERE failure is "unavailable", which the
+// site retries after a short wait.
 export const placeSuggest = onCall(OPTIONS, async (req): Promise<Suggestion[]> => {
   requireNorthwestern(req);
   const { q, campusId } = parsed(() => parseSuggest(req.data));
   if (q.length < 3) return [];
+  const campus = CAMPUS_POINT[campusId];
   try {
-    return toSuggestions(await here(suggestRequest(q, CAMPUS_POINT[campusId])));
-  } catch {
+    return toSuggestions(await here(suggestRequest(q, campus)), campus, { q });
+  } catch (e) {
+    if (e instanceof HereError && e.status === 400) return [];
     throw new HttpsError('unavailable', 'Suggestions are unavailable right now.');
   }
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CAMPUS_POINT, InputError, isNorthwesternToken, kmBetween, parseLookup, parseNearby, parseSuggest } from './rules';
+import { CAMPUS_POINT, inChicagoArea, InputError, isNorthwesternToken, kmBetween, parseLookup, parseNearby, parseSuggest } from './rules';
 
 describe('who may call', () => {
   it('accepts verified Northwestern accounts only', () => {
@@ -49,5 +49,11 @@ describe('input checks', () => {
     const km = kmBetween(CAMPUS_POINT['nu-evn'], CAMPUS_POINT['nu-chi']);
     expect(km).toBeGreaterThan(17);
     expect(km).toBeLessThan(19);
+  });
+  it('knows the Chicago area', () => {
+    for (const p of Object.values(CAMPUS_POINT)) expect(inChicagoArea(p)).toBe(true);
+    expect(inChicagoArea({ lat: 42.3695, lng: -87.9229 })).toBe(true); // Gurnee
+    expect(inChicagoArea({ lat: 42.5847, lng: -87.8212 })).toBe(false); // Kenosha, WI
+    expect(inChicagoArea({ lat: 40.7921, lng: -73.9694 })).toBe(false);
   });
 });

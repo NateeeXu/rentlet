@@ -15,9 +15,16 @@ export const CAMPUS_POINT: Record<CampusId, Point> = {
 };
 
 export const MAX_QUERY = 120;
-// Points further than this from the chosen campus are refused (nearby) or not walked to (lookup).
+// Points further than this from the chosen campus are refused (nearby), not walked to (lookup) or not
+// suggested (placeSuggest).
 export const MAX_KM_FROM_CAMPUS = 60;
 export const MAX_WALK_KM = 6;
+
+// Chicago, Evanston and their suburbs: the same box as the map tiles (tiles.ts SERVICE_AREA). Address
+// suggestions outside it are dropped.
+export const CHICAGO_AREA = { south: 41.4, north: 42.5, west: -88.4, east: -87.2 } as const;
+export const inChicagoArea = (p: Point): boolean =>
+  p.lat >= CHICAGO_AREA.south && p.lat <= CHICAGO_AREA.north && p.lng >= CHICAGO_AREA.west && p.lng <= CHICAGO_AREA.east;
 
 const SCHOOL_EMAIL = /^[^@\s]+@([a-z0-9-]+\.)+edu$/i;
 

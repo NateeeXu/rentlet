@@ -78,6 +78,23 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 .sw::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff}
 .sw.off{background:#cfcfd4}.sw.off::after{right:auto;left:3px}
 .note{margin:12px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
+/* the picked place on a small map right above the street address (as in the mini program): a black pin, and
+   "Adjust position" (top right) to move it to the entrance; the HERE notice stays at the bottom right */
+.pl-box{margin-bottom:16px}
+.pl-box[hidden]{display:none}
+.pl-map{position:relative;height:220px;border-radius:16px;overflow:hidden;background:#eef1f5;border:1px solid var(--hair);isolation:isolate}
+.pl-map.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.pl-map.stale .pl-map-c{opacity:.45;filter:grayscale(1)}
+.pl-map-c{position:absolute;inset:0;z-index:0}
+.pl-map .leaflet-control-zoom{display:none}
+.pl-adj{position:absolute;top:10px;right:10px;z-index:1;display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:0;height:44px;margin:0;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.75);background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(12px) saturate(1.6);backdrop-filter:blur(12px) saturate(1.6);box-shadow:0 1px 4px rgba(0,0,0,.18);font-size:14px;font-weight:650;color:var(--ink);white-space:nowrap}
+.pl-adj:hover{background:#fff}
+.pl-adj[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.pl-adj:disabled{opacity:.55;cursor:default}
+.pl-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-top:2px;font-size:13px;color:var(--muted);line-height:1.4}
+.pl-row span{min-width:0}
+.pl-lk{flex:none;width:auto;min-width:0;height:44px;margin:0 -6px 0 0;padding:0 6px;border:0;background:none;font-size:14px;font-weight:600;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;white-space:nowrap;display:inline-flex;align-items:center}
+.pl-lk[hidden]{display:none}
 .sub{margin:0;font-size:13px;color:var(--muted);margin-bottom:8px}
 .photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .ph{aspect-ratio:4/3;border-radius:12px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;color:var(--muted);text-align:center;border:1px dashed #cfcfd4;position:relative;overflow:hidden;cursor:pointer;margin:0;padding:6px}
@@ -306,38 +323,48 @@ const card=()=>{const fees=S.multi.fees.length&&!S.multi.fees.includes('Nothing 
   return `<div class="rcard"><img src="${(Object.values(S.photos).flat()[0]||'data:image/gif;base64,R0lGODlhAQABAAAAACw=').split('|')[0]}" alt=""><div class="rc"><h3>${S.unit?unitName():'Room'}${S.layout?` · ${esc(layoutName())}`:''}</h3><p>${[S.campus&&town(),S.subletType&&typeName(),S.start&&S.end&&WhenPicker.label(S.start,S.end)].filter(Boolean).join(' · ')||'&nbsp;'}</p><div class="pr">${S.rent?money(S.rent):'<span class="ns">Rent not set</span>'} <small>${[S.rent&&'/ mo',depLine(),fees].filter(Boolean).join(' · ')}</small></div></div></div>`};
 
 /* ---------- Where is it?: the Building field lists the apartment directory (src/lib/apartments.ts); the Street
-   address field lists full addresses from HERE (src/place.ts, through Rentlet's Cloud Functions). A pick keeps
+   address field lists full addresses from HERE (src/place.ts, through Rentlet's Cloud Functions; a school account
+   is needed) with the directory's street addresses alongside, and only those when signed out. A pick keeps
    S.place = {lat, lng, area, zip, walk, label, campusId}, plus id (a HERE address) or apartmentId (a directory
-   building); typing over the address drops it. Without a pick, or without the functions, publishing works the same. ---------- */
+   building), and origin once the host has moved the pin on the map (Adjust position); typing over the address
+   drops it. Without a pick, or without the functions, publishing works the same. ---------- */
 const PL_ICON={address:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>',
   building:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V9.5l5-2.5V20M9 20V4.5l7 3V20M16 20v-8l4 2v6M3 20h18M12 10.5h1M12 14h1"/></svg>'};
 const plNorm=a=>String(a||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-/* PL_HAD: the address typed now has HERE suggestions to pick from; PL_FAILED: the picked address HERE couldn't look up */
-let PL_BUSY=false,PL_OPEN=null,PL_HAD=false,PL_FAILED=null;
+/* PL_BUSY: a lookup ('area') or a walk ('walk') on its way; PL_SEARCH: HERE suggestions on their way; PL_HAD: the
+   address typed now has suggestions to pick from; PL_NONE: why it has none ('number', 'none' or 'down');
+   PL_FAILED: the picked address HERE couldn't look up */
+let PL_BUSY='',PL_OPEN=null,PL_HAD=false,PL_SEARCH=false,PL_NONE='',PL_FAILED=null;
 const plArea=a=>window.RentletPlace?RentletPlace.area(a,S.campusId):''; /* the listing's fallback area */
 /* the line under the street address: what the listing will show once a place is picked, else how to get there */
 function placeNote(){
   const addr=String(S.f.addr||'').trim(),p=S.place;
-  if(PL_BUSY)return 'Finding the area…';
+  if(PL_BUSY)return PL_BUSY==='walk'?'Measuring the walk to campus…':'Finding the area…';
   if(p){const area=p.area||plArea(p.label),walk=p.campusId===S.campusId&&p.walk!=null?`${p.walk} min walk to campus`:'',t=[area&&`Area: ${area}`,walk].filter(Boolean).join(' · ');if(t)return t}
   if(PL_FAILED&&plNorm(PL_FAILED)===plNorm(addr)&&plArea(addr))return `Area: ${plArea(addr)}`;
   if(!S.campusId)return 'Choose the campus first; the suggestions start from it.';
-  if(!RL.authed)return 'Suggestions by HERE once you sign in.';
-  if(addr&&PL_HAD)return 'Pick your address from the list to show its area and walking time.';
-  return 'Suggestions by HERE.'}
-const plShowNote=()=>{const n=$('[data-place-note]');if(n)n.textContent=placeNote();autosave()}; /* a looked-up place is an answer too */
+  if(!RL.authed)return 'Sign in to get address suggestions.';
+  if(PL_SEARCH)return 'Searching…';
+  if(addr.length>=3&&PL_HAD)return 'Pick your address from the list to show its area and walking time.';
+  if(addr.length>=3&&PL_NONE==='number')return 'Keep typing: add the street name after the number.';
+  if(addr.length>=3&&PL_NONE==='none')return 'No matching address near campus. Check the street name, or type the full address.';
+  if(addr.length>=3&&PL_NONE==='down')return 'Address suggestions aren’t available right now. Type the full address; it’s looked up when you publish.';
+  return 'Start with the house number, e.g. 733 Colfax St. Suggestions by HERE.'}
+const plShowNote=()=>{const n=$('[data-place-note]');if(n)n.textContent=placeNote();plMapSync();autosave()}; /* a looked-up place is an answer too */
 addEventListener('rentlet:ready',plShowNote);
 const plSet=(k,v)=>{S.f[k]=v;const el=$(`[data-f=${k}]`);if(el)el.value=v;clearNeed()};
 /* a HERE address: its point, area, ZIP and walk */
 async function plLookup(id,label){
-  if(!window.RentletPlace)return;PL_BUSY=true;PL_FAILED=null;plShowNote();
-  const p=await RentletPlace.lookup({id},S.campusId);PL_BUSY=false;
+  if(!window.RentletPlace)return;PL_BUSY='area';PL_FAILED=null;plShowNote();
+  const p=await RentletPlace.lookup({id},S.campusId);PL_BUSY='';
   if(plNorm(S.f.addr)===plNorm(label)){if(p)S.place=Object.assign(p,{label});else if(!S.place)PL_FAILED=label} /* still the address they picked */
   plShowNote()}
-/* a directory building has its own point and area; the walk comes from HERE routing, else the directory's estimate */
+/* the walk from the place's point (a directory building, or a moved pin) by HERE routing, else the directory's estimate */
+let PL_WALKS=0; /* the newest walk asked for; an older answer only fills in its own place */
 async function plWalk(){const p=S.place;if(!p||!window.RentletPlace)return;
-  PL_BUSY=true;plShowNote();
-  const w=await RentletPlace.walk(p.lat,p.lng,S.campusId);PL_BUSY=false;
+  const my=++PL_WALKS;PL_BUSY='walk';plShowNote();
+  const w=await RentletPlace.walk(p.lat,p.lng,S.campusId);
+  if(my===PL_WALKS&&PL_BUSY==='walk')PL_BUSY='';
   if(S.place===p){p.walk=w!=null?w:RentletPlace.walkEstimate(p.lat,p.lng,S.campusId);p.campusId=S.campusId}
   plShowNote()}
 function plBuilding(b){
@@ -345,18 +372,73 @@ function plBuilding(b){
   if(b.website&&!String(S.f.site||'').trim())plSet('site',b.website);
   PL_FAILED=null;S.place={lat:b.lat,lng:b.lng,area:b.area,zip:null,walk:null,label:b.address,apartmentId:b.id,campusId:S.campusId};
   plWalk()}
-/* a new campus: a building from another place is cleared, with what picking it filled in; otherwise the walk is measured again */
+/* a directory building picked by its street address: the Building and website fields fill in only when empty */
+function plDirAddress(id){const b=window.RentletPlace&&RentletPlace.building(id,S.campusId);if(!b)return;
+  plSet('addr',b.address);if(!String(S.f.building||'').trim())plSet('building',b.name);
+  if(b.website&&!String(S.f.site||'').trim())plSet('site',b.website);
+  PL_FAILED=null;S.place={lat:b.lat,lng:b.lng,area:b.area,zip:null,walk:null,label:b.address,apartmentId:b.id,campusId:S.campusId};
+  plWalk()}
+/* a new campus: a building from another place is cleared, with what picking it filled in; otherwise the walk is
+   measured again (from the moved pin when the host moved it) */
 function placeCampus(){const p=S.place;if(!p||!window.RentletPlace)return;
   if(p.apartmentId&&!RentletPlace.building(p.apartmentId,S.campusId)){const b=RentletPlace.building(p.apartmentId);
     if(b){if(S.f.building===b.name)S.f.building='';if(plNorm(S.f.addr)===plNorm(b.address))S.f.addr='';if(b.website&&S.f.site===b.website)S.f.site=''}
     S.place=null;return}
-  if(p.campusId!==S.campusId){if(p.id)plLookup(p.id,p.label);else plWalk()}}
+  if(p.campusId!==S.campusId){if(p.id&&!p.origin)plLookup(p.id,p.label);else plWalk()}}
+
+/* ---------- the map above the street address: the picked place as a black pin (src/placemap.ts, Leaflet loads with
+   the first pick). Adjust position: drag the pin, tap the spot or use the arrow keys; Done keeps it (within 300 m of
+   the address point, src/lib/place.ts) and measures the walk again; Cancel or Escape puts it back; Reset returns to
+   the address point. Renters see this exact spot on the listing's map (Founder's decision). ---------- */
+let PM=null; /* {box, api, loading, adjusting} for the map on screen now */
+const plMapHtml=()=>{const p=S.place,has=!!(p&&Number.isFinite(p.lat)&&Number.isFinite(p.lng));
+  return `<div class="pl-box" data-place-map${has?'':' hidden'}><div class="pl-map"><div class="pl-map-c" data-pm-canvas></div><button type="button" class="pl-adj" data-pm-adjust aria-pressed="false" disabled>Adjust position</button></div><div class="pl-row"><span data-pm-text>Renters see this spot on the listing’s map.</span><button type="button" class="pl-lk" data-pm-reset hidden>Reset</button><button type="button" class="pl-lk" data-pm-cancel hidden>Cancel</button></div></div>`};
+function plMapDrop(){if(PM&&PM.api)PM.api.destroy();PM=null}
+function plMapSync(){
+  const box=$('[data-place-map]');if(!box){if(PM)plMapDrop();return}
+  const p=S.place,has=!!(p&&Number.isFinite(p.lat)&&Number.isFinite(p.lng)),editing=document.activeElement&&document.activeElement.matches&&document.activeElement.matches('[data-f=addr]');
+  if(PM&&PM.box!==box)plMapDrop();
+  /* while the address is being retyped the old map waits, grayed, so the field doesn't jump; it goes on blur */
+  if(!has){if(PM&&PM.api&&editing){if(PM.adjusting){PM.adjusting=false;PM.api.adjust(false)}plMapUi(true);return}
+    box.hidden=true;plMapDrop();return}
+  const shown=box.hidden;box.hidden=false;
+  if(!PM)PM={box,api:null,loading:false,adjusting:false};
+  const at={lat:p.lat,lng:p.lng},origin=p.origin||at;
+  if(!PM.api&&!PM.loading&&window.RentletPlace&&RentletPlace.pinMap){const mine=PM;mine.loading=true;
+    RentletPlace.pinMap(box.querySelector('[data-pm-canvas]'),at,origin).then(api=>{mine.loading=false;if(PM!==mine){api.destroy();return}mine.api=api;plMapSync()},()=>{mine.loading=false})}
+  if(PM.api&&!PM.adjusting)PM.api.show(at,origin);
+  plMapUi(false);
+  /* the map appears above the field: keep the field being typed in on screen */
+  if(shown&&editing)document.activeElement.scrollIntoView({block:'nearest'})}
+function plMapUi(stale){if(!PM)return;const box=PM.box,p=S.place,on=PM.adjusting,moved=!!(p&&p.origin);
+  const b=box.querySelector('[data-pm-adjust]'),t=box.querySelector('[data-pm-text]');
+  box.querySelector('.pl-map').classList.toggle('on',on);box.querySelector('.pl-map').classList.toggle('stale',!!stale);
+  b.disabled=!PM.api||!!stale;b.textContent=on?'Done':'Adjust position';b.setAttribute('aria-pressed',String(on));
+  t.textContent=stale?'Pick the address from the list to move the map.':on?'Drag the pin to the entrance, or tap the spot. It stays within 300 m of the address.':moved?'Moved from the address point.':'Renters see this spot on the listing’s map.';
+  box.querySelector('[data-pm-reset]').hidden=!!stale||on||!moved;box.querySelector('[data-pm-cancel]').hidden=!on}
+function plAdjust(){if(!PM||!PM.api||!S.place)return;PM.adjusting=true;PM.api.adjust(true);plMapUi(false)}
+/* Done: the pin's spot becomes the place's point, and the walk is measured from it */
+function plAdjustDone(){if(!PM||!PM.api||!PM.adjusting)return;const p=S.place;PM.adjusting=false;
+  if(!p){PM.api.adjust(false);return}
+  const pt=PM.api.point(),next=RentletPlace.movePin(p,pt);PM.api.adjust(false);
+  if(next.lat!==p.lat||next.lng!==p.lng){S.place=next;plWalk()}
+  plShowNote()}
+function plAdjustCancel(){if(!PM||!PM.api||!PM.adjusting)return;PM.adjusting=false;const p=S.place;
+  if(p)PM.api.show({lat:p.lat,lng:p.lng},p.origin||{lat:p.lat,lng:p.lng});else PM.api.adjust(false);plMapUi(false)}
+function plReset(){const p=S.place;if(!p||!p.origin||!window.RentletPlace)return;S.place=RentletPlace.resetPin(p);plWalk();plShowNote()}
+document.addEventListener('click',e=>{const t=e.target;if(!t.closest||!t.closest('[data-place-map]'))return;
+  const focusPill=()=>{const b=$('[data-pm-adjust]');if(b)b.focus()};
+  if(t.closest('[data-pm-adjust]')){if(PM&&PM.adjusting){plAdjustDone();focusPill()}else plAdjust();return}
+  if(t.closest('[data-pm-cancel]')){plAdjustCancel();focusPill();return}
+  if(t.closest('[data-pm-reset]')){plReset();focusPill()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&PM&&PM.adjusting&&e.target.closest&&e.target.closest('[data-place-map]')){e.preventDefault();plAdjustCancel();const b=$('[data-pm-adjust]');if(b)b.focus()}});
+
 function placeField(el){
   const kind=el.dataset.f==='building'?'building':'address',box=el.closest('.in');
   const pop=document.createElement('div');pop.className='ws-pop';pop.hidden=true;pop.id='pl-'+kind;pop.setAttribute('role','listbox');pop.setAttribute('aria-label',kind==='building'?'Buildings':'Addresses');
   document.body.appendChild(pop);
   el.setAttribute('autocomplete','off');el.setAttribute('role','combobox');el.setAttribute('aria-autocomplete','list');el.setAttribute('aria-expanded','false');el.setAttribute('aria-controls',pop.id);
-  let list=[],sel=-1,seq=0,timer=0;
+  let list=[],sel=-1,seq=0,timer=0,again=0;
   /* under the field, or above it when the screen has no room below (a phone with its keyboard up) */
   const place=()=>{const r=box.getBoundingClientRect(),vh=window.visualViewport?visualViewport.height:innerHeight,w=Math.min(r.width,innerWidth-24);
     if(r.bottom<0||r.top>vh){close();return}
@@ -365,34 +447,50 @@ function placeField(el){
     const hd=$('.hd'),top0=hd?hd.getBoundingClientRect().bottom:0,full=pop.offsetHeight,below=vh-r.bottom-16,above=r.top-top0-16,down=below>=full||below>=above,room=down?below:above;
     if(ls&&full>room)ls.style.maxHeight=Math.max(92,ls.offsetHeight-(full-room))+'px';
     pop.style.top=((down?r.bottom+8:r.top-8-pop.offsetHeight)+scrollY)+'px'};
-  /* a building row: name, then street · area; an address row: street line, then city, state and ZIP */
+  /* a building row: name, then street · area; an address row: street line, then city, state and ZIP (a directory
+     building: town · building name) */
   const lines=x=>kind==='building'?[x.name,`${x.street} · ${x.area}`]:[x.title,x.sub];
-  const draw=()=>{pop.innerHTML=(kind==='building'&&!el.value.trim()?'<p class="ws-lab">Popular buildings</p>':'')+`<div class="ws-list">${list.map((x,i)=>{const [t,s]=lines(x);return `<div class="ws-it${i===sel?' on':''}" role="option" id="${pop.id}-${i}" aria-selected="${i===sel}" data-i="${i}"><span class="ws-ic">${PL_ICON[kind]}</span><span class="ws-tx"><b>${esc(t)}</b>${s?`<span>${esc(s)}</span>`:''}</span></div>`}).join('')}</div>${kind==='address'?'<p class="ws-hint">Suggestions by HERE</p>':''}`;
+  /* the address list says where it comes from: HERE's notice whenever a HERE address is in it */
+  const hint=()=>PL_SEARCH?'Searching…':list.some(x=>!x.apartmentId)?'Suggestions by HERE':RL.authed?'From the apartment directory':'From the apartment directory · Sign in to get address suggestions';
+  const draw=()=>{pop.innerHTML=(kind==='building'&&!el.value.trim()?'<p class="ws-lab">Popular buildings</p>':'')+`<div class="ws-list">${list.map((x,i)=>{const [t,s]=lines(x);return `<div class="ws-it${i===sel?' on':''}" role="option" id="${pop.id}-${i}" aria-selected="${i===sel}" data-i="${i}"><span class="ws-ic">${PL_ICON[kind==='address'&&x.apartmentId?'building':kind]}</span><span class="ws-tx"><b>${esc(t)}</b>${s?`<span>${esc(s)}</span>`:''}</span></div>`}).join('')}</div>${kind==='address'?`<p class="ws-hint">${hint()}</p>`:''}`;
     if(sel>=0)el.setAttribute('aria-activedescendant',`${pop.id}-${sel}`);else el.removeAttribute('aria-activedescendant')};
   function open(){if(!list.length){close();return}sel=-1;draw();pop.hidden=false;place();el.setAttribute('aria-expanded','true');PL_OPEN=place;requestAnimationFrame(()=>pop.classList.add('on'))}
   function close(){pop.classList.remove('on');pop.hidden=true;el.setAttribute('aria-expanded','false');el.removeAttribute('aria-activedescendant');if(PL_OPEN===place)PL_OPEN=null}
-  function pick(x){close();if(!x)return;seq++;
+  function pick(x){close();if(!x)return;seq++;clearTimeout(timer);clearTimeout(again);PL_SEARCH=false;
     if(kind==='building'){plBuilding(x);return}
+    if(x.apartmentId){plDirAddress(x.apartmentId);return}
     plSet('addr',x.label);S.place=null;plLookup(x.id,x.label)}
   /* the directory answers at once, from the first focus (popular buildings) to every letter typed */
   const directory=()=>{if(!window.RentletPlace)return;list=RentletPlace.buildings(el.value,S.campusId);open()};
   if(kind==='building')el.addEventListener('focus',directory);
+  /* the directory's street addresses for what's typed (instant, and all a signed-out host gets) */
+  const dirRows=q=>window.RentletPlace&&RentletPlace.addresses&&S.campusId?RentletPlace.addresses(q,S.campusId):[];
+  /* HERE's answer for q; `my` is this search's number: a newer letter, a pick or Escape since means it's dropped */
+  async function search(q,my,retried){
+    const r=await RentletPlace.suggest(q,S.campusId);if(my!==seq)return;
+    PL_SEARCH=false;const dir=dirRows(q);list=RentletPlace.merge?RentletPlace.merge(r,dir):r;PL_HAD=list.length>0;
+    const down=!r.length&&RentletPlace.state&&RentletPlace.state('placeSuggest')==='failed';
+    PL_NONE=list.length?'':down?'down':/^\d+$/.test(q)?'number':'none';plShowNote();
+    /* HERE was busy or the function was waking up: ask once more a moment later */
+    if(down&&!retried)again=setTimeout(()=>{if(my===seq&&document.activeElement===el){PL_SEARCH=true;plShowNote();search(q,my,true)}},3000);
+    if(document.activeElement!==el)return;open()}
   el.addEventListener('input',()=>{
     if(kind==='building'){S.f.building=el.value;const p=S.place,b=p&&p.apartmentId&&window.RentletPlace?RentletPlace.building(p.apartmentId):null;
       if(p&&p.apartmentId&&(!b||el.value!==b.name))delete p.apartmentId; /* their own name now; the address still decides the place */
       directory();return}
-    if(S.place&&plNorm(el.value)!==plNorm(S.place.label))S.place=null;PL_FAILED=null;if(el.value.trim().length<3)PL_HAD=false;S.f.addr=el.value;plShowNote();
-    clearTimeout(timer);const q=el.value.trim(),my=++seq;
-    if(q.length<3||!window.RentletPlace){list=[];close();return}
-    timer=setTimeout(async()=>{const r=await RentletPlace.suggest(q,S.campusId);if(my!==seq)return;
-      PL_HAD=r.length>0;plShowNote();
-      if(document.activeElement!==el)return;list=r;open()},250)});
+    if(S.place&&plNorm(el.value)!==plNorm(S.place.label))S.place=null;PL_FAILED=null;S.f.addr=el.value;
+    clearTimeout(timer);clearTimeout(again);const q=el.value.trim(),my=++seq;
+    PL_HAD=false;PL_NONE='';PL_SEARCH=q.length>=3&&!!window.RentletPlace&&!!S.campusId&&!!RL.authed;
+    list=q.length>=2?dirRows(q):[];PL_HAD=list.length>0;
+    if(document.activeElement===el)open();
+    plShowNote();
+    if(PL_SEARCH)timer=setTimeout(()=>search(q,my,false),250)});
   el.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){clearTimeout(timer);seq++;if(!pop.hidden){e.preventDefault();close()}return} /* and a list still on its way stays shut */
+    if(e.key==='Escape'){clearTimeout(timer);clearTimeout(again);seq++;if(PL_SEARCH){PL_SEARCH=false;plShowNote()}if(!pop.hidden){e.preventDefault();close()}return} /* and a list still on its way stays shut */
     if(pop.hidden||!list.length)return;
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();sel=sel<0?(e.key==='ArrowDown'?0:list.length-1):(sel+(e.key==='ArrowDown'?1:-1)+list.length)%list.length;draw()}
     else if(e.key==='Enter'&&sel>=0){e.preventDefault();pick(list[sel])}});
-  el.addEventListener('blur',()=>setTimeout(()=>{if(document.activeElement!==el)close()},150));
+  el.addEventListener('blur',()=>setTimeout(()=>{if(document.activeElement!==el){close();if(kind==='address')plMapSync()}},150));
   pop.addEventListener('pointerdown',e=>e.preventDefault()); /* keep the field focused while picking */
   pop.addEventListener('click',e=>{const it=e.target.closest('.ws-it');if(it)pick(list[+it.dataset.i])});
   pop.addEventListener('mousemove',e=>{const it=e.target.closest('.ws-it');if(it&&+it.dataset.i!==sel){sel=+it.dataset.i;draw()}})}
@@ -411,7 +509,7 @@ const STEPS=[
   body:()=>
    grp('Campus',`<form data-wform><div class="in ws" data-wseg><span data-wval>${esc(S.campus||'')}</span>${CHEV}</div></form>${nm('campus')}`,'','campus')+
    grp('Building',inp('building','','','','Start typing; the apartment directory fills the rest'),'optional · from the apartment directory, or type your own')+
-   grp('Street address',inp('addr','','','','e.g. 1890 Maple Ave, Evanston')+nm('addr')+`<p class="note" style="margin-top:8px" data-place-note>${esc(placeNote())}</p>`,'','addr')+
+   `<div class="grp" data-need="addr">${plMapHtml()}<span class="lbl">Street address</span>${inp('addr','','','','e.g. 733 Colfax St, Evanston')}${nm('addr')}<p class="note" style="margin-top:8px" data-place-note>${esc(placeNote())}</p></div>`+
    grp('Apartment website',inp('site','','','','Paste the building’s website'),'optional')},
  {q:'When is it free?',h:'Move-in is the first night they can sleep there. Dates can’t start before today.',
   need:()=>!S.start?[['dates','Pick the move-in day.']]:S.start<TODAY?[['dates','Move-in can’t be before today. Pick a new move-in day.']]:!S.end?[['dates','Pick the move-out day.']]:S.end<=S.start?[['dates','Move-out has to be after move-in.']]:[],
@@ -497,7 +595,7 @@ const FOCUSABLE='input:not([type=file]),textarea,button:not([disabled]),[tabinde
 function showNeed(i,[key,msg]){
   if(key==='dates')S.act=S.start&&S.start>=TODAY?'out':'in'; /* the calendar sets the day that's missing */
   S.step=i;NEED={step:i,key,msg};render();toast(msg);
-  const box=$(`[data-need="${key}"]`),sel={dates:`[data-side=${S.act}]`,dep:'[data-f=dep]',layout:S.layout==='Other'?'[data-f=layoutOther]':'',proof:S.proof==='lease'?'.pf-add':''}[key];
+  const box=$(`[data-need="${key}"]`),sel={dates:`[data-side=${S.act}]`,dep:'[data-f=dep]',addr:'[data-f=addr]',layout:S.layout==='Other'?'[data-f=layoutOther]':'',proof:S.proof==='lease'?'.pf-add':''}[key];
   let f=(sel&&$(sel))||(box&&(box.matches(FOCUSABLE)?box:box.querySelector(FOCUSABLE)));
   if(!f&&box){box.tabIndex=-1;f=box}
   if(f){f.focus();f.setAttribute('aria-describedby','need-msg')}
@@ -505,6 +603,7 @@ function showNeed(i,[key,msg]){
 
 function render(){
   if(window.BudgetPicker)BudgetPicker.close();
+  plAdjustDone();plMapDrop(); /* a pin being moved keeps its spot; the map is drawn again below */
   if(NEED&&!stillNeeded())NEED=null;
   const st=$('#stage');st.innerHTML=page();
   /* the dates step carries the homepage calendar itself; a pick updates the two fields and the chips in place
@@ -516,7 +615,7 @@ function render(){
     WhereSearch.attach({form:f,seg:f.querySelector('[data-wseg]'),valueEl:out,current:S.campus,onCampus:(v,name)=>{S.campusId=v;S.campus=name;placeCampus();render()}});
     if(!S.campus)out.innerHTML='<span class="pkph">Choose a campus</span>'});
   /* the building field lists the apartment directory, the street address field HERE addresses */
-  PL_OPEN=null;st.querySelectorAll('[data-f=building],[data-f=addr]').forEach(placeField);syncDots();
+  PL_OPEN=null;st.querySelectorAll('[data-f=building],[data-f=addr]').forEach(placeField);plMapSync();syncDots();
   liveRents();autosave()}
 /* the draft (see DRAFT_KEY): every answer but the files, plus how many files it had; saved a moment after each change */
 const draftState=()=>{const {photos,video,done,code,...rest}=S;

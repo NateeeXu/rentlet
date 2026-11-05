@@ -9,6 +9,8 @@ import {
   listingFilePaths,
   liveCount,
   normalizeInstagram,
+  ownStatus,
+  proofFilePaths,
   requestView,
   SavedSync,
   savedGroup,
@@ -67,6 +69,22 @@ describe('own listings', () => {
     expect(sortOwnListings(list).map((l) => l.code)).toEqual(['d', 'b', 'c', 'a']);
     expect(liveCount(list)).toBe(2);
   });
+  it('shows a listing whose last day has passed as ended, and never counts it as live', () => {
+    const today = '2027-05-01';
+    expect(ownStatus({ status: 'active', end: '2027-04-30' }, today)).toBe('ended');
+    expect(ownStatus({ status: 'hidden', end: '2027-04-30' }, today)).toBe('ended');
+    expect(ownStatus({ status: 'taken', end: '2027-04-30' }, today)).toBe('taken');
+    expect(ownStatus({ status: 'active', end: '2027-05-01' }, today)).toBe('active'); // up through its last day
+    expect(ownStatus({ status: 'active', end: 'soon' }, today)).toBe('active');
+    const list = [
+      { code: 'a', status: 'active' as const, end: '2027-04-30', createdAtMs: 9 },
+      { code: 'b', status: 'active' as const, end: '2027-08-31', createdAtMs: 1 },
+      { code: 'c', status: 'active' as const, end: '2027-05-01', createdAtMs: 2 },
+    ];
+    expect(liveCount(list, today)).toBe(2);
+    const cards = list.map((l) => ({ ...l, status: ownStatus(l, today) }));
+    expect(sortOwnListings([...cards, { code: 't', status: 'taken' as const, end: '', createdAtMs: 99 }]).map((l) => l.code)).toEqual(['c', 'b', 'a', 't']);
+  });
   it('accepts only 8-digit listing codes', () => {
     expect(isListingCode('12345678')).toBe(true);
     expect(isListingCode('02345678')).toBe(false);
@@ -89,6 +107,24 @@ describe('listing files', () => {
     };
     expect(listingFilePaths(l, 'u1')).toEqual(['listings/u1/12345678-1.jpg', 'listings/u1/12345678-2.jpg', 'videos/u1/12345678.mov']);
   });
+  it('lists the lease-proof files noted for one listing, inside the owner folder only', () => {
+    const note = {
+      kind: 'lease',
+      files: [
+        'proofs/u1/12345678-1.pdf',
+        'proofs/u1/12345678-2.heic',
+        'proofs/u1/12345678-1.pdf',
+        'proofs/u2/12345678-1.pdf',
+        'proofs/u1/87654321-1.jpg',
+        'proofs/u1/12345678-3/../../../u2/x.pdf',
+        'listings/u1/12345678-1.jpg',
+        7,
+      ],
+    };
+    expect(proofFilePaths('12345678', 'u1', note)).toEqual(['proofs/u1/12345678-1.pdf', 'proofs/u1/12345678-2.heic']);
+    expect(proofFilePaths('12345678', 'u1', undefined)).toEqual([]);
+    expect(proofFilePaths('12345678', 'u1', { files: 'proofs/u1/12345678-1.pdf' })).toEqual([]);
+  });
   it('ignores a video stored for another listing or person', () => {
     expect(listingFilePaths({ code: '12345678', photos: [], video: url('videos/u2/12345678.mp4') }, 'u1')).toEqual([]);
     expect(listingFilePaths({ code: '12345678', photos: [], video: null }, 'u1')).toEqual([]);
@@ -96,33 +132,66 @@ describe('listing files', () => {
 });
 
 describe('rule mirrors', () => {
+  // the shape src/listings.ts publishListing writes
   const listing = {
     ownerId: 'u1',
+    ownerName: 'Emily',
+    ownerPhoto: 'https://lh3.googleusercontent.com/a/x=s96-c',
     kind: 'sublet',
     campus: 'evanston',
+    campusId: 'nu-evn',
     title: 'Private room in a 3-bed',
     price: 1250,
     start: '2027-01-02',
     end: '2027-04-30',
     status: 'hidden',
     code: '12345678',
-    ownerName: 'Emily',
     area: 'Evanston',
-    photos: ['p'],
+    photos: [url('listings/u1/12345678-1.jpg')],
+    captions: ['Bedroom'],
+    video: null,
+    walk: 8,
+    location: { lat: 42.05, lng: -87.68 },
+    near: [],
+    form: { subletType: 'sublet', layout: '3B2B', f: { note: 'Hi' }, multi: { fees: [], amen: [], habits: [], items: [] }, prefs: {} },
   };
   it('matches validListing', () => {
     expect(validListingShape(listing)).toBe(true);
+    expect(validListingShape({ ...listing, video: url('videos/u1/12345678.mp4') })).toBe(true);
     expect(validListingShape({ ...listing, status: 'live' })).toBe(false);
     expect(validListingShape({ ...listing, price: 12.5 })).toBe(false);
     expect(validListingShape({ ...listing, photos: [] })).toBe(false);
     expect(validListingShape({ ...listing, end: '2027-01-01' })).toBe(false);
     expect(validListingShape({ ...listing, description: 7 })).toBe(false);
   });
+  it('requires one of our campuses, its id and key naming the same one', () => {
+    expect(validListingShape({ ...listing, campusId: 'nu-chi', campus: 'chicago' })).toBe(true);
+    expect(validListingShape({ ...listing, campusId: 'x" onmouseover="alert(1)' })).toBe(false);
+    expect(validListingShape({ ...listing, campusId: 'nu-chi' })).toBe(false);
+    const { campusId: _, ...noId } = listing;
+    expect(validListingShape(noId)).toBe(false);
+  });
+  it('requires the shapes the pages read', () => {
+    const { form: _, ...noForm } = listing;
+    expect(validListingShape(noForm)).toBe(false);
+    expect(validListingShape({ ...listing, form: 'x' })).toBe(false);
+    expect(validListingShape({ ...listing, form: { ...listing.form, f: [] } })).toBe(false);
+    expect(validListingShape({ ...listing, form: { ...listing.form, multi: null } })).toBe(false);
+    expect(validListingShape({ ...listing, captions: 'Bedroom' })).toBe(false);
+    expect(validListingShape({ ...listing, captions: ['x'.repeat(1300)] })).toBe(false);
+    expect(validListingShape({ ...listing, photos: [{ url: 'x' }] })).toBe(false);
+    expect(validListingShape({ ...listing, photos: ['x'.repeat(41_000)] })).toBe(false);
+    expect(validListingShape({ ...listing, video: 'javascript:alert(1)' })).toBe(false);
+    expect(validListingShape({ ...listing, ownerPhoto: 'x'.repeat(2049) })).toBe(false);
+  });
   it('matches validRequest', () => {
     const r = { ownerId: 'u1', campus: 'chicago', start: '2027-01-02', end: '2027-04-30', budget: 1400, status: 'closed' };
     expect(validRequestShape(r)).toBe(true);
+    expect(validRequestShape({ ...r, campusId: 'nu-chi', ownerName: 'Emily', ownerPhoto: '', org: 'Google' })).toBe(true);
     expect(validRequestShape({ ...r, budget: null })).toBe(false);
     expect(validRequestShape({ ...r, note: 'x'.repeat(2001) })).toBe(false);
+    expect(validRequestShape({ ...r, campusId: 'nu-evn' })).toBe(false);
+    expect(validRequestShape({ ...r, ownerName: 'x'.repeat(61) })).toBe(false);
   });
 });
 

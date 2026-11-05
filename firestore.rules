@@ -29,12 +29,33 @@ service cloud.firestore {
       return s is string && s.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
     }
 
+    // an optional field: absent, or a string of at most n characters
+    function optText(d, f, n) {
+      return !(f in d) || (d[f] is string && d[f].size() <= n);
+    }
+
+    // one of our three campuses, its id and key naming the same one
+    function validCampus(d) {
+      return (d.campusId == 'nu-evn' && d.campus == 'evanston')
+        || (d.campusId == 'nu-chi' && d.campus == 'chicago')
+        || (d.campusId == 'chi-dt' && d.campus == 'downtown');
+    }
+
     // ---------- public profiles ----------
+    function validProfile(d) {
+      return d.keys().hasOnly(['name', 'photoURL', 'nu', 'joinedAt', 'updatedAt', 'bio', 'year'])
+        && d.name is string && d.name.size() <= 60
+        && optText(d, 'photoURL', 2048)
+        && optText(d, 'bio', 500)
+        && (!('year' in d) || d.year is int || (d.year is string && d.year.size() <= 20))
+        && (!('nu' in d) || d.nu is bool);
+    }
+
     match /users/{uid} {
-      allow read: if true;
-      allow create, update: if isNU() && me() == uid
-        && request.resource.data.keys().hasOnly(['name', 'photoURL', 'nu', 'joinedAt', 'updatedAt', 'bio', 'year'])
-        && request.resource.data.name is string && request.resource.data.name.size() <= 60;
+      // a profile is read one at a time (a host's first name and photo); nobody lists them all
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if isNU() && me() == uid && validProfile(request.resource.data);
       allow delete: if signedIn() && me() == uid;
 
       // contact details and other private settings: only the owner
@@ -58,18 +79,30 @@ service cloud.firestore {
     }
 
     // ---------- listings ----------
+    // The shapes the site reads (src/lib/listingView.ts) and src/listings.ts publishListing writes.
     function validListing(d) {
       return d.ownerId is string
         && d.kind in ['sublet', 'takeover']
         && d.campus in ['evanston', 'chicago', 'downtown']
+        && validCampus(d)
         && d.title is string && d.title.size() > 0 && d.title.size() <= 120
         && d.price is int && d.price > 0 && d.price <= 20000
         && isDate(d.start) && isDate(d.end) && d.start < d.end
         && d.status in ['active', 'taken', 'hidden']
         && d.code is string && d.code.matches('[1-9][0-9]{7}')
         && d.ownerName is string && d.ownerName.size() <= 60
+        && optText(d, 'ownerPhoto', 2048)
         && d.area is string && d.area.size() <= 80
+        // 1-20 photo links (the first is the cover) and at most one short caption each
         && d.photos is list && d.photos.size() > 0 && d.photos.size() <= 20
+        && d.photos[0] is string && d.photos.join(' ').size() <= 20 * 2048
+        && (!('captions' in d) || (d.captions is list && d.captions.size() <= 20 && d.captions.join(' ').size() <= 20 * 60))
+        && (!('video' in d) || d.video == null || (d.video is string && d.video.size() <= 2048 && d.video.matches('https://.+')))
+        // the post form's answers: a map, and its groups maps too
+        && d.form is map
+        && (!('f' in d.form) || d.form.f is map)
+        && (!('multi' in d.form) || d.form.multi is map)
+        && (!('prefs' in d.form) || d.form.prefs is map)
         && (!('walk' in d) || d.walk == null || (d.walk is int && d.walk > 0 && d.walk < 1000))
         && (!('near' in d) || (d.near is list && d.near.size() <= 12))
         && (!('location' in d) || d.location == null
@@ -93,11 +126,13 @@ service cloud.firestore {
       allow update: if isNU()
         && resource.data.ownerId == me()
         && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.code == resource.data.code
         && request.resource.data.createdAt == resource.data.createdAt
         && validListing(request.resource.data);
       allow delete: if signedIn() && resource.data.ownerId == me();
 
-      // street address, building and website: the host only
+      // street address, building and website; the lease-proof note: the host only. src/profile.ts deletes
+      // these before the listing itself (this rule reads the listing to know its host).
       match /private/{docId} {
         allow read, write: if signedIn()
           && get(/databases/$(database)/documents/listings/$(id)).data.ownerId == me();
@@ -108,6 +143,10 @@ service cloud.firestore {
     function validRequest(d) {
       return d.ownerId is string
         && d.campus in ['evanston', 'chicago', 'downtown']
+        && (!('campusId' in d) || validCampus(d))
+        && optText(d, 'ownerName', 60)
+        && optText(d, 'ownerPhoto', 2048)
+        && optText(d, 'org', 200)
         && isDate(d.start) && isDate(d.end) && d.start < d.end
         && d.budget is int && d.budget > 0 && d.budget <= 20000
         && d.status in ['open', 'closed']

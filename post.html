@@ -21,7 +21,7 @@ img{display:block}
 .hd .wrap{height:64px;display:flex;align-items:center;gap:16px}
 .hd img{height:26px}
 .hd .r{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
-.hd .r .save{color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0 8px;height:44px;display:inline-flex;align-items:center}
+.hd .r .save{color:var(--ink2);text-decoration:underline;text-underline-offset:3px;background:none;border:0;padding:0 8px;height:44px;display:inline-flex;align-items:center;white-space:nowrap;flex:none}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px;width:100%}
 
 /* one set of controls: the same height, font and radius everywhere */
@@ -102,6 +102,10 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 .pf-add:hover{border-color:var(--ink)}
 .pf-add b{font-size:14px;color:var(--ink)}
 .pf-note{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
+/* a restored draft had files that a draft can't keep: say so on the step that needs them */
+.lost{margin:20px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:14px;line-height:1.5;color:var(--ink2)}
+/* the rent picker with too few real rents at this campus to compare: no bars (and, from budget-picker.js, no counts) */
+body.rl-norents .bp-hist{display:none}
 .btn{height:48px;padding:0 22px;border-radius:999px;border:0;background:var(--ink);color:#fff;font-weight:650;font-size:15px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 .btn.lnk{background:none;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:0 8px;margin:0 -8px;height:44px}
 .btn.lnk:disabled{opacity:.35;cursor:default}
@@ -138,7 +142,7 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 .done .acts .btn{flex:none;white-space:nowrap}
 
 @container (max-width:700px){
-  .hd .wrap{height:56px}.hd .r .save{display:none}
+  .hd .wrap{height:56px;gap:12px}.hd .r .save{padding:0}
   .wrap{padding:0 16px}
   h2.q{font-size:26px}
   .a-q{padding:24px 16px 28px}
@@ -148,6 +152,11 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
   .a-steps{display:none}
   .rrow{grid-template-columns:minmax(0,1fr) auto;row-gap:2px}
   .rrow dt{grid-column:1/-1}
+}
+/* small phones: Save and exit stays; the heart and chat icons step aside (both are in the menu) */
+@container (max-width:380px){
+  .hd .r .save{font-size:13px}
+  .hd .r .save~.rl-msgs{display:none}
 }
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -177,9 +186,21 @@ const S={step:0,done:false,f:{},
   multi:{fees:[],amen:[],habits:[],items:[]},
   prefs:{},
   photos:{bedroom:[],living:[],bath:[],kitchen:[],building:[]}};
-/* the campus the visitor picked on the homepage (their own choice), and a draft they saved and left */
+/* the campus the visitor picked on the homepage (their own choice), then the draft saved in this browser */
 try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&WhereSearch.SCHOOLS.find(x=>x[0]===p.school);if(row){S.campusId=row[0];S.campus=row[1]}}catch(_){}
-try{const d=JSON.parse(sessionStorage.getItem('rl-post-draft-v2')||'null');if(d)Object.assign(S,d,{done:false,map:true,video:null})}catch(_){} /* the video file isn't kept in a draft */
+/* the draft: every answer is saved in this browser (localStorage) as the host goes, so a reload, a closed tab or a
+   phone that drops the page keeps the form; it is cleared once the listing is published. Files (photos, the video,
+   lease proof) can't be kept in a draft: LOST counts the ones it had, so the Photos and proof steps ask for them again.
+   An older draft (rl-post-draft-v2, this tab only) is picked up once and moved to the new key. */
+const DRAFT_KEY='rl-post-draft-v3',OLD_DRAFT='rl-post-draft-v2';
+let LOST={photos:0,video:0,proof:0},FROM_OLD=false;
+try{let raw=localStorage.getItem(DRAFT_KEY);if(!raw){raw=sessionStorage.getItem(OLD_DRAFT);FROM_OLD=!!raw}
+  const d=raw?JSON.parse(raw):null;
+  if(d&&typeof d==='object'){const {files,photos,...rest}=d,fl=files||{};
+    LOST={photos:+fl.photos||0,video:fl.video||rest.video?1:0,proof:+fl.proof||0};
+    Object.assign(S,rest,{done:false,map:true,video:null});
+    if(!S.f||typeof S.f!=='object')S.f={};if(!S.prefs||typeof S.prefs!=='object')S.prefs={};
+    S.multi=Object.assign({fees:[],amen:[],habits:[],items:[]},S.multi);for(const k in S.multi)if(!Array.isArray(S.multi[k]))S.multi[k]=[]}}catch(_){}
 const money=v=>'$'+v.toLocaleString('en-US');
 const val=(k,d)=>k in S.f?S.f[k]:d;
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -189,8 +210,17 @@ const depAmt=()=>dollars(val('dep',''));
 const TODAY=(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date());
 const MAXPH=20; /* firestore.rules: at most 20 photos a listing */
 const toast=m=>{if(window.Rentlet&&Rentlet.toast)Rentlet.toast(m)};
-/* what rooms near this campus ask, for the rent picker's histogram (the real site uses the live listings) */
-const PRICES=[950,1050,1100,1150,1180,1200,1200,1250,1280,1300,1300,1320,1350,1380,1400,1400,1420,1450,1450,1480,1500,1500,1520,1550,1580,1600,1600,1650,1700,1700,1750,1800,1850,1900,1950,2000,2100,2200,2400,2800];
+/* what rooms at this campus ask, for the rent picker's histogram: the live listings (src/listings.ts subscribeActive),
+   loaded when the Money step first shows; rooms whose move-out day has passed are left out. With fewer than MIN_RENTS
+   real rents there is nothing fair to compare with, so the picker shows no bars, counts or typical range. */
+const MIN_RENTS=8;
+let LIVE=[],LIVE_ON=false;
+const rents=()=>{const p=LIVE.filter(l=>l.campusId===S.campusId&&!(l.end&&l.end<TODAY)).map(l=>l.price);return p.length>=MIN_RENTS?p:[]};
+const pkLabel=()=>rents().length?'Compare with rooms nearby':'Pick the rent on a slider';
+function liveRents(){if(LIVE_ON||!window.RentletListings||S.done||STEPS[S.step].q!=='Money')return;LIVE_ON=true;
+  RentletListings.subscribeActive(list=>{LIVE=list.map(d=>({campusId:d.campusId,price:Number(d.price)||0,end:String(d.end||'')})).filter(l=>l.price>0);
+    document.querySelectorAll('[data-pk]').forEach(b=>{b.setAttribute('aria-label',pkLabel());b.title=pkLabel()})},()=>{LIVE=[]})}
+addEventListener('rentlet:ready',()=>liveRents());
 const CHEV=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"/></svg>`;
 
 /* ---------- publish to Rentlet (src/listings.ts) ---------- */
@@ -206,7 +236,7 @@ async function publish(btn){
   BUSY=true;const label=btn.textContent;btn.disabled=true;btn.textContent='Uploading photos…';
   try{
     S.code=await RentletListings.publishListing(S,VIDEO,PROOF,s=>{const b=document.querySelector('[data-next]');if(b)b.textContent=s==='photos'?'Uploading photos…':'Publishing…'});
-    S.done=true;try{sessionStorage.removeItem('rl-post-draft-v2')}catch(_){}
+    S.done=true;clearDraft();
     render();window.scrollTo(0,0);
   }catch(e){
     const r=e&&e.reason,gap=r==='invalid'&&firstGap();
@@ -223,14 +253,14 @@ const chip=(t,on,attrs='')=>`<button type="button" class="chip ${on?'on':''}" ar
 const one=(key,list)=>list.map(([v,t])=>chip(t,S[key]===v,`data-one="${key}:${v}"`)).join('');            /* single choice */
 const multi=(g,list)=>list.map(t=>chip(t,S.multi[g].includes(t),`data-multi="${g}:${t}"`)).join('');       /* any number */
 /* optional single choices: tapping the chosen one again clears it */
-const CLEARABLE=['view','neg','route','gender','transferChannel'];
+const CLEARABLE=['view','neg','route','gender'];
 /* key: the answer this group holds, so a missing-answer line can find it and focus its first control */
 const grp=(label,inner,small='',key='')=>`<div class="grp"${key?` data-need="${key}"`:''}><span class="lbl">${label}${small?`<small>${small}</small>`:''}</span>${inner}</div>`;
 const inp=(k,d,u='',pre='',ph='',ex='')=>`<label class="in">${pre?`<span class="pre">${pre}</span>`:''}<input value="${esc(val(k,''))}" placeholder="${esc(ph||d)}" data-f="${k}" ${ex}>${u?`<span class="u">${u}</span>`:''}</label>`;
 const ta=(k,d,ph='')=>`<label class="in ta"><textarea rows="2" placeholder="${esc(ph||d)}" data-f="${k}">${esc(val(k,''))}</textarea></label>`;
 /* a rent field: any amount typed, or picked on the price picker (whose slider covers $800 to $2,600) */
 const PKI=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 13.5h11M4 11V8.5M7 11V4.5M10 11V6.5M13 11V9"/></svg>`;
-const moneyIn=(k,label,ph)=>`<div class="in num"><span class="pre">$</span><input inputmode="numeric" autocomplete="off" maxlength="9" value="${S[k]?S[k].toLocaleString('en-US'):''}" placeholder="${ph}" data-num="${k}" aria-label="${label}"><span class="u">/ mo</span><button type="button" class="pkb" data-pk="${k}" aria-haspopup="dialog" aria-expanded="false" aria-label="Compare with rooms nearby" title="Compare with rooms nearby">${PKI}</button></div>`;
+const moneyIn=(k,label,ph)=>`<div class="in num"><span class="pre">$</span><input inputmode="numeric" autocomplete="off" maxlength="9" value="${S[k]?S[k].toLocaleString('en-US'):''}" placeholder="${ph}" data-num="${k}" aria-label="${label}"><span class="u">/ mo</span><button type="button" class="pkb" data-pk="${k}" aria-haspopup="dialog" aria-expanded="false" aria-label="${pkLabel()}" title="${pkLabel()}">${PKI}</button></div>`;
 /* the line under a field that Next or Publish found unanswered; it goes as soon as the answer is there */
 let NEED=null; /* {step, key, msg} */
 const nm=(k,top)=>NEED&&NEED.step===S.step&&NEED.key===k?`<p class="need${top?' top':''}" id="need-msg">${esc(NEED.msg)}</p>`:'';
@@ -256,7 +286,12 @@ const PRESETS=[['Winter quarter','2027-01-03','2027-03-20'],['Winter + spring','
 
 /* step 12: the files that prove the lease (up to 3 photos or PDFs, 10 MB each) */
 const kb=n=>n>=1048576?`${(n/1048576).toFixed(1)} MB`:`${Math.max(1,Math.round(n/1024))} KB`;
-const proofHtml=()=>`<div class="pf"><p class="pf-h">Lease page or landlord’s email</p>${PROOF.map((f,i)=>`<div class="pf-row"><span class="pf-ic" aria-hidden="true">${f.type==='application/pdf'?'PDF':'IMG'}</span><span class="pf-n">${esc(f.name)}</span><span class="pf-s">${kb(f.size)}</span><button type="button" class="x" data-rmproof="${i}" aria-label="Remove ${esc(f.name)}">×</button></div>`).join('')}${PROOF.length<3?`<label class="pf-add" tabindex="0" role="button"><input type="file" accept="image/*,application/pdf" data-proof hidden><b>+ Add a photo or PDF</b><span>Up to 3 files, 10 MB each</span></label>`:''}<p class="pf-note">Only you and the Rentlet team can open these files. Renters see that lease proof was sent, not the files.</p></div>`;
+const proofHtml=()=>`<div class="pf"><p class="pf-h">Lease page or landlord’s email</p>${PROOF.map((f,i)=>`<div class="pf-row"><span class="pf-ic" aria-hidden="true">${f.type==='application/pdf'?'PDF':'IMG'}</span><span class="pf-n">${esc(f.name)}</span><span class="pf-s">${kb(f.size)}</span><button type="button" class="x" data-rmproof="${i}" aria-label="Remove ${esc(f.name)}">×</button></div>`).join('')}${PROOF.length<3?`<label class="pf-add" tabindex="0" role="button"><input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf" data-proof hidden><b>+ Add a photo or PDF</b><span>Up to 3 files, 10 MB each</span></label>`:''}<p class="pf-note">Only you and the Rentlet team can open these files. Renters see that lease proof was sent, not the files. They’re deleted with the listing or your account.</p></div>`;
+/* a restored draft's files, which a draft can't keep: "Your draft had 3 photos and a video." until they're added again */
+const nOf=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+const lostPhotosNote=()=>{const p=LOST.photos>photoCount()?nOf(LOST.photos,'photo'):'',v=LOST.video&&!S.video?'a video':'';
+  return p||v?`<p class="lost" role="status">Your draft had ${[p,v].filter(Boolean).join(' and ')}. Drafts don’t keep files, so add ${p&&v?'them':p?(LOST.photos===1?'it':'them'):'it'} again.</p>`:''};
+const lostProofNote=()=>S.proof==='lease'&&LOST.proof>PROOF.length?`<p class="lost" role="status">Your draft had ${nOf(LOST.proof,'lease proof file')}. Drafts don’t keep files, so add ${LOST.proof===1?'it':'them'} again.</p>`:'';
 const photoCount=()=>Object.values(S.photos).reduce((n,a)=>n+a.length,0);
 const areasDone=()=>AREAS.filter(([k,,min])=>S.photos[k].length>=min).length;
 const unitName=()=>S.unit==='whole'?'Whole place':'Private room';
@@ -290,7 +325,7 @@ function placeNote(){
   if(!RL.authed)return 'Suggestions by HERE once you sign in.';
   if(addr&&PL_HAD)return 'Pick your address from the list to show its area and walking time.';
   return 'Suggestions by HERE.'}
-const plShowNote=()=>{const n=$('[data-place-note]');if(n)n.textContent=placeNote()};
+const plShowNote=()=>{const n=$('[data-place-note]');if(n)n.textContent=placeNote();autosave()}; /* a looked-up place is an answer too */
 addEventListener('rentlet:ready',plShowNote);
 const plSet=(k,v)=>{S.f[k]=v;const el=$(`[data-f=${k}]`);if(el)el.value=v;clearNeed()};
 /* a HERE address: its point, area, ZIP and walk */
@@ -371,7 +406,7 @@ const STEPS=[
  {q:'What are you leaving?',h:'This sets the rules for dates and the hand-over.',
   need:()=>S.subletType?[]:[['type','Choose a short sublet or a lease takeover.']],
   body:()=>`<div data-need="type"><div class="opts" style="margin-top:28px">${opt(S.subletType==='sublet','Short sublet','You keep the lease and come back. They stay for a fixed stretch.','data-set="subletType:sublet"')}${opt(S.subletType==='takeover','Lease takeover','They take over your lease until it ends. The landlord signs the transfer.','data-set="subletType:takeover"')}</div>${nm('type')}</div>`},
- {q:'Where is it?',h:'Campus first, then the building. Your place shows on the map. The full street address is shared after you both agree.',
+ {q:'Where is it?',h:'Campus first, then the building. The listing shows the exact spot on a map. The street address, building name and website are visible only to you.',
   need:()=>{const m=[],a=String(S.f.addr||'').trim();if(!S.campusId)m.push(['campus','Choose the campus.']);if(a.length<5)m.push(['addr',a?'Add the full street address.':'Add the street address.']);return m},
   body:()=>
    grp('Campus',`<form data-wform><div class="in ws" data-wseg><span data-wval>${esc(S.campus||'')}</span>${CHEV}</div></form>${nm('campus')}`,'','campus')+
@@ -387,8 +422,7 @@ const STEPS=[
    `<div class="grp"><div class="row2"><div data-need="rent"><span class="lbl">Rent per month</span>${moneyIn('rent','Rent per month, in dollars','e.g. 1,450')}${nm('rent')}</div><div><span class="lbl">Original rent<small>optional · what you pay now</small></span>${moneyIn('orig','Original rent per month, in dollars','e.g. 1,600')}</div></div></div>`+
    grp('Deposit',`<div class="opts two" data-need="depc">${opt(S.dep==='none','No deposit','','data-set="dep:none"')}${opt(S.dep==='amount','A deposit','Paid to you','data-set="dep:amount"')}</div>${nm('depc')}${S.dep==='amount'?`<div class="row2" style="margin-top:10px"><div>${inp('dep','','one-time','$','e.g. 600','inputmode="decimal" autocomplete="off"')}</div><div class="chips" style="min-height:var(--ctl);align-items:center" data-need="refund">${chip('Refundable',S.refund===true,'data-refund="1"')}${chip('Non-refundable',S.refund===false,'data-refund="0"')}</div></div>`:''}${nm('dep')}${nm('refund')}`,'','dep')+
    grp('Rent includes',`<div class="chips">${multi('fees',FEES)}</div>`)+
-   `<div class="grp"><div class="row2"><div><span class="lbl">Other costs<small>about, per month</small></span>${inp('extra','','','$','e.g. 60 for utilities','inputmode="decimal" autocomplete="off"')}</div><div><span class="lbl">Negotiable?</span><div class="chips" style="height:var(--ctl);align-items:center">${one('neg',[['little','A little'],['no','No']])}</div></div></div></div>`+
-   grp(S.subletType==='takeover'?'How the lease transfers':'How the sublet is arranged',`<div class="opts">${opt(S.transferChannel==='official','Through the building or landlord','The official process, with a transfer fee if they charge one','data-set="transferChannel:official"')}${opt(S.transferChannel==='private','Privately, between us','Not registered with the building. People are warned of the risk.','data-set="transferChannel:private"')}</div>`)},
+   `<div class="grp"><div class="row2"><div><span class="lbl">Other costs<small>about, per month</small></span>${inp('extra','','','$','e.g. 60 for utilities','inputmode="decimal" autocomplete="off"')}</div><div><span class="lbl">Negotiable?</span><div class="chips" style="height:var(--ctl);align-items:center">${one('neg',[['little','A little'],['no','No']])}</div></div></div></div>`},
  {q:'The room',h:'What people compare first.',
   need:()=>{const m=[];if(!S.unit)m.push(['unit','Choose a private room or the whole place.']);if(!S.layout)m.push(['layout','Choose the layout.']);else if(S.layout==='Other'&&!String(val('layoutOther','')).trim())m.push(['layout','Type the layout, e.g. 4B2B.']);if(!S.bath)m.push(['bath','Choose a private or shared bathroom.']);return m},
   body:()=>
@@ -402,9 +436,9 @@ const STEPS=[
   body:()=>
    grp('Roommates',`<div class="opts two">${opt(S.hasRoommates==='no','Just them','','data-set="hasRoommates:no"')}${opt(S.hasRoommates==='yes','Yes, roommates','','data-set="hasRoommates:yes"')}</div>${nm('mates')}`,'','mates')+
    (S.hasRoommates==='yes'?`<div class="grp" data-need="rmN"><div class="row2"><div><span class="lbl">How many</span>${inp('rmN','','','','e.g. 2','inputmode="numeric" autocomplete="off"')}</div><div><span class="lbl">Who<small>optional</small></span>${inp('rmWho','','','','e.g. grad students')}</div></div>${nm('rmN')}</div>`+grp('Gender',`<div class="chips">${one('gender',GENDER.map(g=>[g,g]))}</div>`,'optional')+grp('Schedule and habits',`<div class="chips">${multi('habits',['Early risers','Quiet weeknights','Cook most nights','Non-smoking','Guests on weekends'])}</div>`,'optional')+grp('Anything else',ta('rmNote','','e.g. Two grad students, quiet weeknights'),'optional'):'')},
- {q:'Getting to campus',h:'Does the school shuttle cover this address?',
+ {q:'Getting to campus',h:'Does the school shuttle cover this address? Your answer helps match the listing with people who want the shuttle.',
   need:()=>S.shuttle?[]:[['shuttle','Choose whether the shuttle covers this address.']],
-  body:()=>grp('Shuttle',`<div class="opts">${opt(S.shuttle==='covered','Yes, covered','','data-set="shuttle:covered"')}${opt(S.shuttle==='not_covered','Not covered','','data-set="shuttle:not_covered"')}${opt(S.shuttle==='unknown','Not sure','We’ll say “not confirmed” on the listing','data-set="shuttle:unknown"')}</div>${nm('shuttle')}`,'','shuttle')+(S.shuttle==='covered'?grp('Route',`<div class="chips">${one('route',ROUTES.map(r=>[r,r]))}</div>`,'optional'):'')},
+  body:()=>grp('Shuttle',`<div class="opts">${opt(S.shuttle==='covered','Yes, covered','','data-set="shuttle:covered"')}${opt(S.shuttle==='not_covered','Not covered','','data-set="shuttle:not_covered"')}${opt(S.shuttle==='unknown','Not sure','','data-set="shuttle:unknown"')}</div>${nm('shuttle')}`,'','shuttle')+(S.shuttle==='covered'?grp('Route',`<div class="chips">${one('route',ROUTES.map(r=>[r,r]))}</div>`,'optional'):'')},
  {q:'In the building',h:'Optional. Pick any the building has.',body:()=>grp('Amenities',`<div class="chips">${multi('amen',AMEN)}</div>`)},
  {q:'What stays?',h:'Furniture that will be there, and on what terms.',
   need:()=>{if(!S.furn)return [['furn','Choose how furnished it is.']];const m=[];if(S.furn==='none')return m;
@@ -418,16 +452,16 @@ const STEPS=[
  {q:'House rules',h:'What you ask of the person moving in. Pick only what applies; tap again to clear.',body:()=>PREFS.map(([g,items])=>grp(g,`<div class="chips">${items.map(t=>chip(t,S.prefs[g]===t,`data-pref="${g}:${t}"`)).join('')}</div>`)).join('')+grp('Anything else',ta('ruleNote','','e.g. Quiet after 10 pm'),'optional')},
  {q:'Photos',h:`At least one of the bedroom. Best with 2 of the bedroom and 1 of each other area, up to ${MAXPH} photos. Phone photos in daylight are fine.`,
   need:()=>!S.photos.bedroom.length?[['photos','Add at least one photo of the bedroom.']]:photoCount()>MAXPH?[['photos',`Remove photos until there are ${MAXPH} or fewer.`]]:[],
-  body:()=>`<div class="grp" data-need="photos">${nm('photos',1)}${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?esc(S.video):'Optional · MP4, MOV or WebM, up to 60 MB'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk" tabindex="0" role="button"><input type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" data-video hidden>Add</label>`}</div></div><p class="note">${photoCount()} of ${MAXPH} photos · ${areasDone()} of ${AREAS.length} areas done. Anyone can report a photo that doesn’t match the place.</p>`},
+  body:()=>`${lostPhotosNote()}<div class="grp" data-need="photos">${nm('photos',1)}${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?esc(S.video):'Optional · MP4, MOV or WebM, up to 60 MB'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk" tabindex="0" role="button"><input type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" data-video hidden>Add</label>`}</div></div><p class="note">${photoCount()} of ${MAXPH} photos · ${areasDone()} of ${AREAS.length} areas done. Photos that don’t match the place can be reported to the Rentlet team.</p>`},
  {q:'Prove it’s yours',h:'Your Northwestern sign-in counts as student verification. A badge shows what was checked; it is not a guarantee.',
   need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length?[['proof','Add a photo of the lease or the landlord’s email, or choose Student verification.']]:[],
-  body:()=>`<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','Student verification','Verified with your Northwestern account','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>`},
- {q:'Check and publish',h:'This is how it will look. After publishing, you can rename it, mark it as taken or take it down from your page.',body:()=>{
+  body:()=>`${lostProofNote()}<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','Student verification','Verified with your Northwestern account','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>`},
+ {q:'Check and publish',h:'This is how it will look. After publishing you can’t edit it, but you can mark it as taken or take it down from Profile.',body:()=>{
    const ok=i=>!missing(i).length,where=String(val('building','')||val('addr','')).trim(),rmN=String(val('rmN','')).trim(),who=String(val('rmWho','')).trim(),extra=dollars(val('extra','')),items=S.multi.items.length,pc=photoCount();
    return `<div class="grp">${card()}</div>
    <dl class="review grp">${[
      ['Type',line([S.subletType&&typeName()],ok(0)),0],
-     ['Where',line([S.campus&&esc(S.campus),where&&`${esc(where)} · on the map`],ok(1)),1],
+     ['Where',line([S.campus&&esc(S.campus),where&&`${esc(where)} (only you see this)`,where&&'exact spot on the map'],ok(1)),1],
      ['Dates',ok(2)?WhenPicker.label(S.start,S.end):S.start&&S.end?'<span class="ns">Pick new dates</span>':NS,2],
      ['Money',line([S.rent&&`${money(S.rent)} / mo`,S.orig&&`was ${money(S.orig)}`,depLine(),extra&&`~${money(extra)} other costs`],ok(3)),3],
      ['Room',line([S.unit&&unitName(),S.layout&&esc(layoutName()),S.bath&&`${S.bath} bath`,val('sqft','')&&`${esc(val('sqft',''))} sq ft`],ok(4)),4],
@@ -440,7 +474,7 @@ const STEPS=[
      ['Verification',S.proof==='student'?'Student ✓':S.proof==='lease'?line([`Student ✓ · lease proof (${PROOF.length} file${PROOF.length===1?'':'s'})`],ok(11)):NS,11]
    ].map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
    ${grp('A note for the listing',ta('note','','e.g. I’m away for winter quarter. Quiet room with a proper desk.'),'optional · shows as a quote')}
-   <p class="note">Goes live as soon as you publish, with a listing number. Up to 3 listings at a time.</p>`}}];
+   <p class="note">Goes live as soon as you publish, with a listing number, and leaves search after the move-out day. Up to 3 listings at a time.</p>`}}];
 /* what a step still needs, and the first step (from the top) that still needs something */
 const missing=i=>STEPS[i]&&STEPS[i].need?STEPS[i].need():[];
 const firstGap=()=>{for(let i=0;i<STEPS.length;i++){const m=missing(i);if(m.length)return [i,m[0]]}return null};
@@ -448,8 +482,8 @@ const firstGap=()=>{for(let i=0;i<STEPS.length;i++){const m=missing(i);if(m.leng
 const reach=()=>{for(let k=S.step;k<STEPS.length;k++)if(missing(k).length)return k;return STEPS.length-1};
 
 const page=()=>{const n=STEPS.length,i=Math.min(S.step,n-1),s=STEPS[i];
-  if(S.done)return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Your listing is live</h2><p class="hint">Listing #${S.code}. Northwestern students can find it now, and you can mark it as taken from your page.</p><div class="grp" style="text-align:left">${card()}</div><div class="acts"><a class="btn sec" href="room.html?room=${S.code}">See your listing</a><a class="btn" href="index.html">Back to home</a></div></div></div>`;
-  return `${header('<button type="button" class="save" data-save>Save and exit</button>')}<div class="a-top"><i style="width:${(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">Step ${i+1} of ${n}</p><h2 class="q">${s.q}</h2><p class="hint">${s.h}</p>${s.body()}</div></div>
+  if(S.done)return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Your listing is live</h2><p class="hint">Listing #${S.code}. It’s in search now. You can mark it as taken or take it down from Profile.</p><div class="grp" style="text-align:left">${card()}</div><div class="acts"><a class="btn sec" href="room.html?room=${S.code}">See your listing</a><a class="btn" href="index.html">Back to home</a></div></div></div>`;
+  return `${header('<button type="button" class="save" data-save title="Your answers are saved in this browser as you go">Save and exit</button>')}<div class="a-top"><i style="width:${(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">Step ${i+1} of ${n}</p><h2 class="q">${s.q}</h2><p class="hint">${s.h}</p>${s.body()}</div></div>
   <div class="a-foot"><div class="wrap"><button class="btn lnk" data-back ${i===0?'disabled':''}>Back</button><div class="a-steps">${STEPS.map((x,k)=>`<button type="button" data-go="${k}" aria-label="Step ${k+1}: ${x.q}"${k===i?' aria-current="step"':''}>${k+1}</button>`).join('')}</div><button class="btn" data-next>${i===n-1?'Publish':'Next'}</button></div></div>`};
 /* the dots' state follows the answers, also while one is being typed (typing doesn't redraw the step) */
 function syncDots(){const i=S.step,r=reach();document.querySelectorAll('.a-steps [data-go]').forEach(b=>{const k=+b.dataset.go;
@@ -457,7 +491,7 @@ function syncDots(){const i=S.step,r=reach();document.querySelectorAll('.a-steps
 
 /* the missing-answer line stays only while that answer is still missing on this step */
 const stillNeeded=()=>NEED&&NEED.step===S.step&&missing(NEED.step).some(([k,m])=>k===NEED.key&&m===NEED.msg);
-function clearNeed(){if(NEED&&!stillNeeded()){NEED=null;const m=$('#need-msg');if(m)m.remove()}syncDots()}
+function clearNeed(){if(NEED&&!stillNeeded()){NEED=null;const m=$('#need-msg');if(m)m.remove()}syncDots();autosave()}
 const FOCUSABLE='input:not([type=file]),textarea,button:not([disabled]),[tabindex]:not([tabindex="-1"])';
 /* Next or Publish found a missing answer: go to its step, say what's missing under the field, and focus the field */
 function showNeed(i,[key,msg]){
@@ -482,8 +516,19 @@ function render(){
     WhereSearch.attach({form:f,seg:f.querySelector('[data-wseg]'),valueEl:out,current:S.campus,onCampus:(v,name)=>{S.campusId=v;S.campus=name;placeCampus();render()}});
     if(!S.campus)out.innerHTML='<span class="pkph">Choose a campus</span>'});
   /* the building field lists the apartment directory, the street address field HERE addresses */
-  PL_OPEN=null;st.querySelectorAll('[data-f=building],[data-f=addr]').forEach(placeField);syncDots()}
-const draft=()=>{try{const {photos,...rest}=S;sessionStorage.setItem('rl-post-draft-v2',JSON.stringify(rest))}catch(_){}}; /* photos are files; they are not kept in the draft */
+  PL_OPEN=null;st.querySelectorAll('[data-f=building],[data-f=addr]').forEach(placeField);syncDots();
+  liveRents();autosave()}
+/* the draft (see DRAFT_KEY): every answer but the files, plus how many files it had; saved a moment after each change */
+const draftState=()=>{const {photos,video,done,code,...rest}=S;
+  return Object.assign(rest,{files:{photos:Math.max(photoCount(),LOST.photos),video:S.video||LOST.video?1:0,proof:S.proof==='lease'?Math.max(PROOF.length,LOST.proof):LOST.proof}})};
+let SAVE_T=0,SAVED=null;
+function saveDraft(){clearTimeout(SAVE_T);SAVE_T=0;if(S.done)return;
+  try{const j=JSON.stringify(draftState());if(j!==SAVED){localStorage.setItem(DRAFT_KEY,j);SAVED=j;sessionStorage.removeItem(OLD_DRAFT)}}catch(_){}}
+const autosave=()=>{if(S.done||SAVED==null)return;clearTimeout(SAVE_T);SAVE_T=setTimeout(saveDraft,400)};
+function clearDraft(){clearTimeout(SAVE_T);SAVE_T=0;try{localStorage.removeItem(DRAFT_KEY);sessionStorage.removeItem(OLD_DRAFT)}catch(_){}}
+/* a tab closed or a phone switching apps saves what's pending at once */
+addEventListener('pagehide',()=>{if(SAVE_T)saveDraft()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&SAVE_T)saveDraft()});
 
 document.addEventListener('click',e=>{const t=e.target;
   const nx=t.closest('[data-next]');if(nx){if(S.step>=STEPS.length-1){publish(nx);return}
@@ -492,7 +537,7 @@ document.addEventListener('click',e=>{const t=e.target;
   const rp=t.closest('[data-rmproof]');if(rp){PROOF.splice(+rp.dataset.rmproof,1);render();return}
   if(t.closest('[data-back]')){S.step=Math.max(0,S.step-1);render();return}
   if(t.closest('[data-edit]')){S.done=false;S.step=STEPS.length-1;render();return}
-  if(t.closest('[data-save]')){draft();location.href='index.html';return}
+  if(t.closest('[data-save]')){SAVED='';saveDraft();location.href='index.html';return}
   const g=t.closest('[data-go]');if(g){const k=+g.dataset.go;if(k>S.step&&k>reach())return;S.step=k;render();return}
   /* a single choice; an optional one clears when tapped again */
   const set=t.closest('[data-set]')||t.closest('[data-one]');if(set){const [k,v]=(set.dataset.set||set.dataset.one).split(':');S[k]=CLEARABLE.includes(k)&&S[k]===v?null:v;if(k==='dep'&&v==='none')S.refund=null;render();return}
@@ -508,7 +553,8 @@ document.addEventListener('click',e=>{const t=e.target;
   if(t.closest('label.ph')&&photoCount()>=MAXPH){e.preventDefault();toast(`You can add up to ${MAXPH} photos. Remove one to add another.`);return}
   /* the price picker, in its rent mode, from the chart button inside each rent field */
   const p=t.closest('[data-pk]');if(p){const k=p.dataset.pk;
-    return BudgetPicker.open({anchor:p,mode:'rent',value:S[k]||0,prices:PRICES,title:k==='orig'?'What you pay now':'Your rent a month',note:k==='orig'?'Shown struck through next to your rent.':'Or type any amount in the field.',onDone:v=>{S[k]=v;render()}})}
+    const pr=rents();document.body.classList.toggle('rl-norents',!pr.length);
+    return BudgetPicker.open({anchor:p,mode:'rent',value:S[k]||0,prices:pr,title:k==='orig'?'What you pay now':'Your rent a month',note:k==='orig'?'Shown struck through next to your rent.':pr.length?'Or type any amount in the field.':'Too few rooms listed here yet to compare. Or type any amount in the field.',onDone:v=>{S[k]=v;render()}})}
   const nb=t.closest('.in.num');if(nb&&!t.closest('input,button'))nb.querySelector('input').focus()});
 /* the photo and file tiles open their file chooser from the keyboard too */
 document.addEventListener('keydown',e=>{const l=e.target.closest&&e.target.closest('label[tabindex]');if(l&&(e.key==='Enter'||e.key===' ')){e.preventDefault();l.click()}});
@@ -526,9 +572,11 @@ document.addEventListener('change',e=>{const el=e.target,file=el.files&&el.files
     if(file.size>=60*1024*1024)return toast('That video is over 60 MB. Try a shorter clip.');
     VIDEO=file;S.video=file.name;render()}
   else if('proof' in el.dataset){el.value='';
-    if(!/^image\/|^application\/pdf$/.test(file.type))return toast('Add a photo or a PDF.');
+    if(!/^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/.test(file.type))return toast('Add a photo (JPG, PNG, WebP or HEIC) or a PDF.');
     if(file.size>=10*1024*1024)return toast('That file is over 10 MB. Try a smaller photo or PDF.');
     if(PROOF.length<3){PROOF.push(file);render()}}});
+/* from here on, changes save themselves; an older draft moves to the new key on the first save */
+SAVED=FROM_OLD?'':JSON.stringify(draftState());
 render();
 </script>
 <script type="module" src="/src/rentlet.ts"></script>

@@ -1078,7 +1078,7 @@ const cxFooter=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fco
 
 /* ---------- hero A1: ticket reel ---------- */
 let cardStyle='chip';
-function sqCard(p,dup){const d=`${md(p.start)}${ic('arrow')}<span class="in">${md(p.youIn)}</span>`;return `<a class="sq" href="#/place/${p.key}" data-place="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${p.title}, ${p.school}. ${p.who} leaves ${md(p.start)}, you arrive ${md(p.youIn)}. ${money(p.price)} per month."><img src="${pic(p.img)}" alt="" class="${p.flip?'flip':''}" style="object-position:${p.pos||'50% 50%'}"><span class="sq-view">View room${ic('arrow')}</span><span class="sq-chip">${d}</span><span class="sq-info"><span class="d">${d}</span><small><span>${p.school}</span><b>${money(p.price)}</b></small></span></a>`}
+function sqCard(p,dup){const d=`${md(p.start)}${ic('arrow')}<span class="in">${md(p.youIn)}</span>`;return `<a class="sq" href="#/place/${p.key}" data-place="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${p.title}, ${p.schoolName||schoolName(p.school)}. ${p.who} leaves ${md(p.start)}, you arrive ${md(p.youIn)}. ${money(p.price)} per month."><img src="${pic(p.img)}" alt="" class="${p.flip?'flip':''}" style="object-position:${p.pos||'50% 50%'}"><span class="sq-view">View room${ic('arrow')}</span><span class="sq-chip">${d}</span><span class="sq-info"><span class="d">${d}</span><small><span>${p.schoolName||schoolName(p.school)}</span><b>${money(p.price)}</b></small></span></a>`}
 function heroReel(){
   const t=ROOMS.map(p=>sqCard(p)).join('')+ROOMS.map(p=>sqCard(p,1)).join('');
   return `<section class="hero h-reel"><div class="wrap">

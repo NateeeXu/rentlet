@@ -1,7 +1,7 @@
 // Pure helpers for the profile page (profile.html + src/profile.ts): field cleaning, the checks the
 // Firestore rules make before an update, and which Storage files belong to a listing. Also the Saved
 // page's pieces (saved.html + src/saved.ts): what a saved card shows and when the page reloads. Tested.
-import { CAMPUS_NAME, type CampusId, type ListingDoc } from './listingView';
+import { CAMPUS_NAME, hasEnded, localDay, type CampusId, type ListingDoc } from './listingView';
 import { KIND_LABEL, LAYOUTS, ROLE_LABEL } from './requestsView';
 
 export const MAX_LIVE = 3;
@@ -49,17 +49,25 @@ export function contactEmailError(email: string): string {
 }
 
 type Status = ListingDoc['status'];
-const STATUS_ORDER: Record<Status, number> = { active: 0, hidden: 1, taken: 2 };
+// What the profile shows for one of your listings: its stored status, or 'ended' once its last day has
+// passed (an ended listing shows nowhere, whatever its status says). A taken listing stays "Taken".
+export type OwnStatus = Status | 'ended';
+const STATUS_ORDER: Record<OwnStatus, number> = { active: 0, hidden: 1, ended: 2, taken: 3 };
 
-// Live listings first, then hidden, then taken; newest first inside each group.
-export function sortOwnListings<T extends { status: Status; createdAtMs?: number }>(list: T[]): T[] {
+export function ownStatus(l: { status: Status; end?: unknown }, today: string = localDay()): OwnStatus {
+  return l.status !== 'taken' && hasEnded(l.end, today) ? 'ended' : l.status;
+}
+
+// Live listings first, then hidden, then ended, then taken; newest first inside each group.
+export function sortOwnListings<T extends { status: OwnStatus; createdAtMs?: number }>(list: T[]): T[] {
   return [...list].sort(
-    (a, b) => (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3) || (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0),
+    (a, b) => (STATUS_ORDER[a.status] ?? 4) - (STATUS_ORDER[b.status] ?? 4) || (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0),
   );
 }
 
-export function liveCount(list: { status: Status }[]): number {
-  return list.filter((l) => l.status === 'active').length;
+// Listings that count toward the live cap: active and not ended.
+export function liveCount(list: { status: OwnStatus; end?: unknown }[], today: string = localDay()): number {
+  return list.filter((l) => l.status === 'active' && !hasEnded(l.end, today)).length;
 }
 
 // A Firebase Storage download URL ("…/v0/b/<bucket>/o/<encoded path>?alt=media&token=…") -> its path.
@@ -89,24 +97,52 @@ export function listingFilePaths(l: Pick<ListingDoc, 'code' | 'photos' | 'video'
   return [...out];
 }
 
+// The lease-proof files noted for one listing (listings/{code}/private/proof = {kind, files, sentAt};
+// src/listings.ts names them proofs/{uid}/{code}-{n}.{ext}). Only paths directly in the owner's own
+// proofs folder and named for this listing are returned, so a delete can never reach anyone else's file.
+export function proofFilePaths(code: string, uid: string, note: unknown): string[] {
+  const files = note && typeof note === 'object' ? (note as { files?: unknown }).files : null;
+  const prefix = `proofs/${uid}/${code}-`;
+  const ok = (p: unknown): p is string => typeof p === 'string' && p.startsWith(prefix) && /^[A-Za-z0-9._-]+$/.test(p.slice(prefix.length));
+  return [...new Set((Array.isArray(files) ? files : []).filter(ok))];
+}
+
 const isDate = (s: unknown): s is string => typeof s === 'string' && ISO_DAY.test(s);
 const isInt = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n);
+const isMap = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
+const maxLen = (v: unknown, n: number) => typeof v === 'string' && v.length <= n;
+// firestore.rules bounds a list of strings by its join(' ') length
+const joinedLen = (v: unknown[]) => v.reduce<number>((n, x) => n + String(x).length, 0) + Math.max(0, v.length - 1);
+const CAMPUS_PAIR: Record<string, string> = { 'nu-evn': 'evanston', 'nu-chi': 'chicago', 'chi-dt': 'downtown' };
+const validCampus = (d: Record<string, unknown>) =>
+  typeof d.campusId === 'string' && Object.prototype.hasOwnProperty.call(CAMPUS_PAIR, d.campusId) && CAMPUS_PAIR[d.campusId] === d.campus;
 
 // The same checks as validListing() in firestore.rules. An update is accepted only when the whole
 // merged document still passes them, so the page asks before sending a status change.
 export function validListingShape(d: Record<string, unknown>): boolean {
+  const form = d.form;
   return (
     typeof d.ownerId === 'string' &&
     (d.kind === 'sublet' || d.kind === 'takeover') &&
     ['evanston', 'chicago', 'downtown'].includes(d.campus as string) &&
+    validCampus(d) &&
     typeof d.title === 'string' && d.title.length > 0 && d.title.length <= 120 &&
     isInt(d.price) && d.price > 0 && d.price <= 20000 &&
     isDate(d.start) && isDate(d.end) && d.start < d.end &&
     ['active', 'taken', 'hidden'].includes(d.status as string) &&
     isListingCode(d.code) &&
     typeof d.ownerName === 'string' && d.ownerName.length <= 60 &&
+    (!('ownerPhoto' in d) || maxLen(d.ownerPhoto, 2048)) &&
     typeof d.area === 'string' && d.area.length <= 80 &&
     Array.isArray(d.photos) && d.photos.length > 0 && d.photos.length <= 20 &&
+    d.photos.every((p) => typeof p === 'string') && joinedLen(d.photos) <= 20 * 2048 &&
+    (!('captions' in d) ||
+      (Array.isArray(d.captions) && d.captions.length <= 20 && d.captions.every((c) => typeof c === 'string') && joinedLen(d.captions) <= 20 * 60)) &&
+    (!('video' in d) || d.video === null || (maxLen(d.video, 2048) && /^https:\/\/.+$/.test(d.video as string))) &&
+    isMap(form) &&
+    (!('f' in form) || isMap(form.f)) &&
+    (!('multi' in form) || isMap(form.multi)) &&
+    (!('prefs' in form) || isMap(form.prefs)) &&
     (!('description' in d) || (typeof d.description === 'string' && d.description.length <= 4000))
   );
 }
@@ -116,6 +152,10 @@ export function validRequestShape(d: Record<string, unknown>): boolean {
   return (
     typeof d.ownerId === 'string' &&
     ['evanston', 'chicago', 'downtown'].includes(d.campus as string) &&
+    (!('campusId' in d) || validCampus(d)) &&
+    (!('ownerName' in d) || maxLen(d.ownerName, 60)) &&
+    (!('ownerPhoto' in d) || maxLen(d.ownerPhoto, 2048)) &&
+    (!('org' in d) || maxLen(d.org, 200)) &&
     isDate(d.start) && isDate(d.end) && d.start < d.end &&
     isInt(d.budget) && d.budget > 0 && d.budget <= 20000 &&
     (d.status === 'open' || d.status === 'closed') &&

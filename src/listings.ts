@@ -18,9 +18,13 @@ import { auth, db, storage } from './firebase';
 import { firstName } from './lib/nu';
 import {
   CAMPUS_KEY,
+  hasEnded,
+  liveList,
+  localDay,
   titleOf,
   toCard,
   toRoom,
+  usableListing,
   type CampusId,
   type ListingDoc,
   type PostForm,
@@ -51,6 +55,9 @@ export class PublishError extends Error {
 // would refuse never leaves orphaned photos behind. The post form checks the same answers step by step.
 const MAX_PHOTOS = 20;
 const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
+// lease proof: the photo and document types storage.rules accepts under proofs/ (no SVG or other images)
+const PROOF_TYPE = /^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/;
+const MAX_PROOF_BYTES = 10 * 1024 * 1024;
 const isDay = (s: unknown): s is string => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
 // The video's type; a file the system didn't label is read from its extension.
@@ -60,7 +67,7 @@ function videoType(video: File): string {
   return ext === 'mov' ? 'video/quicktime' : ext === 'webm' ? 'video/webm' : 'video/mp4';
 }
 
-function ready(S: PostState, video: File | null): boolean {
+function ready(S: PostState, video: File | null, proof: File[]): boolean {
   const price = Math.round(Number(S.rent));
   const photos = Object.values(S.photos || {}).reduce((n, list) => n + (list || []).filter((p) => p.startsWith('data:image/')).length, 0);
   return (
@@ -72,13 +79,16 @@ function ready(S: PostState, video: File | null): boolean {
     S.start < S.end &&
     photos > 0 &&
     photos <= MAX_PHOTOS &&
-    (!video || (/^video\/(mp4|quicktime|webm)$/.test(videoType(video)) && video.size < MAX_VIDEO_BYTES))
+    (!video || (/^video\/(mp4|quicktime|webm)$/.test(videoType(video)) && video.size < MAX_VIDEO_BYTES)) &&
+    (S.proof !== 'lease' || proof.slice(0, 3).every((f) => PROOF_TYPE.test(f.type) && f.size < MAX_PROOF_BYTES))
   );
 }
 
 function fromDoc(id: string, data: DocumentData): ListingDoc {
-  const created = data.createdAt as Timestamp | undefined;
-  return { ...(data as ListingDoc), code: id, createdAtMs: created ? created.toMillis() : Date.now() };
+  const created = data.createdAt as Timestamp | null | undefined;
+  // a listing still saving has no server time yet; anything else that isn't a Timestamp reads as now
+  const ms = created && typeof created.toMillis === 'function' ? created.toMillis() : Date.now();
+  return { ...(data as ListingDoc), code: id, createdAtMs: ms };
 }
 
 function newCode(): string {
@@ -152,10 +162,12 @@ async function hostName(uid: string, displayName: string | null): Promise<string
 export async function publishListing(S: PostState, video: File | null, proof: File[], onStep?: (s: PublishStep) => void): Promise<string> {
   const user = auth.currentUser;
   if (!user) throw new PublishError('signin');
-  if (!ready(S, video)) throw new PublishError('invalid');
+  if (!ready(S, video, proof)) throw new PublishError('invalid');
 
+  // live listings only: one whose last day has passed no longer counts (it shows nowhere)
   const mine = await getDocs(query(collection(db, 'listings'), where('ownerId', '==', user.uid), where('status', '==', 'active')));
-  if (mine.size >= MAX_ACTIVE) throw new PublishError('limit');
+  const today = localDay();
+  if (mine.docs.filter((d) => !hasEnded(d.get('end'), today)).length >= MAX_ACTIVE) throw new PublishError('limit');
 
   const code = await freeCode();
   // HERE answers while the photos upload
@@ -184,7 +196,7 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
     for (const [i, file] of proof.slice(0, 3).entries()) {
       const ext = file.type === 'application/pdf' ? 'pdf' : (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
       const path = `proofs/${user.uid}/${code}-${i + 1}.${ext}`;
-      await uploadBytes(ref(storage, path), file, { contentType: file.type || 'application/octet-stream' });
+      await uploadBytes(ref(storage, path), file, { contentType: file.type });
       proofFiles.push(path);
     }
   }
@@ -274,11 +286,24 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
   return code;
 }
 
-// Every active listing, newest first, kept live.
+// Every active listing that hasn't ended, newest first, kept live. A listing that can't be shown (one
+// malformed document) is left out, so it never breaks the homepage or room page for everyone else.
 export function subscribeActive(cb: (list: ListingDoc[]) => void, onError?: () => void): () => void {
   return onSnapshot(
     query(collection(db, 'listings'), where('status', '==', 'active')),
-    (snap) => cb(snap.docs.map((d) => fromDoc(d.id, d.data())).sort((a, b) => (b.createdAtMs ?? 0) - (a.createdAtMs ?? 0))),
+    (snap) =>
+      cb(
+        liveList(
+          snap.docs.map((d) => {
+            try {
+              return fromDoc(d.id, d.data());
+            } catch {
+              return null;
+            }
+          }),
+          localDay(),
+        ),
+      ),
     () => onError?.(),
   );
 }
@@ -290,7 +315,9 @@ export async function getListing(code: string): Promise<Lookup> {
     const snap = await getDoc(doc(db, 'listings', code));
     if (!snap.exists()) return { state: 'missing' };
     const listing = fromDoc(snap.id, snap.data());
-    return listing.status === 'active' ? { state: 'ok', listing } : { state: 'removed' };
+    if (listing.status !== 'active') return { state: 'removed' };
+    // an ended listing still opens (old links keep working; toRoom marks it ended), a broken one doesn't
+    return usableListing(listing) ? { state: 'ok', listing } : { state: 'missing' };
   } catch (e) {
     // the rules hide listings that were taken down from everyone but their host
     return (e as { code?: string }).code === 'permission-denied' ? { state: 'removed' } : { state: 'error' };

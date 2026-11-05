@@ -151,19 +151,21 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
         <p class="note">Contact details are shared only when you both agree.</p>
         <div class="acts"><a class="btn btn-primary" href="index.html">Find a place</a></div></section>
       <section class="sec" id="post" aria-labelledby="post-h"><h2 id="post-h">Posting a room</h2>
-        <ol class="steps"><li><span>Post in about ten minutes: campus, dates, rent and deposit, photos.</span></li><li><span>It’s checked before it goes live.</span></li><li><span>People message you. You choose who gets the room.</span></li></ol>
+        <ol class="steps"><li><span>Post in about ten minutes: campus, dates, rent and deposit, photos.</span></li><li><span>It goes live as soon as you publish. The map shows its exact spot; the street address stays private to you.</span></li><li><span>People message you. You choose who gets the room.</span></li></ol>
+        <p class="note">A listing can’t be edited after publishing. From Profile you can mark it as taken or take it down, and it leaves search after its move-out day.</p>
         <div class="acts"><a class="btn btn-secondary" href="post.html">Post a listing</a></div></section>
       <section class="sec" id="request" aria-labelledby="request-h"><h2 id="request-h">Posting a request</h2>
         <div class="rq"><p>Nothing fits yet? Post your campus, dates and budget.</p><p>Hosts near that campus can message you.</p></div>
         <div class="acts"><a class="btn btn-secondary" href="request.html">Post a request</a></div></section>
       <section class="sec" id="verification" aria-labelledby="verification-h"><h2 id="verification-h">Verification</h2>
-        <p class="sub">What the badge means</p><ul class="lines"><li>They confirmed a school or work email.</li><li>Hosts can add proof of their lease.</li></ul>
-        <p class="sub">What it doesn’t mean</p><ul class="lines"><li>It isn’t a guarantee about the person, the room or the deal.</li></ul></section>
+        <p class="sub">What the badge means</p><ul class="lines"><li>They signed in with a Northwestern Google account (@u.northwestern.edu or @northwestern.edu). Only those accounts can sign in.</li><li>Hosts can add lease proof. Only the host and the Rentlet team can open it; others see only that it was sent.</li></ul>
+        <p class="sub">What it doesn’t mean</p><ul class="lines"><li>It isn’t a guarantee about the person, the room or the deal.</li><li>Listings aren’t reviewed before they go live.</li></ul>
+        <p class="sub">If something looks wrong</p><ul class="lines"><li>Use Report on the room page or in Messages. Reports go to the Rentlet team.</li></ul></section>
       <section class="sec" id="money" aria-labelledby="money-h"><h2 id="money-h">Money</h2>
         <ul class="lines"><li>Rent and any deposit go to the host directly.</li><li>Rentlet never holds money and is not a broker or agent.</li><li>A deposit, when the host asks for one, is set by the host and shown on the listing.</li></ul>
         <p class="tip"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg><span>Never pay before you’ve seen the lease.</span></p></section>
       <section class="sec" id="privacy" aria-labelledby="privacy-h"><h2 id="privacy-h">Privacy</h2>
-        <ul class="lines"><li>Others can see your first name, role, school, dates and budget.</li><li>The street address shows only if the host chooses, or after you both agree.</li><li>Contact is an Instagram handle or email, never a phone number, shared only inside the conversation.</li></ul></section>
+        <ul class="lines"><li>Others can see your first name, role, school, dates and budget.</li><li>A listing shows its exact spot on the map. Its street address, building name and website are seen only by the host.</li><li>Contact is an Instagram handle or email, never a phone number, shared only inside the conversation.</li></ul></section>
       <section class="sec" id="not" aria-labelledby="not-h"><h2 id="not-h">What Rentlet is not</h2>
         <ul class="nots" data-nots></ul></section>
       <section class="sec" id="faq" aria-labelledby="faq-h"><h2 id="faq-h">FAQ</h2><div class="faq" data-faqs></div></section>
@@ -187,12 +189,12 @@ const NOTS=['No payments or escrow','No background checks','No lease drafting','
 const FAQ=[
   ['Is Rentlet a broker?','No. It’s a place to post and find sublets and lease takeovers, and to talk to each other. We don’t act as an agent for either side.'],
   ['Do you collect rent or deposits?','No. You pay the host or the building directly. Before you pay, check the lease, the landlord’s approval and who receives the money.'],
-  ['How are listings checked?','Every public listing and request is checked before it goes live.'],
+  ['Are listings checked before they go live?','No. A listing goes live as soon as it’s published. Only people with a Northwestern Google account can post, and anything that looks wrong can be reported from the room page or in Messages. Reports go to the Rentlet team.'],
   ['When is my contact information shared?','Only when you both agree. Until then you talk inside Rentlet.'],
-  ['Can I use it if I’m not a student?','Yes. Rooms are listed by campus area, so they also suit interns and new hires nearby. You can verify with a work email.'],
+  ['Can I use it if I’m not a student?','Anyone can browse rooms and requests. Posting, messaging and saving need a Northwestern Google account (@u.northwestern.edu or @northwestern.edu).'],
   ['Which areas do you cover?','Places near Northwestern’s Evanston and Chicago campuses, and in downtown Chicago.'],
-  ['How long until my listing is live?','Once it’s checked. You get the listing number when it’s live.'],
-  ['What happens after my move-in date?','Rentlet steps out once you’ve agreed. Rent, repairs and the deposit are between you, the host and the landlord. When a listing’s dates pass, its page shows that the sublet has ended.']];
+  ['How long until my listing is live?','Right away. It’s live as soon as you publish, with its listing number.'],
+  ['What happens after my move-in date?','Rentlet steps out once you’ve agreed. Rent, repairs and the deposit are between you, the host and the landlord. When a listing’s dates pass, it leaves search and its page shows that the sublet has ended.']];
 $('[data-nots]').innerHTML=NOTS.map(x=>`<li><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg><span>${x}</span></li>`).join('');
 $('[data-faqs]').innerHTML=FAQ.map(([q,a],i)=>`<div class="fq${i?'':' open'}"><h3><button type="button" id="fq${i}" aria-expanded="${!i}" aria-controls="fa${i}" data-faq><span>${q}</span><span class="pm" aria-hidden="true"></span></button></h3><div class="fa" id="fa${i}" role="region" aria-labelledby="fq${i}"><div><p>${a}</p></div></div></div>`).join('');
 

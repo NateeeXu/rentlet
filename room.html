@@ -397,6 +397,11 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .bk-dates small{display:block;font-size:12px;font-weight:600;color:var(--muted)}
 .bk-dates span{display:block;font-size:14px;font-variant-numeric:tabular-nums} /* never cut off; wraps only if it must */
 .bk-msg{width:100%!important;height:48px;margin:14px 0 0!important}
+/* an ended listing: the booking actions give way to one line and a way back to search */
+.bk-end{margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--soft);display:grid;gap:6px;justify-items:start}
+.bk-end b{font-size:15px;font-weight:650;line-height:1.35}
+.t-end{align-self:center}
+.dock a.btn{color:var(--ink);text-decoration:none}
 .bookc .asks{margin:14px 0 0}
 .bookc .safe{margin-top:12px}
 /* estimate row: the receipt prints out of a slot under it and hangs over the page; the card keeps its size */
@@ -830,6 +835,8 @@ const mdy=s=>WhenPicker.day(s);
 const span=(a,b)=>WhenPicker.label(a,b);
 const money=n=>'$'+Math.round(n).toLocaleString('en-US');
 const nightsBetween=(a,b)=>Math.round((T(b)-T(a))/864e5);
+/* text placed into HTML or an attribute */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* fields that match the mini program listing record: 8-digit listing number, layout code, original rent,
    shuttle coverage (covered / not_covered / unknown), amenities from the publish options, furniture level,
    extra items, usage note, and the roommate fields (count, gender, identity, schedule, cooking, cleanliness, guests) */
@@ -876,7 +883,7 @@ document.addEventListener('click',e=>{const i=e.target.closest('.yours label')?.
 let P=[];
 /* photos and the room video, in the order the mini program shows them; any slide opens full screen */
 const MEDIA=()=>P.map(p=>({t:'img',src:pic(p[0]),cap:p[1],flip:!!p[2]})).concat(ROOM.video?[{t:'video',src:ROOM.video,poster:pic((P[1]||P[0]||[])[0]),cap:'Video tour',flip:false}]:[]);
-const gallery=()=>{const M=MEDIA();return `<div class="sqr gal" data-gal><div class="track">${M.map((m,i)=>`<div data-open-lb="${i}">${m.t==='img'?`<img src="${m.src}" alt="${m.cap}" class="${m.flip?'flip':''}">`:`<img src="${m.poster}" alt="" class="${m.flip?'flip':''}"><span class="vplay">${ic2('play')}<b>Play video tour</b></span>`}</div>`).join('')}</div><span class="cap" data-cap>${M[0].cap}</span><button class="nav p" data-gp aria-label="Previous">${ic('l','sm')}</button><button class="nav n" data-gn aria-label="Next">${ic('r','sm')}</button><button type="button" class="expand" data-open-lb-cur aria-label="View full screen" title="View full screen">${ic2('full')}</button><div class="dots">${M.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div></div>`};
+const gallery=()=>{const M=MEDIA();return `<div class="sqr gal" data-gal><div class="track">${M.map((m,i)=>`<div data-open-lb="${i}">${m.t==='img'?`<img src="${m.src}" alt="${m.cap}" class="${m.flip?'flip':''}">`:`<img src="${m.poster}" alt="" class="${m.flip?'flip':''}"><span class="vplay">${ic2('play')}<b>Play video tour</b></span>`}</div>`).join('')}</div><span class="cap" data-cap>${M[0]?M[0].cap:''}</span><button class="nav p" data-gp aria-label="Previous">${ic('l','sm')}</button><button class="nav n" data-gn aria-label="Next">${ic('r','sm')}</button><button type="button" class="expand" data-open-lb-cur aria-label="View full screen" title="View full screen">${ic2('full')}</button><div class="dots">${M.map((_,i)=>`<i class="${i?'':'on'}"></i>`).join('')}</div></div>`};
 function bindGal(){const M=MEDIA();$$('[data-gal]').forEach(gl=>{let i=0;const tr=$('.track',gl),pn=gl.closest('.panel'),go=n=>{i=(n+M.length)%M.length;tr.style.transform=`translateX(${-i*100}%)`;if(pn)$$('[data-thumb]',pn).forEach((b,j)=>b.classList.toggle('on',j===i));$('[data-cap]',gl).textContent=M[i].cap;$$('.dots i',gl).forEach((d,j)=>d.classList.toggle('on',j===i))};
   if(pn)$$('[data-thumb]',pn).forEach(b=>b.onclick=()=>go(+b.dataset.thumb));
   $('[data-gp]',gl).onclick=e=>{e.stopPropagation();go(i-1)};$('[data-gn]',gl).onclick=e=>{e.stopPropagation();go(i+1)};
@@ -907,15 +914,18 @@ const bookCard=()=>{const L=(k,v)=>`<div class="rl"><span>${k}</span><i></i><b>$
   return `<div class="host"><div class="avatar">${ROOM.who[0]}</div><div style="min-width:0;flex:1"><b>${ROOM.who}<span class="marks">${marks()}</span></b><span>${ROOM.role} · ${ROOM.reply}</span></div></div>
   <hr class="bk-hr"><div class="bk-pr"><b>${money(ROOM.price)}</b><small>/ mo</small>${ROOM.neg?'<span class="badge n bk-neg">Negotiable</span>':''}</div><p class="bk-save" data-bsave>${saveLine()}</p>
   <div class="bk-dates"><div><small>Move in</small><span>${d0}</span></div><div><small>Move out</small><span>${d1}</span></div></div>
-  <button class="btn btn-primary bk-msg" data-msg>${ic('chat','sm')}Message ${ROOM.who}</button>
+  ${ended()?endedBox():`<button class="btn btn-primary bk-msg" data-msg>${ic('chat','sm')}Message ${ROOM.who}</button>
   <div class="asks">${ROOM.asks.slice(0,2).map(a=>`<button class="chip" data-ask="${a}">${a}</button>`).join('')}</div>
   <div class="billc estc" data-flip role="button" tabindex="0" aria-label="Print the first-month estimate"><div class="fi"><div class="fa"><u>First-month estimate</u><span>${money(allIn())} ${ic2('arrow')}</span></div>
     <div class="slot" aria-hidden="true"></div><div class="feed"><div class="paper fin" role="group" aria-label="First-month estimate">
-    <p class="rh"><span>FIRST-MONTH ESTIMATE</span><span>${ROOM.who.toUpperCase()} · ${KEY.toUpperCase()}</span></p>
+    <p class="rh"><span>FIRST-MONTH ESTIMATE</span><span>${ROOM.who.toUpperCase()} · ${esc(KEY.toUpperCase())}</span></p>
     ${L('Rent',money(ROOM.price))}${L(ROOM.utilText,ROOM.util===null?'ASK THE HOST':'~'+money(ROOM.util))}${inc}${dep}
     <div class="rl tot"><span>EST. TOTAL</span><i></i><b>${money(allIn())}</b></div>
     <p class="rf">${foot}</p></div></div></div></div>
-  <p class="mut safe">Never pay before you’ve seen the lease.</p>`};
+  <p class="mut safe">Never pay before you’ve seen the lease.</p>`}`};
+/* the listing's last day has passed: src/lib/listingView.ts toRoom sets ROOM.ended; without it, the end date decides */
+const ended=()=>typeof ROOM.ended==='boolean'?ROOM.ended:!!ROOM.end&&ROOM.end<today;
+const endedBox=()=>`<div class="bk-end" role="status"><b>This ${ROOM.type==='Lease takeover'?'lease takeover':'sublet'} ended on ${mdy(ROOM.end)}</b><a class="st-link" href="index.html">Search all rooms</a></div>`;
 const SPOTS={'Downtown Evanston':[168,124],'South Evanston':[110,148],'Southeast Evanston':[200,150],'North Evanston':[120,34],'Northeast Evanston':[178,20]};
 const DESTS=[['main','Main campus · The Rock',[222,70]],['lib','University Library',[236,52]],['kellogg','Kellogg Global Hub',[244,96]],['tech','Tech Institute',[214,36]]];
 const ICON2={full:'<path d="M15 4h5v5M20 4l-6 6M9 20H4v-5M4 20l6-6M15 20h5v-5M20 20l-6-6M9 4H4v5M4 4l6 6"/>',shuttle:'<path d="M3.5 15.5V9a3 3 0 0 1 3-3h9.5l4.5 4.5v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M3.5 11h17M9.5 6v5M14.5 6v5"/><circle cx="8" cy="17.5" r="1.7"/><circle cx="16" cy="17.5" r="1.7"/>',flag:'<path d="M5.5 21V4M5.5 4.5h11l-2 4 2 4h-11"/>',copy:'<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>',play:'<path d="M8 5.5v13l10.5-6.5z"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.7v.1"/>',bike:'<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-7h5l3 7M10 9l2 7M13.5 6h2.5"/>',bus:'<rect x="5" y="3.5" width="14" height="14" rx="3"/><path d="M5 11h14M8.5 20.5v-3M15.5 20.5v-3"/><circle cx="8.5" cy="14.3" r=".6"/><circle cx="15.5" cy="14.3" r=".6"/>',ext:'<path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/>',pin:'<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',down:'<path d="M7 10l5 5 5-5"/>'};
@@ -981,7 +991,7 @@ const pplTile=()=>`<p class="tl">You’ll live with</p><button type="button" cla
 const VM={cap:'<path d="M2.5 9L12 4.5 21.5 9 12 13.5z"/><path d="M6.5 11v4.5c1.5 1.3 3.4 2 5.5 2s4-.7 5.5-2V11"/>',doc:'<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/>',key:'<circle cx="8" cy="15.5" r="3.8"/><path d="M10.8 12.7L19 4.5M16 7.5l2.5 2.5"/>'};
 const VST={ok:['Verified','<path d="M3 6.2l2 2 4-4.2"/>'],pending:['In review','<path d="M6 3.4V6l1.8 1.2"/>'],more:['More info needed','<path d="M6 3.5V6.5M6 8.6v.1"/>'],rejected:['Not approved','<path d="M4 4l4 4M8 4L4 8"/>'],none:['Not submitted','<path d="M3.8 6h4.4"/>']};
 const marks=()=>{const v=ROOM.ver,L=ROOM.type==='Lease takeover'?'takeover':'sublet';
-  return [['cap','student',`Student (${ROOM.school||'Northwestern'})`],['doc','lease','Lease proof'],['key','landlord',`Landlord OK for the ${L}`]]
+  return [['cap','student',`Student (${esc(roomCampus()||'Northwestern')})`],['doc','lease','Lease proof'],['key','landlord',`Landlord OK for the ${L}`]]
   .map(([k,f,name])=>{const st=v[f],t=`${name}: ${VST[st][0].toLowerCase()}`;return `<button type="button" class="vm ${st}" data-tip="${t}" aria-label="${t}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${VM[k]}</svg><i aria-hidden="true"><svg viewBox="0 0 12 12">${VST[st][1]}</svg></i></button>`}).join('')};
 const factIcon=f=>f[0]==='wash'?ic('wash'):`<img src="img/icons/${f[0]}.svg" alt="">`;
 function moreCards(all){const list=Object.entries(ROOMS).filter(([k])=>all&&STATE!=='expired'&&STATE!=='removed'?true:k!==KEY).map(([k,R])=>({k,R,f:fitOf(R)})).filter(x=>x.f.k!=='no'&&x.R.price<=BUDGET*1.05).sort((a,b)=>(b.f.k==='ok')-(a.f.k==='ok')||b.f.ov-a.f.ov).slice(0,3);
@@ -1047,7 +1057,12 @@ function shareRoom(){const u=shareUrl(),line=shareLine();
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ffturn]');if(!b)return;const f=b.closest('.fflip'),on=!f.classList.contains('on'),fr=f.querySelector('.ff.front'),bk=f.querySelector('.ff.back');
   f.classList.toggle('on',on);setTimeout(()=>f.classList.toggle('sw',on),reduced?0:120);fr.inert=on;bk.inert=!on;fr.querySelector('[data-ffturn]').setAttribute('aria-expanded',on);
   setTimeout(()=>(on?bk:fr).querySelector('[data-ffturn]').focus({preventScroll:true}),reduced?0:160)});
-const head=()=>`<header class="hdr"><div class="wrap"><a href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="msearch" role="search" aria-label="Search rooms"><button type="button" class="seg seg-w" aria-label="Change campus">${ic2('pin')}<span><small>Where</small><em data-where>Northwestern · Evanston</em></span></button><i></i><button type="button" class="seg" data-wopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your dates">${ic('cal','sm')}<span><small>When</small><em data-when>${WhenPicker.label(plan.start,plan.end)}</em></span></button><i class="b"></i><button type="button" class="seg seg-b" data-bopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your budget"><b class="usd">$</b><span><small>Budget</small><em data-bud>${BudgetPicker.label(BUDGET)}</em></span></button>
+/* the room's campus by name, never the stored id: toRoom's schoolName, else the id (or name) matched in where-search.js */
+const campusOf=v=>{const t=plainTx(v),r=((window.WhereSearch&&WhereSearch.SCHOOLS)||[]).find(x=>x[0]===t||x[1]===t);return r?r[1]:''};
+const roomCampus=()=>ROOM.schoolName?plainTx(ROOM.schoolName):campusOf(ROOM.school);
+/* the header's Where: this room's campus; before a room loads, the campus last searched */
+const whereName=()=>roomCampus()||campusOf(plan.school)||'Northwestern · Evanston';
+const head=()=>`<header class="hdr"><div class="wrap"><a href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="msearch" role="search" aria-label="Search rooms"><button type="button" class="seg seg-w" aria-label="Change campus">${ic2('pin')}<span><small>Where</small><em data-where>${esc(whereName())}</em></span></button><i></i><button type="button" class="seg" data-wopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your dates">${ic('cal','sm')}<span><small>When</small><em data-when>${WhenPicker.label(plan.start,plan.end)}</em></span></button><i class="b"></i><button type="button" class="seg seg-b" data-bopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your budget"><b class="usd">$</b><span><small>Budget</small><em data-bud>${BudgetPicker.label(BUDGET)}</em></span></button>
   <button type="button" class="aipk" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button>
   <button type="button" class="go" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button></div><div class="hdr-r"><button type="button" class="aipk ai-m" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button><button type="button" class="msrch" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button>${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div><button type="button" class="ai-scrim" id="aiScrim" data-aiclose aria-label="Close AI picks" tabindex="-1" hidden></button><div class="ai-gp" id="aiCard" role="dialog" aria-label="AI picks" hidden></div><div class="aicard scard" id="sCard" role="dialog" aria-label="Search listings" hidden><label class="sfield">${ic('search','sm')}<span class="sr">Search</span><input id="sQ" type="search" placeholder="Search an area, layout or listing #" autocomplete="off" spellcheck="false" aria-controls="sList"><kbd>Esc</kbd></label><div class="slist" id="sList" role="listbox"></div></div></header>`;
 /* "Sam, junior at Weinberg" from the role "Junior, Weinberg" */
@@ -1057,9 +1072,10 @@ const byline=()=>{const [a,b]=ROOM.role.split(', ');return b?`${ROOM.who}, ${/^.
 const saveBtn=()=>{const c=String(ROOM.code||'');if(!/^[1-9][0-9]{7}$/.test(c))return '';
   const on=!!(window.RL&&typeof RL.isSaved==='function'&&RL.isSaved('room',c));
   return `<button type="button" class="btn btn-ghost btn-sm" data-rl-save="room:${c}" aria-pressed="${on}" aria-label="Save this room">${ic('heart','sm')}<span class="sv-off">Save</span><span class="sv-on">Saved</span></button>`};
-const titlebar=()=>`<div class="titlebar"><div><h1>${ROOM.title}</h1><p class="t-sub"><span>${ROOM.area}</span><span>${ROOM.type}</span>${titleDates()}<button type="button" class="lcode" data-code="${ROOM.code}" aria-label="Copy listing number ${ROOM.code}">Listing #${ROOM.code}${ic2('copy')}</button></p></div><div class="tb-acts"><button class="btn btn-ghost btn-sm" data-share aria-label="Share this room">${ic('share','sm')}<span>Share</span></button>${saveBtn()}<button class="btn btn-ghost btn-sm" data-report aria-label="Report this listing">${ic2('flag')}<span>Report</span></button></div></div>`;
+const titlebar=()=>`<div class="titlebar"><div><h1>${ROOM.title}</h1><p class="t-sub"><span>${ROOM.area}</span><span>${ROOM.type}</span>${titleDates()}${ended()?'<span class="badge n t-end">Ended</span>':''}<button type="button" class="lcode" data-code="${ROOM.code}" aria-label="Copy listing number ${ROOM.code}">Listing #${ROOM.code}${ic2('copy')}</button></p></div><div class="tb-acts"><button class="btn btn-ghost btn-sm" data-share aria-label="Share this room">${ic('share','sm')}<span>Share</span></button>${saveBtn()}<button class="btn btn-ghost btn-sm" data-report aria-label="Report this listing">${ic2('flag')}<span>Report</span></button></div></div>`;
 const below=()=>`<div class="below"><details><summary>Room details ${ic('down')}</summary><div class="in">${ROOM.facts.map(f=>f[2]?`${f[1]} (${f[2]})`:f[1]).join(' · ')}.</div></details><details><summary>About ${ROOM.type==='Lease takeover'?'taking over the lease':'this sublet'} ${ic('down')}</summary><div class="in">${ROOM.type==='Lease takeover'?`You take over ${ROOM.who}’s lease until ${mdy(ROOM.end)}. The landlord signs the transfer; ask about any transfer fee.`:`You sublet from ${ROOM.who} until ${mdy(ROOM.end)}. ${ROOM.who} stays on the lease.`}</div></details><details><summary>Safety ${ic('down')}</summary><div class="in">Never pay before you’ve seen the room and the lease. <button class="chip" data-report>Report this listing</button></div></details></div>`;
-const dock=()=>`<div class="dock"><div class="dock-in"><div class="dp"><b>${money(ROOM.price)}</b><span>/ mo</span><small>${span(ROOM.start,ROOM.end)}</small></div><button class="btn btn-primary btn-sm" data-msg>${ic('chat','sm')}<span>Message<span class="dk-who"> ${ROOM.who}</span></span></button></div></div>`;
+/* an ended listing has no Message here either: the bar says when it ended and leads back to search */
+const dock=()=>`<div class="dock"><div class="dock-in"><div class="dp"><b>${money(ROOM.price)}</b><span>/ mo</span><small>${ended()?`Ended ${mdy(ROOM.end)}`:span(ROOM.start,ROOM.end)}</small></div>${ended()?`<a class="btn btn-secondary btn-sm" href="index.html">Search rooms</a>`:`<button class="btn btn-primary btn-sm" data-msg>${ic('chat','sm')}<span>Message<span class="dk-who"> ${ROOM.who}</span></span></button>`}</div></div>`;
 const page=()=>`${head()}<main class="wrap f2">${titlebar()}<div class="tri-wrap"><div class="tri intro" id="tri">
   <div class="panel mid">${gallery()}
     <div class="thumbs">${MEDIA().map((m,i)=>`<button class="${i?'':'on'} ${m.t==='video'?'vid':''}" data-thumb="${i}" aria-label="Show ${m.cap}"><img src="${m.t==='img'?m.src:m.poster}" alt="" class="${m.flip?'flip':''}">${m.t==='video'?`<span class="vb">${ic2('play')}</span>`:''}</button>`).join('')}</div>
@@ -1072,15 +1088,33 @@ ${ROOM.location&&window.RentletRoomMap?nearSection():''}
 
 /* listings arrive from src/rentlet.ts; the room in the URL is looked up among them, or directly when it is
    not active (taken down, or a host viewing their own hidden listing) */
-const today=new Date().toISOString().slice(0,10);
+/* today on the visitor's calendar (an end date is a local day, not a UTC one) */
+const today=(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(new Date());
+/* a room can be drawn once it has a listing number and both dates; anything less shows a state instead */
+const ISO_DAY=/^\d{4}-\d\d-\d\d$/;
+const loaded=()=>!!ROOM.code&&ISO_DAY.test(String(ROOM.start||''))&&ISO_DAY.test(String(ROOM.end||''));
+/* an ended listing still shows the whole room; its booking actions give way to the ended line */
 function useRoom(R){const same=JSON.stringify(R)===JSON.stringify(ROOM);Object.keys(ROOM).forEach(k=>delete ROOM[k]);Object.assign(ROOM,R);P=ROOM.photos||[];
-  const want=ROOM.end&&ROOM.end<today?'expired':'ok';if(STATE!==want)setState(want);else if(!same)render()}
+  if(STATE!=='ok')setState('ok');else if(!same)render()}
+/* a direct lookup's answer: the room, or taken down / not found / couldn't load */
+function showLookup(r){if(r&&r.state==='ok')return useRoom(RentletListings.toRoom(r.listing));const k=r&&ST_ICON[r.state]?r.state:'error';if(STATE!==k)setState(k)}
+/* liveDown: the live list failed (its listener has stopped), so Try again starts a new one */
+let liveDown=false,retrying=false,retryN=0;
 window.RL_onListings=list=>{
-  if(list===null){if(STATE==='loading')setState('error');return}
-  Object.keys(ROOMS).forEach(k=>delete ROOMS[k]);list.forEach(d=>{ROOMS[d.code]=RentletListings.toRoom(d)});
+  if(list===null){liveDown=true;if(STATE==='loading'&&!retrying)setState('error');return}
+  liveDown=false;Object.keys(ROOMS).forEach(k=>delete ROOMS[k]);list.forEach(d=>{ROOMS[d.code]=RentletListings.toRoom(d)});
   if(!KEY)return setState('missing');
   if(ROOMS[KEY])return useRoom(ROOMS[KEY]);
-  RentletListings.getListing(KEY).then(r=>{if(r.state==='ok')useRoom(RentletListings.toRoom(r.listing));else if(STATE!==r.state)setState(r.state)})};
+  RentletListings.getListing(KEY).then(showLookup,()=>{if(STATE==='loading')setState('error')})};
+/* src/rentlet.ts sets window.RentletListings when it loads; wait a little for it, then give up */
+function listingsApi(){return new Promise((ok,no)=>{if(window.RentletListings)return ok(window.RentletListings);
+  const on=()=>{clearTimeout(t);window.RentletListings?ok(window.RentletListings):no()},t=setTimeout(()=>{removeEventListener('rentlet:ready',on);no()},10000);
+  addEventListener('rentlet:ready',on,{once:true})})}
+/* Try again: look the room up again (and restart the live list if that is what failed), then show what came back */
+function retryLoad(){if(!KEY)return setState('missing');const n=++retryN;retrying=true;setState('loading');
+  const mine=()=>{if(n!==retryN)return false;retrying=false;return true};
+  listingsApi().then(L=>{if(liveDown){liveDown=false;L.subscribeActive(window.RL_onListings,()=>window.RL_onListings(null))}return L.getListing(KEY)})
+    .then(r=>{if(mine()&&(r&&r.state==='ok'||STATE==='loading'))showLookup(r)},()=>{if(mine()&&STATE==='loading')setState('error')})}
 /* page states: the real page waits for data (three dots), and can find the listing gone, ended, unknown, or fail to load */
 const QS=new URLSearchParams(location.search),QROOM=QS.get('room');
 let STATE=KEY?'loading':'missing';
@@ -1092,12 +1126,15 @@ function stateView(){const yd=span(plan.start,plan.end);
     removed:[`This listing is no longer available`,`The host took it down, or it was rented. The rooms below fit your dates (${yd}).`,`<a class="st-link" href="index.html">Search all rooms</a>`],
     expired:[`This sublet has ended`,`${ROOM.start&&ROOM.end?`It was available ${span(ROOM.start,ROOM.end)}. `:''}The rooms below are open on your dates.`,`<a class="st-link" href="index.html">Search all rooms</a>`],
     missing:[`We couldn’t find this listing`,`The link may be wrong, or the listing was removed. Check the listing number and search again.`,`<button type="button" class="st-link" data-sopen>Search by listing number</button>`],
-    error:[`Couldn’t load this room`,`Check your connection and try again. Code: NET_TIMEOUT`,`<button type="button" class="btn btn-primary btn-sm" data-retry>Try again</button><a class="st-link" href="index.html">Back to search</a>`]}[STATE];
+    error:[`Couldn’t load this room`,`Check your connection and try again.`,`<button type="button" class="btn btn-primary btn-sm" data-retry>Try again</button><a class="st-link" href="index.html">Back to search</a>`]}[STATE];
   const more=STATE==='error'?'':`<section class="more"><h2>Other rooms that fit your dates <a href="index.html">See all</a></h2><div class="mrow" id="moreRooms">${moreCards(true)}</div></section>`;
   return `${head()}<main class="wrap"><div class="st-box">${stIcon(STATE)}<h1>${box[0]}</h1><p>${box[1]}</p><div class="st-acts">${box[2]}</div></div>${more}</main>`}
 function setState(k){STATE=k;const u=new URL(location.href);if(k==='ok')u.searchParams.delete('state');else u.searchParams.set('state',k);history.replaceState(null,'',u);$$('[data-st]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.st===k));boot()}
-function boot(){setVh();
-  if(STATE==='loading'){site.innerHTML=loadingView();return}
+function boot(){setVh();clearTimeout(boot.w);
+  /* never draw a room that hasn't loaded: wait for it, or say it couldn't load */
+  if(STATE==='ok'&&!loaded())return setState(Object.keys(ROOM).length?'error':'loading');
+  /* the dots never spin forever: with no answer in 20 s the page offers Try again (a late answer still shows the room) */
+  if(STATE==='loading'){site.innerHTML=loadingView();boot.w=setTimeout(()=>{if(STATE==='loading')setState('error')},20000);return}
   if(STATE!=='ok'){document.title='Rentlet';site.innerHTML=stateView();return}
   site.innerHTML=loadingView();clearTimeout(boot.t);boot.t=setTimeout(render,reduced?0:650)}
 /* sign-in gate: messaging, quick questions, saving and reporting need an account */
@@ -1122,20 +1159,24 @@ function shareMeta(){const set=(sel,attr,val)=>{let m=document.head.querySelecto
   set('meta[name="description"]','content',`${ROOM.type}, available ${span(ROOM.start,ROOM.end)}. Listing #${ROOM.code} on Rentlet.`)}
 /* the header's Where: the same city → campus list as the homepage; choosing a campus goes back to the homepage for it */
 function attachWhere(){const seg=$('.msearch .seg-w');if(!seg||!window.WhereSearch)return;
-  WhereSearch.attach({form:$('.msearch'),seg,valueEl:$('[data-where]',seg),labelEl:$('small',seg),current:'Northwestern · Evanston',onCampus:(v)=>{try{sessionStorage.setItem('cs-plan',JSON.stringify({...plan,school:v}))}catch(_){}location.href='index.html'}})}
-function render(){if(STATE!=='ok')return boot();setVh();shareMeta();document.title=`${ROOM.title} · ${ROOM.area} | Rentlet`;$('#msgT').textContent=`Message ${ROOM.who}`;site.innerHTML=page();bindGal();attachWhere();requestAnimationFrame(nbFade);requestAnimationFrame(()=>{const p=$('[data-clamp]'),m=$('[data-more]');if(p&&m&&p.scrollHeight<=p.clientHeight+2)m.hidden=true});$$('[data-flip]').forEach(sizeFlip);
+  WhereSearch.attach({form:$('.msearch'),seg,valueEl:$('[data-where]',seg),labelEl:$('small',seg),current:whereName(),onCampus:(v)=>{try{sessionStorage.setItem('cs-plan',JSON.stringify({...plan,school:v}))}catch(_){}location.href='index.html'}})}
+function render(){if(STATE!=='ok'||!loaded())return boot();
+  /* a listing the page can't draw shows Couldn't load (with Try again) instead of leaving the dots spinning */
+  let html;try{html=page()}catch(e){console.error(e);return setState('error')}
+  setVh();shareMeta();document.title=`${ROOM.title} · ${ROOM.area} | Rentlet`;$('#msgT').textContent=`Message ${ROOM.who}`;site.innerHTML=html;bindGal();attachWhere();requestAnimationFrame(nbFade);requestAnimationFrame(()=>{const p=$('[data-clamp]'),m=$('[data-more]');if(p&&m&&p.scrollHeight<=p.clientHeight+2)m.hidden=true});$$('[data-flip]').forEach(sizeFlip);
   const tri=$('#tri');requestAnimationFrame(()=>requestAnimationFrame(()=>tri.classList.remove('intro')));site.scrollTop=0;drawNearMap()}
 $('#roomTabs').innerHTML=Object.entries(ROOMS).map(([k,R])=>`<button onclick="location.href='room.html?room=${k}'" aria-selected="${k===KEY}">${R.who}</button>`).join('');
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
 document.addEventListener('click',e=>{const t=e.target;
   const fl=t.closest('[data-flip]');if(fl){if(fl.classList.contains('on')){fl.classList.add('out');setTimeout(()=>fl.classList.remove('on','out'),reduced?0:330)}else fl.classList.add('on');return}
   if(t.closest('[data-login]')){signIn();return}
-  if(t.closest('[data-retry]')){STATE='loading';boot();setTimeout(()=>setState('ok'),reduced?0:900);return}
+  if(t.closest('[data-retry]')){retryLoad();return}
   const dy=t.closest('[data-wopen]');if(dy){pickDates(dy);return}
   const bo=t.closest('[data-bopen]');if(bo){pickBudget(bo);return}
   const nc=t.closest('[data-ncat]');if(nc){nb.cat=nc.dataset.ncat;nb.on=0;drawNear();return}
   const nm=t.closest('[data-nmode]');if(nm){nb.mode=nm.dataset.nmode;drawNear();return}
   const no=t.closest('[data-non]');if(no){nb.on=+no.dataset.non;drawNear();return}
+  if((t.closest('[data-msg]')||t.closest('[data-ask]'))&&ended())return toast('This listing has ended.');
   if(t.closest('[data-msg]')){gate('message',()=>{$('#msgBox').value=`Hi ${ROOM.who}! I’m looking at ${span(plan.start,plan.end)}. Is the room still available?`;$('#msg').classList.add('on')});return}
   const a=t.closest('[data-ask]');if(a){gate('message',()=>{$('#msgBox').value=`Hi ${ROOM.who}! ${a.dataset.ask}`;$('#msg').classList.add('on')});return}
   if(t.closest('[data-share]')){shareRoom();return}
@@ -1152,14 +1193,24 @@ document.addEventListener('click',e=>{const t=e.target;
   const mt=t.closest('[data-mates]');if(mt){const o=mt.getAttribute('aria-expanded')!=='true';mt.setAttribute('aria-expanded',o);mt.nextElementSibling.classList.toggle('open',o);return}
   const lg=t.closest('[data-layout]');if(lg){const o=lg.getAttribute('aria-expanded')!=='true';lg.setAttribute('aria-expanded',o);lg.closest('.lgc').classList.toggle('open',o);return}
   if(!t.closest('.lgpop'))$$('.lgc.open').forEach(c=>{c.classList.remove('open');$('[data-layout]',c).setAttribute('aria-expanded','false')});
-  if(t.closest('[data-report]')){gate('report',()=>{$$('#rep input[name=rr]').forEach(r=>r.checked=false);$('#repTx').value='';$('#repGo').disabled=true;$('#rep').classList.add('on')});return}
-  if(t.id==='repGo'){$('#rep').classList.remove('on');return toast(`Thanks. We’ll review listing #${ROOM.code}.`)}
+  if(t.closest('[data-report]')){gate('report',()=>{if(!repBusy){$$('#rep input[name=rr]').forEach(r=>r.checked=false);$('#repTx').value='';$('#repGo').disabled=true}$('#rep').classList.add('on')});return}
+  if(t.closest('#repGo')){sendReport();return}
   const mo=t.closest('[data-more]');if(mo){const p=$('[data-clamp]'),o=p.classList.toggle('open');mo.textContent=o?'Show less':'Read more';return}
   const vm=t.closest('.vm');if(vm){vm.classList.add('show');clearTimeout(vm._t);vm._t=setTimeout(()=>vm.classList.remove('show'),1800);return}
   if(t.closest('[data-close]')||t.classList.contains('ov'))$$('.ov').forEach(o=>o.classList.remove('on'))});
+/* Report: src/rentlet.ts stores the reason and details for the owner to review (signed in only; the gate above
+   asks first). The sheet closes and thanks the reporter only once the report is stored; otherwise it stays open. */
+let repBusy=false;
+const REP_FAIL='Couldn’t send the report. Try again.';
+function sendReport(){const b=$('#repGo'),r=$('#rep input[name=rr]:checked');if(repBusy||b.disabled||!r)return;
+  if(!window.Rentlet||typeof Rentlet.report!=='function')return toast(REP_FAIL);
+  repBusy=true;b.disabled=true;b.textContent='Sending…';
+  const done=ok=>{repBusy=false;b.textContent='Send report';
+    if(ok){$('#rep').classList.remove('on');toast(`Thanks. We’ll review listing #${ROOM.code||KEY}.`)}else{b.disabled=!$('#rep input[name=rr]:checked');toast(REP_FAIL)}};
+  Promise.resolve().then(()=>Rentlet.report(String(ROOM.code||KEY),r.value,$('#repTx').value)).then(ok=>done(ok===true),()=>done(false))}
 /* Send: src/chat.ts starts the conversation (or adds to the one that exists) with this first message, then the thread opens */
 const SEND_FAIL={own:'This is your own listing.',gone:'This listing is no longer available.',blocked:'This conversation is closed.',failed:'Couldn’t send. Check your connection and try again.'};
-$('#send').onclick=()=>{const b=$('#send'),v=$('#msgBox').value;if(b.disabled)return;if(!v.trim()){$('#msgBox').focus();return}
+$('#send').onclick=()=>{const b=$('#send'),v=$('#msgBox').value;if(b.disabled)return;if(ended()){$('#msg').classList.remove('on');return toast('This listing has ended.')}if(!v.trim()){$('#msgBox').focus();return}
   if(!window.RentletChat)return toast('Still loading. Try again in a moment.');
   b.disabled=true;b.textContent='Sending…';
   RentletChat.start(KEY,v).then(r=>{
@@ -1168,7 +1219,7 @@ $('#send').onclick=()=>{const b=$('#send'),v=$('#msgBox').value;if(b.disabled)re
     if(r.reason==='signin'){$('#msg').classList.remove('on');AUTH=false;gate('message',()=>$('#msg').classList.add('on'));return}
     toast(SEND_FAIL[r.reason]||SEND_FAIL.failed)},()=>{b.disabled=false;b.textContent='Send message';toast(SEND_FAIL.failed)})};
 addEventListener('keydown',e=>{if(e.key==='Escape'){closeAi(true);closeSearch();$$('.ov').forEach(o=>o.classList.remove('on'));$$('.lgc.open').forEach(c=>c.classList.remove('open'))}});
-document.addEventListener('change',e=>{if(e.target.name==='rr')$('#repGo').disabled=false});
+document.addEventListener('change',e=>{if(e.target.name==='rr'&&!repBusy)$('#repGo').disabled=false});
 let look='flat';try{look=localStorage.getItem('cs-room-look')||'flat'}catch(_){}
 function setLook(k){look=k;$('#site').classList.toggle('flat',k==='flat');$$('[data-look]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.look===k));try{localStorage.setItem('cs-room-look',k)}catch(_){}}
 $$('[data-look]').forEach(b=>b.onclick=()=>setLook(b.dataset.look));setLook(look);

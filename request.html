@@ -179,7 +179,12 @@ const S={step:0,done:false,f:{},err:'',
 try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&WhereSearch.SCHOOLS.find(x=>x[0]===p.school);if(row){S.campusId=row[0];S.campus=row[1]}
   if(p.start&&p.end&&p.start>=TODAY&&p.end>p.start){S.start=p.start;S.end=p.end}}catch(_){}
 S.budget=BudgetPicker.load(1500);
-const restore=d=>{if(!d)return false;if(d.budget==null)d.budget=Infinity;Object.assign(S,d,{done:false,err:''});S.multi={life:(d.multi&&d.multi.life)||[],layouts:(d.multi&&d.multi.layouts)||[]};return true};
+/* a saved draft, or your posted request reopened for editing: every answer comes back. A missing answer (an older
+   request has no layouts) keeps the form's own default, the lists are always lists, and a draft's budget of null is
+   No max (JSON has no Infinity). */
+const restore=d=>{if(!d||typeof d!=='object')return false;const m=d.multi||{},list=a=>Array.isArray(a)?[...a]:[];
+  for(const [k,v] of Object.entries(d))if(v!=null&&k!=='multi'&&k!=='f')S[k]=v;
+  Object.assign(S,{done:false,err:'',budget:d.budget==null?Infinity:d.budget,f:{...(d.f&&typeof d.f==='object'?d.f:{})},multi:{life:list(m.life),layouts:list(m.layouts)}});return true};
 let restored=false;
 try{restored=restore(JSON.parse(sessionStorage.getItem('cs-request-draft')||'null'))}catch(_){}
 /* signed in with Google: start the name from the first name on the account */
@@ -276,7 +281,7 @@ const B={
       ['Where',`${S.campus} · ${name(NEAR,S.near).toLowerCase()}`,0],
       ['Dates',`${datesText()} · ${name(FLEX,S.flex).toLowerCase()}`,1],
       ['Budget',`${budText()}${S.util?' · utilities included':''}`,2],
-      ['Room',`${KIND[S.kind]} · ${S.furn==='any'?'furnished or not':name(FURN,S.furn).toLowerCase()+(S.furn==='part'?' furnished':'')}${S.bath?' · private bathroom':''} · roommates: ${name(MATES,S.mates).toLowerCase()}`,3],
+      ['Room',`${KIND[S.kind]}${S.multi.layouts.length?` · ${S.multi.layouts.join(', ')}`:''} · ${S.furn==='any'?'furnished or not':name(FURN,S.furn).toLowerCase()+(S.furn==='part'?' furnished':'')}${S.bath?' · private bathroom':''} · roommates: ${name(MATES,S.mates).toLowerCase()}`,3],
       ['About you',`${esc(val('name','').trim()||'No name yet')} · ${roleName()}${orgVal()?` · ${esc(orgVal())}`:''}${S.multi.life.length?` · ${S.multi.life.join(', ').toLowerCase()}`:''}`,4]];
     const acct=RL.authed&&RL.user?`Posting with your Northwestern account. Hosts see your first name and Google photo, never your email.`:`You’ll sign in with your Northwestern Google account to post. That’s how hosts know you’re at Northwestern.`;
     return `<div class="grp">${qcard(record())}</div><dl class="review grp">${rows.map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
@@ -315,7 +320,7 @@ const draft=()=>{try{sessionStorage.setItem('cs-request-draft',JSON.stringify(st
 const nameMissing=()=>!val('name','').trim();
 const goErr=k=>{S.err=k;S.step=STEPS.findIndex(x=>x[k]);render()};
 /* reopen your posted request in the form */
-function useMine(step){const f=MINE.request.form;Object.assign(S,f,{done:false,err:''});S.f={...f.f};S.multi={life:[...f.multi.life]};EDITING=true;S.step=step}
+function useMine(step){restore(MINE.request.form);EDITING=true;S.step=step}
 
 /* post: sign in first if needed (the form stays as it is), then publish to Firestore */
 window.RL_onAuth=u=>{if(u&&!('name' in S.f)&&googleName())S.f.name=googleName();render()};

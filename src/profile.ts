@@ -19,7 +19,7 @@ import {
 } from 'firebase/firestore';
 import { deleteObject, listAll, ref } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
-import type { ListingDoc } from './lib/listingView';
+import { hasEnded, localDay, type ListingDoc } from './lib/listingView';
 import { firstName, isNorthwesternEmail } from './lib/nu';
 import {
   affiliation,
@@ -30,6 +30,8 @@ import {
   liveCount,
   MAX_LIVE,
   normalizeInstagram,
+  ownStatus,
+  proofFilePaths,
   requestView,
   sortOwnListings,
   validListingShape,
@@ -78,10 +80,13 @@ function fromDoc(id: string, data: DocumentData): ListingDoc {
   return { ...(data as ListingDoc), code: id, createdAtMs: millis(data.createdAt) };
 }
 
-// what the page's listing card needs
-const ownCard = (l: ListingDoc) => ({
+// what the page's listing card needs. status is 'ended' once the last day has passed (not "Live":
+// it shows nowhere), with ended set too; the stored status is kept as stored.
+const ownCard = (l: ListingDoc, today: string) => ({
   code: l.code,
-  status: l.status,
+  status: ownStatus(l, today),
+  ended: ownStatus(l, today) === 'ended',
+  stored: l.status,
   title: str(l.title) || 'Your listing',
   area: str(l.area),
   start: str(l.start),
@@ -126,8 +131,9 @@ function start(u: User) {
     onSnapshot(
       query(collection(db, 'listings'), where('ownerId', '==', u.uid)),
       (s) => {
-        mine = sortOwnListings(s.docs.map((d) => fromDoc(d.id, d.data())));
-        page({ listings: mine.map(ownCard) });
+        mine = s.docs.map((d) => fromDoc(d.id, d.data()));
+        const today = localDay();
+        page({ listings: sortOwnListings(mine.map((l) => ownCard(l, today))) });
       },
       () => page({ listings: 'error' }),
     ),
@@ -165,18 +171,24 @@ function need(): User {
   return u;
 }
 
-// A listing, its private address, then its photos and video. The address goes first: its rule
-// looks up the listing to check who owns it.
-async function removeListing(l: ListingDoc, owner: string) {
-  await deleteDoc(doc(db, 'listings', l.code, 'private', 'location'));
-  await deleteDoc(doc(db, 'listings', l.code));
-  await Promise.allSettled(listingFilePaths(l, owner).map((p) => deleteObject(ref(storage, p))));
+// files in one of the person's folders (only those whose name starts with namePrefix, if given)
+async function sweep(folder: string, namePrefix = '') {
+  const res = await listAll(ref(storage, folder));
+  await Promise.allSettled(res.items.filter((i) => i.name.startsWith(namePrefix)).map((i) => deleteObject(i)));
 }
 
-// files left in the person's folders by an upload that never became a listing
-async function sweep(folder: string) {
-  const res = await listAll(ref(storage, folder));
-  await Promise.allSettled(res.items.map((i) => deleteObject(i)));
+// A listing's private notes (street address, lease-proof note), then the listing, then its photos, video
+// and lease-proof files. The private notes go first: their rule looks up the listing to check who owns
+// it, so once the listing is gone nobody could delete them. The proof note is read before it goes, for
+// the names of its files; a proof upload whose note never saved is found by its name in the folder.
+async function removeListing(l: ListingDoc, owner: string) {
+  const priv = await getDocs(collection(db, 'listings', l.code, 'private'));
+  const proof = proofFilePaths(l.code, owner, priv.docs.find((d) => d.id === 'proof')?.data());
+  const ids = new Set(['location', 'proof', ...priv.docs.map((d) => d.id)]);
+  await Promise.all([...ids].map((id) => deleteDoc(doc(db, 'listings', l.code, 'private', id))));
+  await deleteDoc(doc(db, 'listings', l.code));
+  await Promise.allSettled([...listingFilePaths(l, owner), ...proof].map((p) => deleteObject(ref(storage, p))));
+  await sweep(`proofs/${owner}`, `${l.code}-`).catch(() => undefined);
 }
 
 async function wipe(owner: string) {
@@ -190,7 +202,8 @@ async function wipe(owner: string) {
   }
   const priv = await getDocs(collection(db, 'users', owner, 'private'));
   await Promise.all(priv.docs.map((d) => deleteDoc(d.ref)));
-  await Promise.allSettled([sweep(`listings/${owner}`), sweep(`videos/${owner}`)]);
+  // and anything left from uploads that never became a listing, lease proofs included
+  await Promise.allSettled([sweep(`listings/${owner}`), sweep(`videos/${owner}`), sweep(`proofs/${owner}`)]);
   await deleteDoc(doc(db, 'users', owner));
 }
 
@@ -241,6 +254,9 @@ const api = {
     need();
     const l = mine.find((x) => x.code === code);
     if (!l) throw new ProfileError('That listing is no longer here.');
+    // an ended listing shows nowhere, so it can't go live again; it needs new dates
+    if (status === 'active' && hasEnded(l.end))
+      throw new ProfileError('This listing’s dates have passed. Post it again with new dates.');
     if (l.status === status) return;
     if (status === 'active' && liveCount(mine) >= MAX_LIVE)
       throw new ProfileError(`Up to ${MAX_LIVE} live listings at a time. Hide one or mark it as taken first.`);

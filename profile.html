@@ -301,7 +301,7 @@ const pill=(cls,t)=>`<span class="pill ${cls}"><i></i>${t}</span>`;
 const panel=(id,title,sub,body,extra='')=>`<section class="panel" id="sec-${id}" data-sec="${id}" aria-labelledby="h-${id}"><div class="ph2"><div><h2 id="h-${id}">${title}</h2>${sub?`<p>${sub}</p>`:''}</div>${extra}</div><div class="pb">${body}</div></section>`;
 const loading=t=>`<p class="note" style="margin-top:0" role="status">${t}</p>`;
 const failed=t=>`<div class="empty"><h3>${t}</h3><p>Check your connection and try again.</p><button type="button" class="btn sec" data-act="retry">Try again</button></div>`;
-const STATUS={active:['ok','Live'],hidden:['','Hidden'],taken:['','Taken']};
+const STATUS={active:['ok','Live'],hidden:['','Hidden'],taken:['','Taken'],ended:['','Ended']};
 
 /* ---------- sections ---------- */
 function secYou(){
@@ -317,9 +317,10 @@ function listingCard(l){const [c,t]=STATUS[l.status]||['',esc(l.status)],live=l.
   let acts='';
   if(live)acts=`<a class="btn sec" href="${link}">See listing</a><button type="button" class="btn sec" data-act="hide" ${id}>Hide</button><button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
   else if(l.status==='hidden')acts=`<button type="button" class="btn sec" data-act="show" ${id}>Show again</button><button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
+  else if(l.status==='ended')acts=`<a class="btn sec" href="post.html">Post again with new dates</a>`; /* the dates have passed; it can't be shown again */
   else acts=`<button type="button" class="btn sec" data-act="show" ${id}>Repost</button>`;
   acts+=`<button type="button" class="lk" data-act="ldel" ${id}>Delete</button>`;
-  const meta=live?(l.createdAtMs?`<small>Posted ${fms(l.createdAtMs)}</small>`:''):l.status==='hidden'?'<small>Hidden from search</small>':'<small>Off search</small>';
+  const meta=live?(l.createdAtMs?`<small>Posted ${fms(l.createdAtMs)}</small>`:''):l.status==='hidden'?'<small>Hidden from search</small>':l.status==='ended'?'<small>Dates have passed · off search</small>':'<small>Off search</small>';
   return `<article class="lc" data-listing="${l.code}">${link?`<a class="lph" href="${link}" aria-label="Open ${esc(l.title)}">${img}</a>`:`<div class="lph">${img}</div>`}
     <div class="lb"><div class="lt">${pill(c,t)}${meta}</div><h3>${esc(l.title)}</h3><div class="lm">${[esc(l.area),wl(l.start,l.end)].filter(Boolean).join(' · ')}</div><div class="lp">${money(l.price)} <small>/ mo</small></div></div>
     <div class="acts">${acts}</div></article>`}

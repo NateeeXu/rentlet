@@ -36,12 +36,13 @@ service firebase.storage {
     }
 
     // lease proof for a listing (private): only the host can open or remove it; the Rentlet team reads it
-    // in the Firebase console. Photos or PDFs, under 10 MB.
+    // in the Firebase console. Photos (JPEG, PNG, WebP, HEIC) or PDFs, under 10 MB; no SVG or other
+    // image types that can carry script.
     match /proofs/{uid}/{fileName} {
       allow read, delete: if mine(uid);
       allow create: if isNU() && mine(uid)
         && request.resource.size < 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*|application/pdf');
+        && request.resource.contentType.matches('(image/(jpeg|png|webp|heic|heif)|application/pdf)');
       allow update: if false;
     }
 

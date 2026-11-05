@@ -273,7 +273,18 @@ async function toggleSave(kind: SaveKind, id: string): Promise<boolean | null> {
 window.Rentlet = {
   user: null,
   signIn,
-  signOut: () => firebaseSignOut(auth),
+  // signing out also clears this browser's form drafts (they can hold a street address), for shared computers
+  signOut: () => {
+    for (const k of ['rl-post-draft-v3', 'rl-post-draft-v2', 'cs-request-draft']) {
+      try {
+        localStorage.removeItem(k);
+        sessionStorage.removeItem(k);
+      } catch {
+        /* private mode */
+      }
+    }
+    return firebaseSignOut(auth);
+  },
   toast,
   report,
   toggleSave,

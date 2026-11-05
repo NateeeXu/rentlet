@@ -171,3 +171,5 @@ export { shuttleLive } from './shuttle.js';
 export { mapTile } from './tiles.js';
 // link previews for shared rooms (GET /r/{code})
 export { sharePreview } from './share.js';
+// real walk / bike / drive routes from a listing to a nearby place (GET /api/route)
+export { routeLine } from './route.js';

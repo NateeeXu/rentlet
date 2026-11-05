@@ -967,7 +967,8 @@ const nearSection=()=>`<section class="near" id="near" aria-label="Getting aroun
 function drawNear(){const n=$('#near');if(!n)return;if(!$('#nbMap',n)){n.innerHTML=nearBody()}else{const t=document.createElement('div');t.innerHTML=nearBody();
   ['.nb-h','.nb-cats','.nb-list'].forEach(c=>{const a=$(c,n),b=$(c,t);if(a&&b)a.replaceWith(b)})}
   nbFade();drawNearMap()}
-function drawNearMap(){const el=$('#nbMap');if(el&&window.RentletRoomMap)RentletRoomMap.draw(el,ROOM,nearList(),nb.on,nb.cat)}
+/* the map draws the selected place's street route for the chosen mode (stops: on foot) and puts its minutes in the row */
+function drawNearMap(){const el=$('#nbMap');if(el&&window.RentletRoomMap)RentletRoomMap.draw(el,ROOM,nearList(),nb.on,nb.cat,NSTOPS.includes(nb.cat)?'Walk':nb.mode)}
 window.RL_nearSelect=i=>{nb.on=i;drawNear()};
 window.RL_nearRedraw=()=>{if($('#near'))drawNear();else if(STATE==='ok'&&ROOM.location)render()};
 /* the place-type row fades on the right only while some tabs are still off screen */

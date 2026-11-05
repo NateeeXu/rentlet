@@ -1,7 +1,10 @@
 // Room page "Getting around": a real map of the room's spot with its campus, the nearest
 // Northwestern shuttle stops and nearby places (HERE, saved with the listing when it was posted).
 // room.html renders the list and calls window.RentletRoomMap.draw(); this module owns the map.
-import { createMap, drawPin, drawRoute, fitTo, L } from './map';
+// The selected place gets its street route from GET /api/route (functions/src/route.ts, HERE Routing)
+// for the Walk / Bike / Drive choice (stops: always on foot), and its row shows the routed minutes.
+// Until a route arrives, or when there is none, the map keeps a dashed straight line and the estimate.
+import { createMap, drawPin, drawRoute, fitTo, INK, L } from './map';
 import { CAMPUS_POINT } from './lib/apartments';
 import { DIRECTIONS, LINES, metersBetween, nearestStops, routePath, walkingMinutes, type DirectionId } from './lib/shuttleData';
 import { nearbyPlaces } from './place';
@@ -112,13 +115,106 @@ export function rows(cat: Cat, room: RoomLike): Row[] {
     .sort((a, b) => a.w - b.w);
 }
 
+// ---------- street routes for the selected place ----------
+export type Mode = 'Walk' | 'Bike' | 'Drive';
+type RouteMode = 'walk' | 'bike' | 'drive';
+const ROUTE_MODE: Record<Mode, RouteMode> = { Walk: 'walk', Bike: 'bike', Drive: 'drive' };
+// how far the endpoint routes from the room, in a straight line (functions/src/route.ts MAX_KM)
+const REACH_METERS: Record<RouteMode, number> = { walk: 6000, bike: 6000, drive: 25000 };
+const CODE = /^[1-9][0-9]{7}$/;
+
+interface Route {
+  points: L.LatLngTuple[];
+  minutes: number;
+}
+
+const routes = new Map<string, Route | null>(); // per place and mode; null: no route, keep the estimate
+let routesOff = false; // no /api/route here (local dev, or not deployed yet)
+let inflight: { key: string; ctl: AbortController } | null = null;
+let lastDraw: Parameters<typeof draw> | null = null;
+let shownKey = '';
+
+// stops are timed on foot whatever the switch says (room.html says so above the list)
+const routeModeOf = (cat: Cat, mode: Mode): RouteMode => (cat === 'Shuttle' || cat === 'Transit' ? 'walk' : (ROUTE_MODE[mode] ?? 'walk'));
+
+// '' when this place isn't routed from this room (no listing code, too far, no endpoint)
+function routeKey(room: RoomLike, r: Row | undefined, mode: RouteMode): string {
+  const code = String(room.code || '');
+  const p = room.location;
+  if (!r || !p || routesOff || !CODE.test(code)) return '';
+  if (metersBetween(p, r) > REACH_METERS[mode]) return '';
+  return `${code}|${r.lat.toFixed(5)},${r.lng.toFixed(5)}|${mode}`;
+}
+
+const isTuple = (x: unknown): x is L.LatLngTuple =>
+  Array.isArray(x) && x.length === 2 && x.every((n) => typeof n === 'number' && Number.isFinite(n));
+
+// The endpoint's answer as a line from the room to the place; null when it is empty or doesn't fit
+// (a line that doesn't start at the room's pin is an old answer for a spot that has since moved).
+function toRoute(json: unknown, from: { lat: number; lng: number }, to: Row): Route | null {
+  const j = json as { points?: unknown; seconds?: unknown } | null;
+  if (!j || !Array.isArray(j.points) || j.points.length < 2 || !j.points.every(isTuple)) return null;
+  if (typeof j.seconds !== 'number' || !Number.isFinite(j.seconds) || j.seconds < 0) return null;
+  const pts = j.points as L.LatLngTuple[];
+  const [a, b] = [pts[0], pts[pts.length - 1]];
+  if (metersBetween(from, { lat: a[0], lng: a[1] }) > 60 || metersBetween(to, { lat: b[0], lng: b[1] }) > 60) return null;
+  return { points: pts, minutes: Math.max(1, Math.round(j.seconds / 60)) };
+}
+
+function requestRoute(key: string, room: RoomLike, r: Row, mode: RouteMode): void {
+  const from = room.location!;
+  const ctl = new AbortController();
+  inflight = { key, ctl };
+  const q = new URLSearchParams({ code: String(room.code), lat: r.lat.toFixed(5), lng: r.lng.toFixed(5), mode });
+  fetch(`/api/route?${q}`, { signal: ctl.signal, headers: { Accept: 'application/json' } })
+    .then(async (res) => {
+      // anything but JSON is a server without the endpoint (a dev server's page, Hosting's 404)
+      if (!(res.headers.get('content-type') || '').includes('application/json')) {
+        routesOff = true;
+        return;
+      }
+      routes.set(key, res.ok ? toRoute(await res.json(), from, r) : null);
+    })
+    .catch((e: unknown) => {
+      if ((e as Error)?.name !== 'AbortError') routes.set(key, null);
+    })
+    .finally(() => {
+      if (inflight?.ctl === ctl) inflight = null;
+      // redrawn only when a route arrived for what is still selected; otherwise the dashed line stays
+      if (!ctl.signal.aborted && routes.get(key) && shownKey === key && lastDraw) draw(...lastDraw);
+    });
+}
+
+// Rows with a route show its minutes in place of the estimate room.html wrote.
+function showMinutes(el: HTMLElement, room: RoomLike, list: Row[], mode: RouteMode): void {
+  const box = el.closest('.nb-box');
+  if (!box) return;
+  list.forEach((r, i) => {
+    const key = routeKey(room, r, mode);
+    const route = key ? routes.get(key) : null;
+    const em = route ? box.querySelector<HTMLElement>(`.nb-row[data-non="${i}"] em`) : null;
+    if (em && route) em.textContent = `${route.minutes} min`;
+  });
+}
+
 let map: L.Map | null = null;
 let mapEl: HTMLElement | null = null;
 let layer: L.LayerGroup | null = null;
 
-export function draw(el: HTMLElement | null, room: RoomLike, list: Row[], on: number, cat: Cat): void {
+export function draw(el: HTMLElement | null, room: RoomLike, list: Row[], on: number, cat: Cat, mode: Mode = 'Walk'): void {
   const p = room.location;
   if (!el || !p) return;
+  lastDraw = [el, room, list, on, cat, mode];
+  const sel = list[on];
+  const how = routeModeOf(cat, mode);
+  const key = routeKey(room, sel, how);
+  shownKey = key;
+  if (inflight && inflight.key !== key) {
+    inflight.ctl.abort();
+    inflight = null;
+  }
+  if (key && sel && !routes.has(key) && !inflight) requestRoute(key, room, sel, how);
+  const route = key ? routes.get(key) : null;
   if (map && mapEl !== el) {
     map.remove();
     map = null;
@@ -135,8 +231,9 @@ export function draw(el: HTMLElement | null, room: RoomLike, list: Row[], on: nu
       drawRoute(g, routePath(d), DIRECTIONS[d].color, { weight: 3, opacity: 0.75 });
     }
   }
-  const sel = list[on];
-  if (sel) L.polyline([p, [sel.lat, sel.lng]], { color: '#222222', weight: 2, dashArray: '4 6', interactive: false }).addTo(g);
+  // the street route in ink over a white casing; a dashed straight line while it loads or if there is none
+  if (route) drawRoute(g, route.points.map(([lat, lng]) => ({ lat, lng })), INK, { weight: 4, opacity: 1 });
+  else if (sel) L.polyline([p, [sel.lat, sel.lng]], { color: INK, weight: 2, dashArray: '4 6', interactive: false }).addTo(g);
   list.forEach((r, i) => {
     const active = i === on;
     const m = L.circleMarker([r.lat, r.lng], {
@@ -152,8 +249,11 @@ export function draw(el: HTMLElement | null, room: RoomLike, list: Row[], on: nu
     m.addTo(g);
   });
   drawPin(g, p, 'This room');
-  if (list.length) fitTo(map!, [p, ...list.map((r) => ({ lat: r.lat, lng: r.lng }))], [40, 40]);
+  // the whole route stays in view, with the other places, so the map doesn't jump between rows
+  const shown = [p, ...list.map((r) => ({ lat: r.lat, lng: r.lng })), ...(route ? route.points.map(([lat, lng]) => ({ lat, lng })) : [])];
+  if (list.length) fitTo(map!, shown, [40, 40]);
   else map!.setView(p, 15);
+  showMinutes(el, room, list, how);
 }
 
 window.RentletRoomMap = { rows, draw };

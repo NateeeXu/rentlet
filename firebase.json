@@ -38,6 +38,13 @@
     ],
     "rewrites": [
       {
+        "source": "/api/route",
+        "function": {
+          "functionId": "routeLine",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/api/shuttle",
         "function": {
           "functionId": "shuttleLive",

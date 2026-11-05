@@ -352,6 +352,6 @@ onAuthStateChanged(auth, (u) => {
   if (isNU(u)) {
     if (u.uid !== uid) start(u);
   } else {
-    signedOut(); // a non-Northwestern account is signed out by src/rentlet.ts
+    signedOut(); // an account without a school (.edu) email is signed out by src/rentlet.ts
   }
 });

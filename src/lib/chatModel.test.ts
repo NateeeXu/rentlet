@@ -266,7 +266,7 @@ describe('thread view', () => {
       activeCodes: null,
       now,
     });
-    expect(v.p).toMatchObject({ photo: 'https://p.test/m.jpg', role: 'Junior · Northwestern', since: 'Member since Oct 2026', bio: 'Tidy' });
+    expect(v.p).toMatchObject({ photo: 'https://p.test/m.jpg', role: 'Junior', since: 'Member since Oct 2026', bio: 'Tidy' });
     expect(v.taken).toBe(false);
   });
 });

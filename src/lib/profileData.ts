@@ -23,9 +23,13 @@ export function cleanFirstName(raw: string | null | undefined): string {
   return (raw ?? '').trim().split(/\s+/)[0].slice(0, 24);
 }
 
-// Student accounts are @u.northwestern.edu; staff and instructors use @northwestern.edu.
+// Northwestern student accounts are @u.northwestern.edu and staff use @northwestern.edu; anyone else
+// signed in with another school's .edu address.
 export function affiliation(email: string | null | undefined): string {
-  return /@u\.northwestern\.edu$/i.test((email ?? '').trim()) ? 'Northwestern student' : 'Northwestern';
+  const e = (email ?? '').trim();
+  if (/@u\.northwestern\.edu$/i.test(e)) return 'Northwestern student';
+  if (/@northwestern\.edu$/i.test(e)) return 'Northwestern';
+  return 'School email (.edu)';
 }
 
 // "@sam.k", "instagram.com/sam.k/" and " sam.k " all become "sam.k".
@@ -270,7 +274,7 @@ export function savedRequestCard(id: string, d: Record<string, unknown>, savedAt
   const role = str(d.role) as keyof typeof ROLE_LABEL;
   return {
     id,
-    who: str(d.ownerName) || 'Northwestern student',
+    who: str(d.ownerName) || 'Student',
     photo: /^https:\/\//.test(str(d.ownerPhoto)) ? str(d.ownerPhoto) : '',
     role: ROLE_LABEL[role] ?? 'Student',
     kind: KIND_LABEL[kind] ?? KIND_LABEL.room,

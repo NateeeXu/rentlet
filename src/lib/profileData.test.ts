@@ -39,7 +39,8 @@ describe('names and contact fields', () => {
   it('tells students from staff', () => {
     expect(affiliation('emily2027@u.northwestern.edu')).toBe('Northwestern student');
     expect(affiliation('prof@northwestern.edu')).toBe('Northwestern');
-    expect(affiliation(undefined)).toBe('Northwestern');
+    expect(affiliation('sam@uchicago.edu')).toBe('School email (.edu)');
+    expect(affiliation(undefined)).toBe('School email (.edu)');
   });
   it('cleans Instagram handles', () => {
     expect(normalizeInstagram('@sam.k')).toBe('sam.k');
@@ -260,7 +261,7 @@ describe('saved requests', () => {
 
   it('falls back quietly on missing or odd fields', () => {
     const c = savedRequestCard(uid, { ownerPhoto: 'javascript:alert(1)', budget: 1400, anyPrice: true, kind: 'castle', role: 7, layouts: 'Studio' }, 0);
-    expect(c).toMatchObject({ who: 'Northwestern student', photo: '', role: 'Student', kind: 'Private room', layouts: [], start: '', end: '', budget: null });
+    expect(c).toMatchObject({ who: 'Student', photo: '', role: 'Student', kind: 'Private room', layouts: [], start: '', end: '', budget: null });
     expect(savedRequestCard(uid, { kind: 'either', role: 'newhire', budget: 0 }, 0)).toMatchObject({
       kind: 'Room or whole place',
       role: 'New hire',

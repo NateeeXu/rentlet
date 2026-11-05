@@ -671,7 +671,7 @@ async function resolve(params: { c?: string | null; listing?: string | null; wit
   if (roles.hostId === uid) {
     const p = await loadProfile(roles.guestId);
     if (!p) return { notice: 'We couldn’t find that person.' };
-    names[roles.guestId] = p.name || 'Northwestern student';
+    names[roles.guestId] = p.name || 'Student';
     photos[roles.guestId] = p.photoURL;
   } else {
     names[L.ownerId] = L.ownerName;

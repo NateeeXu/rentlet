@@ -49,7 +49,7 @@ declare global {
   }
 }
 
-const NOT_NU = 'Rentlet is for Northwestern. Sign in with your @u.northwestern.edu Google account.';
+const NOT_NU = 'Rentlet needs a school Google account. Sign in with an email that ends in .edu.';
 
 function cachedUid(): string | null {
   try {

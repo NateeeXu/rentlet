@@ -8,7 +8,11 @@ describe('who may call', () => {
     expect(isNorthwesternToken({ email: 'emily@u.northwestern.edu', email_verified: false })).toBe(false);
     expect(isNorthwesternToken({ email: 'emily@u.northwestern.edu' })).toBe(false);
     expect(isNorthwesternToken({ email: 'x@gmail.com', email_verified: true })).toBe(false);
-    expect(isNorthwesternToken({ email: 'x@evil.northwestern.edu', email_verified: true })).toBe(false);
+    expect(isNorthwesternToken({ email: 'x@uchicago.edu', email_verified: true })).toBe(true);
+    expect(isNorthwesternToken({ email: 'x@cs.stanford.edu', email_verified: true })).toBe(true);
+    expect(isNorthwesternToken({ email: 'x@uchicago.edu', email_verified: false })).toBe(false);
+    expect(isNorthwesternToken({ email: 'x@edu.example.com', email_verified: true })).toBe(false);
+    expect(isNorthwesternToken({ email: 'x@.edu', email_verified: true })).toBe(false);
     expect(isNorthwesternToken({ email: 'x@northwestern.edu.evil.com', email_verified: true })).toBe(false);
     expect(isNorthwesternToken(undefined)).toBe(false);
   });

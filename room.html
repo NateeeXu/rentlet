@@ -814,7 +814,7 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
   <div class="acts"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="repGo" disabled>Send report</button></div></div></div>
 <div class="ov" id="login" role="dialog" aria-modal="true" aria-labelledby="loginT"><div class="sheet lgsheet"><div class="lg-top"><span class="lg-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></svg></span><div><h3 id="loginT">Sign in</h3><p id="loginR"></p></div></div>
   <button type="button" class="btn lg-g" data-login="google"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"/></svg>Continue with Google</button>
-  <p class="lg-fine">Use your Northwestern Google account. By continuing, you agree to the <a href="terms.html">Terms</a> and the <a href="privacy.html">Privacy Policy</a>.</p>
+  <p class="lg-fine">Use your school Google account (an email ending in .edu). By continuing, you agree to the <a href="terms.html">Terms</a> and the <a href="privacy.html">Privacy Policy</a>.</p>
   <button type="button" class="lg-x" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
 <div class="toast" id="toast" role="status"></div>
 <script>/* overlays live inside the stage so the phone preview shows them inside the frame */
@@ -911,7 +911,7 @@ const bookCard=()=>{const L=(k,v)=>`<div class="rl"><span>${k}</span><i></i><b>$
   inc=ROOM.included?L(ROOM.included,'INCL.'):ROOM.rentOnly?L('Utilities','NOT INCL.'):'',
   dep=L(ROOM.refund?'Deposit*':'Deposit',ROOM.deposit===null?'ASK THE HOST':ROOM.deposit?money(ROOM.deposit):'NONE'),
   foot=[ROOM.refund==='yes'?'*refundable':ROOM.refund==='no'?'*non-refundable':'',ROOM.util===null?'':'~ estimated',`paid to ${ROOM.who}, not Rentlet`].filter(Boolean).join(' · ');
-  return `<div class="host"><div class="avatar">${ROOM.who[0]}</div><div style="min-width:0;flex:1"><b>${ROOM.who}<span class="marks">${marks()}</span></b><span>${ROOM.role} · ${ROOM.reply}</span></div></div>
+  return `<div class="host"><div class="avatar">${ROOM.who[0]}</div><div style="min-width:0;flex:1"><b>${ROOM.who}<span class="marks">${marks()}</span></b><span>Verified school email</span></div></div>
   <hr class="bk-hr"><div class="bk-pr"><b>${money(ROOM.price)}</b><small>/ mo</small>${ROOM.neg?'<span class="badge n bk-neg">Negotiable</span>':''}</div><p class="bk-save" data-bsave>${saveLine()}</p>
   <div class="bk-dates"><div><small>Move in</small><span>${d0}</span></div><div><small>Move out</small><span>${d1}</span></div></div>
   ${ended()?endedBox():`<button class="btn btn-primary bk-msg" data-msg>${ic('chat','sm')}Message ${ROOM.who}</button>
@@ -952,7 +952,7 @@ const nIc=(c,sz=16)=>`<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill
 function nearList(){return window.RentletRoomMap?RentletRoomMap.rows(nb.cat,ROOM):[]}
 function nearNote(L){if(L.length)return '';
   if(nb.cat==='Shuttle')return `<p class="nb-note"><b>No campus shuttle stop nearby</b>The nearest Northwestern shuttle stop is more than a 20-minute walk away. <a href="shuttle.html">See the shuttle map</a></p>`;
-  return `<p class="nb-note"><b>Nothing to show here yet</b>${RL.authed?'No places of this kind came up within a short walk.':'Sign in with your Northwestern account to see places nearby.'}</p>`}
+  return `<p class="nb-note"><b>Nothing to show here yet</b>${RL.authed?'No places of this kind came up within a short walk.':'Sign in with your school Google account to see places nearby.'}</p>`}
 /* the drawing uses the same 300 × 180 plan as the area spots, scaled to 800 × 420 */
 const NX=8/3,NY=7/3,nP=([x,y])=>[+(x*NX).toFixed(1),+(y*NY).toFixed(1)];
 function nearMap(){return `<div class="nb-lf" id="nbMap"></div><span class="nb-cap">Exact spot · street address after you both agree</span>`}
@@ -991,7 +991,7 @@ const pplTile=()=>`<p class="tl">You’ll live with</p><button type="button" cla
 const VM={cap:'<path d="M2.5 9L12 4.5 21.5 9 12 13.5z"/><path d="M6.5 11v4.5c1.5 1.3 3.4 2 5.5 2s4-.7 5.5-2V11"/>',doc:'<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/>',key:'<circle cx="8" cy="15.5" r="3.8"/><path d="M10.8 12.7L19 4.5M16 7.5l2.5 2.5"/>'};
 const VST={ok:['Verified','<path d="M3 6.2l2 2 4-4.2"/>'],pending:['In review','<path d="M6 3.4V6l1.8 1.2"/>'],more:['More info needed','<path d="M6 3.5V6.5M6 8.6v.1"/>'],rejected:['Not approved','<path d="M4 4l4 4M8 4L4 8"/>'],none:['Not submitted','<path d="M3.8 6h4.4"/>']};
 const marks=()=>{const v=ROOM.ver,L=ROOM.type==='Lease takeover'?'takeover':'sublet';
-  return [['cap','student',`Student (${esc(roomCampus()||'Northwestern')})`],['doc','lease','Lease proof'],['key','landlord',`Landlord OK for the ${L}`]]
+  return [['cap','student','School email (.edu)'],['doc','lease','Lease proof'],['key','landlord',`Landlord OK for the ${L}`]]
   .map(([k,f,name])=>{const st=v[f],t=`${name}: ${VST[st][0].toLowerCase()}`;return `<button type="button" class="vm ${st}" data-tip="${t}" aria-label="${t}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${VM[k]}</svg><i aria-hidden="true"><svg viewBox="0 0 12 12">${VST[st][1]}</svg></i></button>`}).join('')};
 const factIcon=f=>f[0]==='wash'?ic('wash'):`<img src="img/icons/${f[0]}.svg" alt="">`;
 function moreCards(all){const list=Object.entries(ROOMS).filter(([k])=>all&&STATE!=='expired'&&STATE!=='removed'?true:k!==KEY).map(([k,R])=>({k,R,f:fitOf(R)})).filter(x=>x.f.k!=='no'&&x.R.price<=BUDGET*1.05).sort((a,b)=>(b.f.k==='ok')-(a.f.k==='ok')||b.f.ov-a.f.ov).slice(0,3);
@@ -1065,8 +1065,8 @@ const whereName=()=>roomCampus()||campusOf(plan.school)||'Northwestern · Evanst
 const head=()=>`<header class="hdr"><div class="wrap"><a href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="msearch" role="search" aria-label="Search rooms"><button type="button" class="seg seg-w" aria-label="Change campus">${ic2('pin')}<span><small>Where</small><em data-where>${esc(whereName())}</em></span></button><i></i><button type="button" class="seg" data-wopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your dates">${ic('cal','sm')}<span><small>When</small><em data-when>${WhenPicker.label(plan.start,plan.end)}</em></span></button><i class="b"></i><button type="button" class="seg seg-b" data-bopen aria-haspopup="dialog" aria-expanded="false" aria-label="Change your budget"><b class="usd">$</b><span><small>Budget</small><em data-bud>${BudgetPicker.label(BUDGET)}</em></span></button>
   <button type="button" class="aipk" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button>
   <button type="button" class="go" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button></div><div class="hdr-r"><button type="button" class="aipk ai-m" data-aipick aria-expanded="false" aria-controls="aiCard" aria-label="AI pick: rooms that fit your dates and budget"><span class="sh" aria-hidden="true"></span>${SPK}<span class="t">AI pick</span></button><button type="button" class="msrch" data-sopen aria-expanded="false" aria-controls="sCard" aria-label="Search by area, layout or listing number">${ic('search','sm')}</button>${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div><button type="button" class="ai-scrim" id="aiScrim" data-aiclose aria-label="Close AI picks" tabindex="-1" hidden></button><div class="ai-gp" id="aiCard" role="dialog" aria-label="AI picks" hidden></div><div class="aicard scard" id="sCard" role="dialog" aria-label="Search listings" hidden><label class="sfield">${ic('search','sm')}<span class="sr">Search</span><input id="sQ" type="search" placeholder="Search an area, layout or listing #" autocomplete="off" spellcheck="false" aria-controls="sList"><kbd>Esc</kbd></label><div class="slist" id="sList" role="listbox"></div></div></header>`;
-/* "Sam, junior at Weinberg" from the role "Junior, Weinberg" */
-const byline=()=>{const [a,b]=ROOM.role.split(', ');return b?`${ROOM.who}, ${/^.[a-z]/.test(a)?a[0].toLowerCase()+a.slice(1):a} at ${b}`:`${ROOM.who}, ${ROOM.role}`};
+/* "Sam, the host": a listing doesn't say which school its host is from, only that they signed in with a school email */
+const byline=()=>`${ROOM.who}, the host`;
 /* Save: only on a real listing (8-digit number). The boot script owns the click; src/rentlet.ts signs the visitor in,
    saves it to their account and keeps aria-pressed current, and the CSS turns that into "Save" or "Saved" */
 const saveBtn=()=>{const c=String(ROOM.code||'');if(!/^[1-9][0-9]{7}$/.test(c))return '';

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rentlet · Sublets from Northwestern students</title>
+<title>Rentlet · Sublets near Northwestern</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
 <style>
 :root{
@@ -873,7 +873,7 @@ function hcard(l,p,i){
     <div class="ph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ph-tag">${l.type}</span>${heartBtn(l,'save')}<span class="walk">${ic('walk','sm')}${l.walk} min to campus</span></div>
     <div class="cb">
       <div class="ct"><h3>${l.title}</h3>${priceTag(l)}</div>
-      <p class="meta">${l.area} · ${ic('shield','sm')}${l.who}, verified student</p>
+      <p class="meta">${l.area} · ${ic('shield','sm')}${l.who}, verified school email</p>
       ${fitLine(l,p)}
       <div class="legs">
         <div class="leg"><span class="leg-k">Move in</span><span class="leg-d"><span>${md(l.start)}</span><span class="hand">${ic('arrow','sm')}</span><b>${md(p.start)}</b><span class="sr">${l.who} leaves ${md(l.start)}, you arrive ${md(p.start)}</span></span><span class="pill ${s1}">${t1}</span></div>
@@ -890,7 +890,7 @@ function rcard(q,mine,i){
     <div class="avatar">${q.who[0]}</div>
     <div>
       <div class="ct"><h3>${q.who} · ${q.role}</h3><span class="unit">${q.kind}</span></div>
-      <p class="meta">${ic('shield','sm')}Verified student · ${range(q.start,q.end)}</p>
+      <p class="meta">${ic('shield','sm')}Verified school email · ${range(q.start,q.end)}</p>
       <div class="legs">
         <div class="leg"><span class="leg-k">Move in</span><span class="leg-d"><span>${md(mine.start)}</span><span class="hand">${ic('arrow','sm')}</span><b>${md(q.start)}</b><span class="sr">you leave ${md(mine.start)}, ${q.who} arrives ${md(q.start)}</span></span><span class="pill ${st[0]}">${st[1]}</span></div>
         <div class="leg"><span class="leg-k">Move out</span><span class="leg-d"><span>${md(mine.end)}</span><span class="hand">${ic('arrow','sm')}</span><b>${md(q.end)}</b><span class="sr">your lease ends ${md(mine.end)}, ${q.who} leaves ${md(q.end)}</span></span><span class="pill ${en[0]}">${en[1]}</span></div>
@@ -959,7 +959,7 @@ const steps=()=>`<section class="steps"><div class="wrap"><h2>How it works</h2><
   <li><h3>See who lines up</h3><p>Each room shows the gap or overlap with your dates, the walk to campus, and how it compares with your budget.</p></li>
   <li><h3>Message and move in</h3><p>Ask your questions, agree on the details, and pick up the keys.</p></li></ol></div></section>`;
 const trust=()=>`<section class="trust"><div class="wrap"><h2>Safe on both sides</h2><div class="trust-grid">
-  <div><div class="tile40">${ic('shield')}</div><h3>Know who you’re talking to</h3><p>Look for the verified badge to see who has confirmed they’re a student.</p></div>
+  <div><div class="tile40">${ic('shield')}</div><h3>Know who you’re talking to</h3><p>Look for the verified badge to see who has confirmed a school (.edu) email.</p></div>
   <div><div class="tile40">${ic('chat')}</div><h3>Talk first, share later</h3><p>Message inside Rentlet. Contact details are swapped only when you both agree.</p></div>
   <div><div class="tile40">${ic('cal')}</div><h3>Dates and rent up front</h3><p>Every room shows its dates and monthly rent.</p></div></div></div></section>`;
 const footer=()=>`<footer class="foot"><div class="wrap"><div><img src="img/rentlet-logo.png" alt="Rentlet"><p>© 2026 Rentlet · A student class project, not affiliated with Northwestern University</p></div>
@@ -990,7 +990,7 @@ function cxResults(el){const p=plan,head=`<div class="cx-sh"><div><h2>Rooms open
   let shown=[];
   if(nights(p.start,p.end)<=0)el.innerHTML=head+cxEmpty('Check your dates','Your move-out date needs to be after your move-in date.');
   else if(!LOADED)el.innerHTML=head+`<div class="cx-grid">${skeleton(3)}</div>`;
-  else if(!L.some(l=>l.school===p.school))el.innerHTML=head+cxEmpty(`No rooms near ${schoolName(p.school)} yet`,'Be the first to post a place here. Northwestern students looking nearby will see it right away.',`<button type="button" class="cx-lnk" onclick="location.href='post.html'">Post a listing</button>`);
+  else if(!L.some(l=>l.school===p.school))el.innerHTML=head+cxEmpty(`No rooms near ${schoolName(p.school)} yet`,'Be the first to post a place here. Students and interns looking nearby will see it right away.',`<button type="button" class="cx-lnk" onclick="location.href='post.html'">Post a listing</button>`);
   else{const all=L.filter(l=>l.school===p.school&&fit(l,p).ok);shown=all.map(l=>l.id);
     if(!all.length)el.innerHTML=head+cxEmpty('Nothing lines up with these dates yet','Try moving your dates by a week or two, or raise your budget a little.',`<button type="button" class="cx-lnk" data-reset>Reset the search</button>`);
     else{const types=['All','Private room','Entire place','Studio'].filter(k=>k==='All'||all.some(l=>ltype(l)===k));if(!types.includes(CXF))CXF='All';
@@ -1061,15 +1061,15 @@ const cxPost=()=>{
 const OLD_POST=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-post"><div><h2>Leaving early?<br>Someone’s arriving.</h2><p>Moving for a new job, an internship or a semester abroad? Post your room and see people who need those dates.</p>
   <ul><li>${ic('check','sm')}Post in a few steps; drafts save themselves</li><li>${ic('check','sm')}Live as soon as you publish</li><li>${ic('check','sm')}Edit, hide or repost any time</li></ul><button type="button" class="go" onclick="location.href='post.html'">${ic('plus')}Post a listing</button></div>
   <div class="cx-pimg"><img src="img/living.jpg" alt=""></div></div></div></section>`;
-const CXFAQ=[['Is Rentlet a broker?','No. Rentlet is a place for Northwestern students to post and find sublets and lease takeovers, and to talk to each other. We don’t act as an agent for either side.'],
+const CXFAQ=[['Is Rentlet a broker?','No. Rentlet is a place for students to post and find sublets and lease takeovers near Northwestern, and to talk to each other. We don’t act as an agent for either side.'],
  ['Do you collect rent or deposits?','No. You pay the other person or the building directly. Before you pay, check the lease, the landlord’s or building’s approval, and who receives the money.'],
- ['Who can use Rentlet?','Northwestern students and staff. You sign in with your Northwestern Google account, so everyone you talk to is from Northwestern.'],
- ['How are listings checked?','Everyone who posts signs in with a Northwestern account, and anyone can report a listing. Reported listings are reviewed and taken down if they break the rules.'],
+ ['Who can use Rentlet?','Anyone can browse. To post, message or save, you sign in with a school Google account (an email ending in .edu), so everyone you talk to has a verified school email.'],
+ ['How are listings checked?','Everyone who posts signs in with a school Google account (.edu), and anyone can report a listing. Reported listings are reviewed and taken down if they break the rules.'],
  ['When is my contact information shared?','Only when you both agree. Until then you talk inside Rentlet.'],
  ['Which areas do you cover?','Places near Northwestern’s Evanston and Chicago campuses, and in downtown Chicago.']];
 const cxFaq=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-sh"><div><h2>FAQ</h2></div><button type="button" class="cx-lnk" onclick="location.href='how-it-works.html#faq'">More questions</button></div><div class="cx-faq">${CXFAQ.map((f,i)=>`<details ${i?'':'open'}><summary>${f[0]}</summary><p>${f[1]}</p></details>`).join('')}</div></div></section>`;
 const cxFooter=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fcols">
-  <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers between Northwestern students.</p></div>
+  <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers near Northwestern.</p></div>
   <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></div>
   <div><h4>Post</h4><a href="post.html">Post a listing</a><a href="request.html">Post a request</a><a href="profile.html">Your listings</a></div>
   <div><h4>Areas</h4><a href="index.html">Northwestern Evanston</a><a href="index.html">Northwestern Chicago</a></div>
@@ -1122,7 +1122,7 @@ function roomPage(m){
           <div class="leg"><span class="leg-k">Move out</span><span class="leg-d"><span>Lease ends ${md(m.end)}</span><span class="hand">${ic('arrow','sm')}</span><b>You leave ${md(m.youOut)}</b></span><span class="pill ${s2}">${t2}</span></div>
         </div>
         <p class="fit ${r.whole?'full':'part'}">${ic(r.whole?'check':'cal')}<span><b>${dates}</b>${m.budget&&budgetText(r.diff)?` <span class="bud">· ${budgetText(r.diff)}</span>`:''}</span></p>
-        <div class="poster"><div class="avatar">${m.who[0]}</div><div><b>${m.who}</b><span>${ic('shield','sm')}Verified student</span></div>
+        <div class="poster"><div class="avatar">${m.who[0]}</div><div><b>${m.who}</b><span>${ic('shield','sm')}Verified school email</span></div>
           <div class="acts"><button class="btn btn-primary" data-toast="Opens a message to ${m.who}.">${ic('chat','sm')}Message ${m.who}</button>${ROOM_CODE.test(String(m.code||''))?`<button type="button" class="btn btn-secondary" data-rl-save="room:${m.code}" aria-pressed="${roomSaved(m.code)}" aria-label="Save this room">${ic('heart','sm')}</button>`:''}</div></div>
       </div>
     </div>
@@ -1343,7 +1343,7 @@ function bindOrbit(){
   function reasons(pk){const p=pk.p,f=pk.f,bud=plan.budget-p.price,ok=c=>c?ic('check'):ic('cal');
     return `<div class="r4top"><span class="nk-tag">${SPARK}AI pick</span><small>${f.whole?'Fits your dates':'Close fit'} · ${wl(plan.start,plan.end)}</small></div>
       <div class="r4body"><div><h3>${p.title}</h3><p>${p.area} · ${wl(p.start,p.end)} · <b>${money(p.price)}</b> / mo</p></div>
-      <ul><li class="${f.whole?'':'wa'}">${ok(f.whole)}${f.whole?'Covers your whole stay':`${Math.floor(f.ov/f.need*100)}% fits your dates`}</li><li class="${bud>=0?'':'wa'}">${ok(bud>=0)}${bud===Infinity?'No budget limit':bud>=0?`${money(bud)} under your budget`:`${money(-bud)} over, within 5%`}</li><li class="${p.walk<=15?'':'wa'}">${ok(p.walk<=15)}${p.walk} min walk to campus</li><li>${ic('check')}${p.who} is a verified student</li></ul></div>
+      <ul><li class="${f.whole?'':'wa'}">${ok(f.whole)}${f.whole?'Covers your whole stay':`${Math.floor(f.ov/f.need*100)}% fits your dates`}</li><li class="${bud>=0?'':'wa'}">${ok(bud>=0)}${bud===Infinity?'No budget limit':bud>=0?`${money(bud)} under your budget`:`${money(-bud)} over, within 5%`}</li><li class="${p.walk<=15?'':'wa'}">${ok(p.walk<=15)}${p.walk} min walk to campus</li><li>${ic('check')}${p.who} has a verified school email</li></ul></div>
       <div class="r4acts"><a class="nk-btn" href="room.html?room=${p.key}">View details<svg class="arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a><button class="nk-ghost" data-a4again>${SPARK}Pick again</button><button class="btn btn-ghost" data-a4back>Back to all rooms</button></div>`}
   /* back to the reel: each card returns to the exact pose of its reel card (measured now), then hands over to it with a short cross-fade */
   function closeFly(now){if(!flying||flying.closing)return;const F=flying,done=()=>{fly.classList.remove('on');fly.innerHTML='';hero.style.minHeight='';unlockReel();F.cards.forEach(c=>{if(c.src){c.src.style.visibility='';c.src.getAnimations().forEach(a=>a.cancel())}});if(flying===F)flying=null;st.picked=false;rest=performance.now()};

@@ -49,7 +49,7 @@ function load() {
 }
 
 async function call<T>(name: string, data: unknown, parse: (x: unknown) => T, fallback: T, timeout: number): Promise<T> {
-  if (missing || !auth.currentUser) return fallback; // the functions only answer signed-in Northwestern accounts
+  if (missing || !auth.currentUser) return fallback; // the functions only answer signed-in school (.edu) accounts
   try {
     const { fns, mod } = await load();
     const res = await mod.httpsCallable(fns, name, { timeout })(data);

@@ -189,7 +189,7 @@ export function toRow(id: string, d: RequestDoc, createdAtMs: number, updatedAtM
   return {
     id,
     uid: d.ownerId,
-    who: d.ownerName || 'Northwestern student',
+    who: d.ownerName || 'Student',
     photo: d.ownerPhoto || '',
     role: ROLE_LABEL[d.role] ?? 'Student',
     kind: KIND_LABEL[d.kind] ?? KIND_LABEL.room,
@@ -208,7 +208,7 @@ export function toRow(id: string, d: RequestDoc, createdAtMs: number, updatedAtM
     org: d.org ?? '',
     life: d.life ?? [],
     note: d.note ?? '',
-    // only signed-in Northwestern accounts can post (firestore.rules)
+    // only signed-in school (.edu) accounts can post (firestore.rules)
     verified: true,
     posted: isoDay(createdAtMs),
     active: isoDay(Math.max(createdAtMs, updatedAtMs)),

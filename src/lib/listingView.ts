@@ -340,8 +340,8 @@ export function toRoom(d: ListingDoc, today: string = localDay()) {
   const end = isDay(r.end) ? r.end : '';
   return {
     who: html(str(r.ownerName)),
-    role: 'Northwestern student',
-    reply: 'verified with a Northwestern account',
+    role: 'Student',
+    reply: 'verified school email',
     title: html(str(r.title)),
     area: html(str(r.area)),
     walk: walkOf(r.walk),
@@ -409,7 +409,7 @@ export function toRoom(d: ListingDoc, today: string = localDay()) {
       guests: html(pref('Visitors') || 'Ask the host'),
       note: html(text('rmNote')),
     },
-    // only what something real backs: the Northwestern sign-in, and a lease proof the host uploaded (in review).
+    // only what something real backs: the school (.edu) sign-in, and a lease proof the host uploaded (in review).
     // There is no separate landlord approval yet, so that mark is always "Not submitted".
     ver: { student: 'ok', lease: f.proof === 'lease' ? 'pending' : 'none', landlord: 'none' },
     // the map: the exact spot and the places saved with the listing (names are escaped when drawn)

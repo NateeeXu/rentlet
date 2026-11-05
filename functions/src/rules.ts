@@ -19,13 +19,14 @@ export const MAX_QUERY = 120;
 export const MAX_KM_FROM_CAMPUS = 60;
 export const MAX_WALK_KM = 6;
 
-const NU_EMAIL = /@(u\.)?northwestern\.edu$/i;
+const SCHOOL_EMAIL = /^[^@\s]+@([a-z0-9-]+\.)+edu$/i;
 
-// A signed-in Google account whose verified email is @u.northwestern.edu or @northwestern.edu.
+// A signed-in Google account with a verified school email ending in .edu (Founder, Nov 4: any school,
+// not only Northwestern). The name is kept for its callers.
 export function isNorthwesternToken(token: unknown): boolean {
   if (!token || typeof token !== 'object') return false;
   const t = token as { email?: unknown; email_verified?: unknown };
-  return t.email_verified === true && typeof t.email === 'string' && NU_EMAIL.test(t.email.trim());
+  return t.email_verified === true && typeof t.email === 'string' && SCHOOL_EMAIL.test(t.email.trim());
 }
 
 export class InputError extends Error {}

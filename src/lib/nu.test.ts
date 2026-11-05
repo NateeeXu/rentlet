@@ -9,7 +9,11 @@ describe('isNorthwesternEmail', () => {
   it('rejects other domains and lookalikes', () => {
     expect(isNorthwesternEmail('emily@gmail.com')).toBe(false);
     expect(isNorthwesternEmail('emily@u.northwestern.edu.evil.com')).toBe(false);
-    expect(isNorthwesternEmail('emily@notnorthwestern.edu')).toBe(false);
+    expect(isNorthwesternEmail('emily@notnorthwestern.edu')).toBe(true); // any .edu since Nov 4
+    expect(isNorthwesternEmail('sam@uchicago.edu')).toBe(true);
+    expect(isNorthwesternEmail('sam@cs.stanford.edu')).toBe(true);
+    expect(isNorthwesternEmail('sam@gmail.com')).toBe(false);
+    expect(isNorthwesternEmail('sam@edu.example.com')).toBe(false);
     expect(isNorthwesternEmail(null)).toBe(false);
   });
 });
@@ -17,6 +21,6 @@ describe('isNorthwesternEmail', () => {
 describe('firstName', () => {
   it('keeps only the first name', () => {
     expect(firstName('Emily Chen')).toBe('Emily');
-    expect(firstName('  ')).toBe('Northwestern student');
+    expect(firstName('  ')).toBe('Student');
   });
 });

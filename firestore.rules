@@ -1,7 +1,7 @@
 rules_version = '2';
 
 // Rentlet access rules. Anyone may browse active listings and open requests; only signed-in
-// Northwestern accounts (verified @u.northwestern.edu or @northwestern.edu Google accounts) may
+// School accounts (verified Google accounts with an email ending in .edu; Northwestern-only until Nov 4) may
 // write, and every write is limited to the writer's own documents or conversations.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -13,7 +13,7 @@ service cloud.firestore {
     function isNU() {
       return signedIn()
         && request.auth.token.email_verified == true
-        && request.auth.token.email.lower().matches('.*@(u[.])?northwestern[.]edu');
+        && request.auth.token.email.lower().matches('[^@]+@([a-z0-9-]+[.])+edu');
     }
 
     function me() {

@@ -241,7 +241,7 @@ async function publish(btn){
   }catch(e){
     const r=e&&e.reason,gap=r==='invalid'&&firstGap();
     if(gap){showNeed(gap[0],gap[1]);return}
-    toast(r==='limit'?'You already have 3 listings live. Mark one as taken first.':r==='photos'?'Add at least one photo of the place before publishing.':r==='signin'?'Sign in with your Northwestern account to publish.':r==='invalid'?'Something on the form needs another look. Check the steps and try again.':'Couldn’t publish. Check your connection and try again.');
+    toast(r==='limit'?'You already have 3 listings live. Mark one as taken first.':r==='photos'?'Add at least one photo of the place before publishing.':r==='signin'?'Sign in with your school Google account (.edu) to publish.':r==='invalid'?'Something on the form needs another look. Check the steps and try again.':'Couldn’t publish. Check your connection and try again.');
     if(r==='photos'){S.step=STEPS.findIndex(x=>x.q==='Photos');render();window.scrollTo(0,0)}
   }finally{
     BUSY=false;const b=document.querySelector('[data-next]');if(b&&!S.done){b.disabled=false;b.textContent=label}
@@ -453,9 +453,9 @@ const STEPS=[
  {q:'Photos',h:`At least one of the bedroom. Best with 2 of the bedroom and 1 of each other area, up to ${MAXPH} photos. Phone photos in daylight are fine.`,
   need:()=>!S.photos.bedroom.length?[['photos','Add at least one photo of the bedroom.']]:photoCount()>MAXPH?[['photos',`Remove photos until there are ${MAXPH} or fewer.`]]:[],
   body:()=>`${lostPhotosNote()}<div class="grp" data-need="photos">${nm('photos',1)}${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?esc(S.video):'Optional · MP4, MOV or WebM, up to 60 MB'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk" tabindex="0" role="button"><input type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" data-video hidden>Add</label>`}</div></div><p class="note">${photoCount()} of ${MAXPH} photos · ${areasDone()} of ${AREAS.length} areas done. Photos that don’t match the place can be reported to the Rentlet team.</p>`},
- {q:'Prove it’s yours',h:'Your Northwestern sign-in counts as student verification. A badge shows what was checked; it is not a guarantee.',
-  need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length?[['proof','Add a photo of the lease or the landlord’s email, or choose Student verification.']]:[],
-  body:()=>`${lostProofNote()}<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','Student verification','Verified with your Northwestern account','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>`},
+ {q:'Prove it’s yours',h:'Signing in with your school email (.edu) counts as verification. A badge shows what was checked; it is not a guarantee.',
+  need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length?[['proof','Add a photo of the lease or the landlord’s email, or choose School email.']]:[],
+  body:()=>`${lostProofNote()}<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','School email','Verified when you signed in with your .edu email','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>`},
  {q:'Check and publish',h:'This is how it will look. After publishing you can’t edit it, but you can mark it as taken or take it down from Profile.',body:()=>{
    const ok=i=>!missing(i).length,where=String(val('building','')||val('addr','')).trim(),rmN=String(val('rmN','')).trim(),who=String(val('rmWho','')).trim(),extra=dollars(val('extra','')),items=S.multi.items.length,pc=photoCount();
    return `<div class="grp">${card()}</div>
@@ -471,7 +471,7 @@ const STEPS=[
      ['What stays',S.furn==='none'?'Not furnished':S.furn?line([`${S.furn==='full'?'Fully':'Partly'} furnished`,items&&`${items} item${items===1?'':'s'}`,S.terms==='gift'?'theirs to keep':S.terms==='use'?'use during the stay':''],ok(8)):NS,8],
      ['Rules',Object.values(S.prefs).filter(Boolean).join(' · ')||'None set',9],
      ['Photos',line([`${pc} photo${pc===1?'':'s'}`,`${areasDone()} of ${AREAS.length} areas`,S.video&&'video'],ok(10)),10],
-     ['Verification',S.proof==='student'?'Student ✓':S.proof==='lease'?line([`Student ✓ · lease proof (${PROOF.length} file${PROOF.length===1?'':'s'})`],ok(11)):NS,11]
+     ['Verification',S.proof==='student'?'School email ✓':S.proof==='lease'?line([`School email ✓ · lease proof (${PROOF.length} file${PROOF.length===1?'':'s'})`],ok(11)):NS,11]
    ].map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
    ${grp('A note for the listing',ta('note','','e.g. I’m away for winter quarter. Quiet room with a proper desk.'),'optional · shows as a quote')}
    <p class="note">Goes live as soon as you publish, with a listing number, and leaves search after the move-out day. Up to 3 listings at a time.</p>`}}];

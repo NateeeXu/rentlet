@@ -765,7 +765,7 @@ export function threadView(conv: Conv, o: ThreadOpts) {
   const tab = tabOf(conv, me);
   const host = tab === 'subletting';
   const P = o.profile;
-  const name = (P?.name || conv.names[other] || '').trim() || 'Northwestern student';
+  const name = (P?.name || conv.names[other] || '').trim() || 'Student';
   const photo = P?.photoURL || conv.photos[other] || '';
   const msgs = o.msgs ?? [];
   const L = conv.listing;
@@ -780,7 +780,7 @@ export function threadView(conv: Conv, o: ThreadOpts) {
       photo,
       col: colorFor(other),
       ok: P ? P.nu : true,
-      role: P?.year ? `${P.year} · Northwestern` : 'Verified Northwestern account',
+      role: P?.year ? String(P.year) : 'Verified school email',
       bio: P?.bio ?? '',
       year: P?.year ?? '',
       since: memberSince(P?.joinedAtMs ?? 0),

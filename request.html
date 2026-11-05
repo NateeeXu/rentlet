@@ -188,7 +188,7 @@ const restore=d=>{if(!d||typeof d!=='object')return false;const m=d.multi||{},li
 let restored=false;
 try{restored=restore(JSON.parse(sessionStorage.getItem('cs-request-draft')||'null'))}catch(_){}
 /* signed in with Google: start the name from the first name on the account */
-const googleName=()=>RL.user&&RL.user.name&&RL.user.name!=='Northwestern student'?RL.user.name:'';
+const googleName=()=>RL.user&&RL.user.name&&!['Student','Northwestern student'].includes(RL.user.name)?RL.user.name:'';
 if(!('name' in S.f)&&googleName())S.f.name=googleName();
 
 /* your own open request (src/requests.ts). One at a time: posting again replaces it.
@@ -283,7 +283,7 @@ const B={
       ['Budget',`${budText()}${S.util?' · utilities included':''}`,2],
       ['Room',`${KIND[S.kind]}${S.multi.layouts.length?` · ${S.multi.layouts.join(', ')}`:''} · ${S.furn==='any'?'furnished or not':name(FURN,S.furn).toLowerCase()+(S.furn==='part'?' furnished':'')}${S.bath?' · private bathroom':''} · roommates: ${name(MATES,S.mates).toLowerCase()}`,3],
       ['About you',`${esc(val('name','').trim()||'No name yet')} · ${roleName()}${orgVal()?` · ${esc(orgVal())}`:''}${S.multi.life.length?` · ${S.multi.life.join(', ').toLowerCase()}`:''}`,4]];
-    const acct=RL.authed&&RL.user?`Posting with your Northwestern account. Hosts see your first name and Google photo, never your email.`:`You’ll sign in with your Northwestern Google account to post. That’s how hosts know you’re at Northwestern.`;
+    const acct=RL.authed&&RL.user?`Posting with your school Google account. Hosts see your first name and Google photo, never your email.`:`You’ll sign in with your school Google account (an email ending in .edu) to post. That’s how hosts know you have a verified school email.`;
     return `<div class="grp">${qcard(record())}</div><dl class="review grp">${rows.map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
       <p class="note">${acct}</p>
       <p class="note">Live as soon as you post, until your move-in date. One request at a time${MINE&&MINE.request?(EDITING?': this updates the one you have up.':': this replaces the one you already have up.'):'.'}</p>`}
@@ -340,7 +340,7 @@ async function post(){
   }catch(e){
     BUSY=false;const why=e&&e.reason;
     if(why==='dates'||why==='name'){goErr(why);return}
-    toast(why==='signin'?'Sign in with your Northwestern account to post.':'Couldn’t post. Check your connection and try again.');
+    toast(why==='signin'?'Sign in with your school Google account (.edu) to post.':'Couldn’t post. Check your connection and try again.');
     render();
   }
 }

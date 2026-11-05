@@ -1467,6 +1467,9 @@ cardStyle=new URLSearchParams(location.search).get('cs')||'chip';$$('[data-cs]')
 const wantAi=false; /* AI pick is taken down for now; ?ai=1 no longer starts it */
 window.RL_onAuth=()=>show(current,true);
 let booted=false;const boot=()=>{if(booted)return;booted=true;if(location.hash)renderRoute();else show(current)};
+/* the room page's search button lands here with ?find=1: go straight to the results for that search */
+if(/[?&]find=1/.test(location.search)){history.replaceState(null,'',location.pathname+location.hash);
+  const toRes=()=>{const r=document.getElementById('res');if(r)r.scrollIntoView({block:'start'})};setTimeout(toRes,500);setTimeout(toRes,1600)}
 window.RL_onListings=list=>{LOADED=true;if(list)L.splice(0,L.length,...list.map(d=>RentletListings.toCard(d)));
   for(const k of ['nu-evn','nu-chi','chi-dt'])CAMPUS_ROOMS[k]=L.filter(l=>l.school===k);
   window.RL_SEARCH_ROOMS=L.map(l=>({key:l.key,code:l.code,title:l.title,area:l.area,layout:l.layout,price:l.price}));

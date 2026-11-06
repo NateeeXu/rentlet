@@ -10,10 +10,11 @@ import {
   serverTimestamp,
   setDoc,
   where,
+  writeBatch,
   type DocumentData,
   type Timestamp,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
 import { firstName } from './lib/nu';
 import {
@@ -29,17 +30,12 @@ import {
   type ListingDoc,
   type PostForm,
 } from './lib/listingView';
-import { asPlace, listingPlace, sameAddress, type PickedPlace } from './lib/place';
+import { AREA_CAPTION, AREA_ORDER, editState, removedFiles, type PrivateLocation } from './lib/listingEdit';
+import { asPlace, listingPlace, sameAddress, type ListingPlace, type PickedPlace } from './lib/place';
+import { proofFilePaths } from './lib/profileData';
 import { lookupPlace, nearbyPlaces } from './place';
 
 const MAX_ACTIVE = 3;
-const AREA_CAPTION: Record<string, string> = {
-  bedroom: 'Bedroom',
-  living: 'Living room',
-  bath: 'Bathroom',
-  kitchen: 'Kitchen',
-  building: 'Window or building',
-};
 // Form fields kept out of the public answers. The street address and website stay private to the host
 // (shared only after both sides agree); the building name also goes on the listing, as its room page title.
 const PRIVATE_FIELDS = ['addr', 'building', 'site'];
@@ -68,9 +64,11 @@ function videoType(video: File): string {
   return ext === 'mov' ? 'video/quicktime' : ext === 'webm' ? 'video/webm' : 'video/mp4';
 }
 
-function ready(S: PostState, video: File | null, proof: File[]): boolean {
+// keepLinks: an edit also counts the photos already on the listing
+function ready(S: PostState, video: File | null, proof: File[], keepLinks = false): boolean {
   const price = Math.round(Number(S.rent));
-  const photos = Object.values(S.photos || {}).reduce((n, list) => n + (list || []).filter((p) => p.startsWith('data:image/')).length, 0);
+  const isPhoto = (p: string) => p.startsWith('data:image/') || (keepLinks && p.startsWith('https://'));
+  const photos = Object.values(S.photos || {}).reduce((n, list) => n + (list || []).filter(isPhoto).length, 0);
   return (
     (S.subletType === 'sublet' || S.subletType === 'takeover') &&
     price > 0 &&
@@ -161,6 +159,72 @@ async function hostName(uid: string, displayName: string | null): Promise<string
   return firstName(displayName);
 }
 
+// The form's answers as a listing stores them: the public answers, the host-only fields, whole-dollar rents.
+function answers(S: PostState) {
+  const f: Record<string, string> = {};
+  const location: Record<string, string> = {};
+  for (const [k, v] of Object.entries(S.f || {})) {
+    const value = String(v ?? '').trim();
+    if (PRIVATE_FIELDS.includes(k)) location[k] = value;
+    else f[k] = value;
+  }
+  const form: PostForm = JSON.parse(
+    JSON.stringify({ ...S, f, photos: undefined, video: undefined, step: undefined, done: undefined, act: undefined, place: undefined, code: undefined }),
+  );
+  const campusId = (S.campusId in CAMPUS_KEY ? S.campusId : 'nu-evn') as CampusId;
+  form.campusId = campusId;
+  // Answers the host skipped stay empty (null, or [] for the lists); the same field names and shapes as before.
+  // Rents are whole dollars; no original rent is 0, so the room page shows no "was" price.
+  const price = Math.round(Number(S.rent) || 0);
+  form.rent = price;
+  form.orig = Number(S.orig) > 0 ? Math.round(Number(S.orig)) : 0;
+  const multi: Partial<PostForm['multi']> = S.multi ?? {};
+  form.multi = { fees: multi.fees ?? [], amen: multi.amen ?? [], habits: multi.habits ?? [], items: multi.items ?? [] };
+  form.prefs = S.prefs ?? {};
+  // refundable only means something with a deposit, and furniture terms only with furniture
+  if (form.dep !== 'amount') (form as { refund: boolean | null }).refund = null;
+  if (form.furn !== 'full' && form.furn !== 'part') form.terms = null;
+  // every listing shows at its spot on the map; the street address and website stay host-only
+  form.map = true;
+  return { form, location, price, campusId };
+}
+
+// Places around the spot for the room page's Getting around (fails soft to none).
+async function placesNear(spot: ListingPlace['location'], campusId: CampusId) {
+  return spot
+    ? (await nearbyPlaces(spot.lat, spot.lng, campusId))
+        .filter((x) => x.lat != null && x.lng != null)
+        .slice(0, 12)
+        .map((x) => ({ kind: x.kind, name: x.name.slice(0, 80), lat: x.lat, lng: x.lng, walk: x.walk, meters: x.meters }))
+    : [];
+}
+
+// The listing's public fields, the same for a new listing and an edited one.
+function publicFields(
+  S: PostState,
+  { form, location, price, campusId }: ReturnType<typeof answers>,
+  spot: ListingPlace,
+  files: { photos: string[]; captions: string[]; video: string | null },
+) {
+  return {
+    campus: CAMPUS_KEY[campusId],
+    campusId,
+    kind: S.subletType,
+    title: titleOf(form),
+    building: (location.building || '').slice(0, 80),
+    area: spot.area,
+    price,
+    start: S.start,
+    end: S.end,
+    photos: files.photos,
+    captions: files.captions,
+    video: files.video,
+    walk: spot.walk,
+    location: spot.location, // null when no place was picked or found
+    form,
+  };
+}
+
 export async function publishListing(S: PostState, video: File | null, proof: File[], onStep?: (s: PublishStep) => void): Promise<string> {
   const user = auth.currentUser;
   if (!user) throw new PublishError('signin');
@@ -178,8 +242,7 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
   onStep?.('photos');
   const photos: string[] = [];
   const captions: string[] = [];
-  const order = ['bedroom', 'living', 'kitchen', 'bath', 'building'];
-  for (const area of order) {
+  for (const area of AREA_ORDER) {
     for (const src of S.photos[area] || []) {
       if (!src.startsWith('data:image/')) continue; // only photos the host added
       const blob = await compress(src);
@@ -212,39 +275,10 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
   }
 
   onStep?.('saving');
-  const f: Record<string, string> = {};
-  const location: Record<string, string> = {};
-  for (const [k, v] of Object.entries(S.f || {})) {
-    const value = String(v ?? '').trim();
-    if (PRIVATE_FIELDS.includes(k)) location[k] = value;
-    else f[k] = value;
-  }
-  const form: PostForm = JSON.parse(
-    JSON.stringify({ ...S, f, photos: undefined, video: undefined, step: undefined, done: undefined, act: undefined, place: undefined }),
-  );
-  const campusId = (S.campusId in CAMPUS_KEY ? S.campusId : 'nu-evn') as CampusId;
-  form.campusId = campusId;
-  // Answers the host skipped stay empty (null, or [] for the lists); the same field names and shapes as before.
-  // Rents are whole dollars; no original rent is 0, so the room page shows no "was" price.
-  const price = Math.round(Number(S.rent) || 0);
-  form.rent = price;
-  form.orig = Number(S.orig) > 0 ? Math.round(Number(S.orig)) : 0;
-  const multi: Partial<PostForm['multi']> = S.multi ?? {};
-  form.multi = { fees: multi.fees ?? [], amen: multi.amen ?? [], habits: multi.habits ?? [], items: multi.items ?? [] };
-  form.prefs = S.prefs ?? {};
-  // refundable only means something with a deposit, and furniture terms only with furniture
-  if (form.dep !== 'amount') (form as { refund: boolean | null }).refund = null;
-  if (form.furn !== 'full' && form.furn !== 'part') form.terms = null;
-  // every listing shows at its spot on the map; the street address and website stay host-only
-  form.map = true;
+  const saved = answers(S);
+  const { location, campusId } = saved;
   const spot = listingPlace(await placing, location.addr || '', campusId);
-  // places around the spot for the room page's Getting around (fails soft to none)
-  const near = spot.location
-    ? (await nearbyPlaces(spot.location.lat, spot.location.lng, campusId))
-        .filter((x) => x.lat != null && x.lng != null)
-        .slice(0, 12)
-        .map((x) => ({ kind: x.kind, name: x.name.slice(0, 80), lat: x.lat, lng: x.lng, walk: x.walk, meters: x.meters }))
-    : [];
+  const near = await placesNear(spot.location, campusId);
 
   await setDoc(doc(db, 'listings', code), {
     ownerId: user.uid,
@@ -252,22 +286,8 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
     ownerPhoto: user.photoURL ?? '',
     status: 'active',
     code,
-    campus: CAMPUS_KEY[campusId],
-    campusId,
-    kind: S.subletType,
-    title: titleOf(form),
-    building: (location.building || '').slice(0, 80),
-    area: spot.area,
-    price,
-    start: S.start,
-    end: S.end,
-    photos,
-    captions,
-    video: videoUrl,
-    walk: spot.walk,
-    location: spot.location, // null when no place was picked or found
+    ...publicFields(S, saved, spot, { photos, captions, video: videoUrl }),
     near,
-    form,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -327,4 +347,118 @@ export async function getListing(code: string): Promise<Lookup> {
   }
 }
 
-export { toCard, toRoom };
+export type EditLookup =
+  | { state: 'ok'; listing: ListingDoc; location: PrivateLocation; proofFiles: number }
+  | { state: 'signin' | 'denied' | 'missing' | 'error' };
+
+// A listing and its host-only details, for its host to edit.
+export async function getListingForEdit(code: string): Promise<EditLookup> {
+  await auth.authStateReady();
+  const user = auth.currentUser;
+  if (!user) return { state: 'signin' };
+  try {
+    const snap = await getDoc(doc(db, 'listings', code));
+    if (!snap.exists()) return { state: 'missing' };
+    if (snap.get('ownerId') !== user.uid) return { state: 'denied' };
+    const [loc, proof] = await Promise.all([
+      getDoc(doc(db, 'listings', code, 'private', 'location')),
+      getDoc(doc(db, 'listings', code, 'private', 'proof')),
+    ]);
+    const d = loc.data() ?? {};
+    const str = (v: unknown) => (typeof v === 'string' ? v : '');
+    return {
+      state: 'ok',
+      listing: fromDoc(code, snap.data()),
+      location: { address: str(d.address), building: str(d.building), site: str(d.site), zip: typeof d.zip === 'string' ? d.zip : null },
+      proofFiles: proofFilePaths(code, user.uid, proof.data()).length,
+    };
+  } catch (e) {
+    // the rules hide a listing that was taken down from everyone but its host
+    return { state: (e as { code?: string }).code === 'permission-denied' ? 'denied' : 'error' };
+  }
+}
+
+// Saves the edited answers. The listing number, host, status and post date stay as they are. New files get
+// new names, because storage.rules does not allow overwriting one. The public listing and its host-only
+// details change together or not at all; files the listing stops using go once that has worked.
+export async function updateListing(code: string, S: PostState, video: File | null, proof: File[], onStep?: (s: PublishStep) => void): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new PublishError('signin');
+  if (!ready(S, video, proof, true)) throw new PublishError('invalid');
+  const listingRef = doc(db, 'listings', code);
+  const snap = await getDoc(listingRef).catch(() => null);
+  if (!snap?.exists() || snap.get('ownerId') !== user.uid) throw new PublishError('failed');
+  const old = fromDoc(code, snap.data());
+
+  const saved = answers(S);
+  const { location, campusId } = saved;
+  const placing = placeFor(S, location.addr || '', campusId).catch(() => null);
+  const stamp = Date.now().toString(36);
+  const uploaded: string[] = [];
+  const upload = async (path: string, data: Blob, contentType: string) => {
+    const r = ref(storage, path);
+    await uploadBytes(r, data, { contentType });
+    uploaded.push(path);
+    return r;
+  };
+
+  const photos: string[] = [];
+  const captions: string[] = [];
+  let videoUrl: string | null = null;
+  try {
+    onStep?.('photos');
+    for (const area of AREA_ORDER) {
+      for (const src of S.photos[area] || []) {
+        if (src.startsWith('https://')) photos.push(src);
+        else if (src.startsWith('data:image/')) {
+          const r = await upload(`listings/${user.uid}/${code}-${stamp}-${photos.length + 1}.jpg`, await compress(src), 'image/jpeg');
+          photos.push(await getDownloadURL(r));
+        } else continue;
+        captions.push(AREA_CAPTION[area]);
+      }
+    }
+    if (!photos.length) throw new PublishError('photos');
+
+    const proofPaths: string[] = [];
+    if (S.proof === 'lease') {
+      for (const [i, file] of proof.slice(0, 3).entries()) {
+        const ext = file.type === 'application/pdf' ? 'pdf' : (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
+        const path = `proofs/${user.uid}/${code}-${stamp}-${i + 1}.${ext}`;
+        await upload(path, file, file.type);
+        proofPaths.push(path);
+      }
+    }
+
+    if (video) {
+      const ext = (video.name.split('.').pop() || 'mp4').toLowerCase();
+      const r = await upload(`videos/${user.uid}/${code}.${stamp}.${ext}`, video, videoType(video));
+      videoUrl = await getDownloadURL(r);
+    } else if (S.video) videoUrl = old.video ?? null;
+
+    onStep?.('saving');
+    const spot = listingPlace(await placing, location.addr || '', campusId);
+    // the same spot keeps its places: a failed lookup answers with none and must not wipe out a good list
+    const samePlace = spot.location?.lat === old.location?.lat && spot.location?.lng === old.location?.lng && campusId === old.campusId;
+    const near = samePlace ? (old.near ?? []) : await placesNear(spot.location, campusId);
+
+    const batch = writeBatch(db);
+    batch.update(listingRef, { ...publicFields(S, saved, spot, { photos, captions, video: videoUrl }), near, updatedAt: serverTimestamp() });
+    batch.set(
+      doc(db, 'listings', code, 'private', 'location'),
+      { address: location.addr || '', building: location.building || '', site: location.site || '', showOnMap: true, zip: spot.zip },
+      { merge: true },
+    );
+    if (proofPaths.length) {
+      const note = doc(db, 'listings', code, 'private', 'proof');
+      const had = proofFilePaths(code, user.uid, (await getDoc(note)).data());
+      batch.set(note, { kind: 'lease', files: [...had, ...proofPaths], sentAt: serverTimestamp() });
+    }
+    await batch.commit();
+  } catch (e) {
+    await Promise.allSettled(uploaded.map((p) => deleteObject(ref(storage, p))));
+    throw e instanceof PublishError ? e : new PublishError('failed');
+  }
+  await Promise.allSettled(removedFiles(old, user.uid, photos, videoUrl).map((p) => deleteObject(ref(storage, p))));
+}
+
+export { editState, toCard, toRoom };

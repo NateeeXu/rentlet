@@ -315,8 +315,9 @@ function secYou(){
 function listingCard(l){const [c,t]=STATUS[l.status]||['',esc(l.status)],live=l.status==='active',link=live?`room.html?room=${l.code}`:'',dis=S.busy[l.code]?'disabled':'',id=`data-id="${l.code}" ${dis}`;
   const img=l.img?`<img src="${esc(l.img)}" alt="" loading="lazy">`:'';
   let acts='';
-  if(live)acts=`<a class="btn sec" href="${link}">See listing</a><button type="button" class="btn sec" data-act="hide" ${id}>Hide</button><button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
-  else if(l.status==='hidden')acts=`<button type="button" class="btn sec" data-act="show" ${id}>Show again</button><button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
+  const edit=`<a class="btn sec" href="post.html?edit=${l.code}">Edit</a>`;
+  if(live)acts=`<a class="btn sec" href="${link}">See listing</a>${edit}<button type="button" class="btn sec" data-act="hide" ${id}>Hide</button><button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
+  else if(l.status==='hidden')acts=`<button type="button" class="btn sec" data-act="show" ${id}>Show again</button>${edit}<button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
   else if(l.status==='ended')acts=`<a class="btn sec" href="post.html">Post again with new dates</a>`; /* the dates have passed; it can't be shown again */
   else acts=`<button type="button" class="btn sec" data-act="show" ${id}>Repost</button>`;
   acts+=`<button type="button" class="lk" data-act="ldel" ${id}>Delete</button>`;

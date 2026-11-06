@@ -120,6 +120,9 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 .pf-add b{font-size:14px;color:var(--ink)}
 .pf-note{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
 /* a restored draft had files that a draft can't keep: say so on the step that needs them */
+.sk{display:block;max-width:100%;border-radius:7px;background:linear-gradient(90deg,#e9e9ec 25%,#f2f2f4 50%,#e9e9ec 75%);background-size:200% 100%;animation:sksh 1.5s linear infinite}
+@keyframes sksh{from{background-position:100% 0}to{background-position:-100% 0}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
 .lost{margin:20px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:14px;line-height:1.5;color:var(--ink2)}
 /* the rent picker with too few real rents at this campus to compare: no bars (and, from budget-picker.js, no counts) */
 body.rl-norents .bp-hist{display:none}
@@ -203,6 +206,10 @@ const S={step:0,done:false,f:{},
   multi:{fees:[],amen:[],habits:[],items:[]},
   prefs:{},
   photos:{bedroom:[],living:[],bath:[],kitchen:[],building:[]}};
+/* edit mode (post.html?edit={listing number}, from Profile): the same steps, filled in from the published listing.
+   state: loading, ok, signin, denied, missing or error. An edit never reads or writes the draft. */
+const EDIT_PARAM=new URLSearchParams(location.search).get('edit'),EDIT_OK=/^[1-9][0-9]{7}$/.test(EDIT_PARAM||'');
+let EDIT=EDIT_PARAM===null?null:{code:EDIT_OK?EDIT_PARAM:'',state:EDIT_OK?'loading':'missing'};
 /* the campus the visitor picked on the homepage (their own choice), then the draft saved in this browser */
 try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&WhereSearch.SCHOOLS.find(x=>x[0]===p.school);if(row){S.campusId=row[0];S.campus=row[1]}}catch(_){}
 /* the draft: every answer is saved in this browser (localStorage) as the host goes, so a reload, a closed tab or a
@@ -211,7 +218,7 @@ try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&Wh
    An older draft (rl-post-draft-v2, this tab only) is picked up once and moved to the new key. */
 const DRAFT_KEY='rl-post-draft-v3',OLD_DRAFT='rl-post-draft-v2';
 let LOST={photos:0,video:0,proof:0},FROM_OLD=false;
-try{let raw=localStorage.getItem(DRAFT_KEY);if(!raw){raw=sessionStorage.getItem(OLD_DRAFT);FROM_OLD=!!raw}
+if(!EDIT)try{let raw=localStorage.getItem(DRAFT_KEY);if(!raw){raw=sessionStorage.getItem(OLD_DRAFT);FROM_OLD=!!raw}
   const d=raw?JSON.parse(raw):null;
   if(d&&typeof d==='object'){const {files,photos,...rest}=d,fl=files||{};
     LOST={photos:+fl.photos||0,video:fl.video||rest.video?1:0,proof:+fl.proof||0};
@@ -243,7 +250,34 @@ const CHEV=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor
 /* ---------- publish to Rentlet (src/listings.ts) ---------- */
 let VIDEO=null,BUSY=false,PROOF=[]; /* PROOF: lease-proof files (photos or PDFs), uploaded privately when the listing is published */
 /* signing in on the last step must not reload the page and lose the form */
-window.RL_onAuth=()=>render();
+window.RL_onAuth=()=>{if(EDIT&&EDIT.state==='signin')loadEdit();else render()};
+/* edit mode: the listing and its host-only details become the form's answers, and the form opens on its review step */
+async function loadEdit(){
+  EDIT.state='loading';render();
+  const r=window.RentletListings?await RentletListings.getListingForEdit(EDIT.code).catch(()=>({state:'error'})):{state:'error'};
+  if(r.state!=='ok'){EDIT.state=r.state;render();return}
+  const l=r.listing;
+  Object.assign(S,RentletListings.editState(l,r.location),{step:STEPS.length-1,done:false,act:'in',map:true});
+  /* newName: a name saved while building names were private, which saving now makes public */
+  EDIT={code:EDIT.code,state:'ok',status:l.status,start:l.start,proof:r.proofFiles,newName:!l.building&&!!r.location.building};
+  render();window.scrollTo(0,0)}
+async function saveEdit(btn){
+  if(BUSY)return;
+  const gap=firstGap();if(gap){showNeed(gap[0],gap[1]);return}
+  if(!RL.authed&&!(await RL.signIn()))return;
+  if(!window.RentletListings){toast('Still loading. Try again in a moment.');return}
+  BUSY=true;const label=btn.textContent;btn.disabled=true;btn.textContent='Saving…';
+  try{
+    await RentletListings.updateListing(EDIT.code,S,VIDEO,PROOF,s=>{const b=document.querySelector('[data-next]');if(b)b.textContent=s==='photos'?'Uploading photos…':'Saving…'});
+    S.code=EDIT.code;S.done=true;render();window.scrollTo(0,0);
+  }catch(e){
+    const r=e&&e.reason;
+    toast(r==='photos'?'Add at least one photo of the place before saving.':r==='signin'?'Sign in with the school Google account you posted with.':r==='invalid'?'Something on the form needs another look. Check the steps and try again.':'Couldn’t save your changes. Check your connection and try again.');
+    if(r==='photos'){S.step=STEPS.findIndex(x=>x.q==='Photos');render();window.scrollTo(0,0)}
+  }finally{
+    BUSY=false;const b=document.querySelector('[data-next]');if(b&&!S.done){b.disabled=false;b.textContent=label}
+  }
+}
 async function publish(btn){
   if(BUSY)return;
   /* the step dots and a restored draft can skip a step's check, so publishing checks every answer again */
@@ -308,7 +342,7 @@ const proofHtml=()=>`<div class="pf"><p class="pf-h">Lease page or landlord’s 
 const nOf=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
 const lostPhotosNote=()=>{const p=LOST.photos>photoCount()?nOf(LOST.photos,'photo'):'',v=LOST.video&&!S.video?'a video':'';
   return p||v?`<p class="lost" role="status">Your draft had ${[p,v].filter(Boolean).join(' and ')}. Drafts don’t keep files, so add ${p&&v?'them':p?(LOST.photos===1?'it':'them'):'it'} again.</p>`:''};
-const lostProofNote=()=>S.proof==='lease'&&LOST.proof>PROOF.length?`<p class="lost" role="status">Your draft had ${nOf(LOST.proof,'lease proof file')}. Drafts don’t keep files, so add ${LOST.proof===1?'it':'them'} again.</p>`:'';
+const lostProofNote=()=>EDIT?(S.proof==='lease'&&EDIT.proof?`<p class="lost" role="status">${nOf(EDIT.proof,'file')} already sent. Add more only if something changed.</p>`:''):S.proof==='lease'&&LOST.proof>PROOF.length?`<p class="lost" role="status">Your draft had ${nOf(LOST.proof,'lease proof file')}. Drafts don’t keep files, so add ${LOST.proof===1?'it':'them'} again.</p>`:'';
 const photoCount=()=>Object.values(S.photos).reduce((n,a)=>n+a.length,0);
 const areasDone=()=>AREAS.filter(([k,,min])=>S.photos[k].length>=min).length;
 const unitName=()=>S.unit==='whole'?'Whole place':'Private room';
@@ -318,9 +352,9 @@ const layoutName=()=>S.layout==='Other'?String(val('layoutOther','')).trim().toU
 /* empty until the host answers: no deposit line at all, rather than a made-up one */
 const depLine=()=>S.dep==='amount'?(depAmt()?`${money(depAmt())} deposit${S.refund===true?', refundable':S.refund===false?', non-refundable':''}`:''):S.dep==='none'?'no deposit':'';
 const list=a=>{const w=a.map(f=>f==='Wi-Fi'?f:f.toLowerCase());return w.length>1?w.slice(0,-1).join(', ')+' and '+w[w.length-1]:w[0]||''};
-const photosHtml=()=>`<div class="photos">${AREAS.map(([k,name])=>S.photos[k].map((src,i)=>{const [u,f]=src.split('|');return `<div class="ph has"><img src="${u}" alt="" class="${f||''}"><em>${name}</em><button type="button" class="x" data-rm="${k}:${i}" aria-label="Remove">×</button></div>`}).join('')+`<label class="ph" tabindex="0" role="button" aria-label="Add a photo: ${name}"><input type="file" accept="image/*" data-area="${k}" hidden><b>+ Add</b>${name}</label>`).join('')}</div>`;
+const photosHtml=()=>`<div class="photos">${AREAS.map(([k,name])=>S.photos[k].map((src,i)=>{const [u,f]=src.split('|');return `<div class="ph has"><img src="${esc(u)}" alt="" class="${f||''}"><em>${name}</em><button type="button" class="x" data-rm="${k}:${i}" aria-label="Remove">×</button></div>`}).join('')+`<label class="ph" tabindex="0" role="button" aria-label="Add a photo: ${name}"><input type="file" accept="image/*" data-area="${k}" hidden><b>+ Add</b>${name}</label>`).join('')}</div>`;
 const card=()=>{const fees=S.multi.fees.length&&!S.multi.fees.includes('Nothing extra')?`${list(S.multi.fees)} included`:'';
-  return `<div class="rcard"><img src="${(Object.values(S.photos).flat()[0]||'data:image/gif;base64,R0lGODlhAQABAAAAACw=').split('|')[0]}" alt=""><div class="rc"><h3>${S.unit?unitName():'Room'}${S.layout?` · ${esc(layoutName())}`:''}</h3><p>${[S.campus&&town(),S.subletType&&typeName(),S.start&&S.end&&WhenPicker.label(S.start,S.end)].filter(Boolean).join(' · ')||'&nbsp;'}</p><div class="pr">${S.rent?money(S.rent):'<span class="ns">Rent not set</span>'} <small>${[S.rent&&'/ mo',depLine(),fees].filter(Boolean).join(' · ')}</small></div></div></div>`};
+  return `<div class="rcard"><img src="${esc((Object.values(S.photos).flat()[0]||'data:image/gif;base64,R0lGODlhAQABAAAAACw=').split('|')[0])}" alt=""><div class="rc"><h3>${S.unit?unitName():'Room'}${S.layout?` · ${esc(layoutName())}`:''}</h3><p>${[S.campus&&town(),S.subletType&&typeName(),S.start&&S.end&&WhenPicker.label(S.start,S.end)].filter(Boolean).join(' · ')||'&nbsp;'}</p><div class="pr">${S.rent?money(S.rent):'<span class="ns">Rent not set</span>'} <small>${[S.rent&&'/ mo',depLine(),fees].filter(Boolean).join(' · ')}</small></div></div></div>`};
 
 /* ---------- Where is it?: the Building field lists the apartment directory (src/lib/apartments.ts); the Street
    address field lists full addresses from HERE (src/place.ts, through Rentlet's Cloud Functions; a school account
@@ -512,7 +546,7 @@ const STEPS=[
    `<div class="grp" data-need="addr">${plMapHtml()}<span class="lbl">Street address</span>${inp('addr','','','','e.g. 733 Colfax St, Evanston')}${nm('addr')}<p class="note" style="margin-top:8px" data-place-note>${esc(placeNote())}</p></div>`+
    grp('Apartment website',inp('site','','','','Paste the building’s website'),'optional')},
  {q:'When is it free?',h:'Move-in is the first night they can sleep there. Dates can’t start before today.',
-  need:()=>!S.start?[['dates','Pick the move-in day.']]:S.start<TODAY?[['dates','Move-in can’t be before today. Pick a new move-in day.']]:!S.end?[['dates','Pick the move-out day.']]:S.end<=S.start?[['dates','Move-out has to be after move-in.']]:[],
+  need:()=>!S.start?[['dates','Pick the move-in day.']]:S.start<TODAY&&!(EDIT&&S.start===EDIT.start)?[['dates','Move-in can’t be before today. Pick a new move-in day.']]:!S.end?[['dates','Pick the move-out day.']]:S.end<=S.start?[['dates','Move-out has to be after move-in.']]:[],
   body:()=>`<div class="grp" data-need="dates"><div class="row2"><div><span class="lbl">Move in</span>${side('in',S.start)}</div><div><span class="lbl">Move out</span>${side('out',S.end)}</div></div>${nm('dates')}</div><div class="grp"><div class="chips">${PRESETS.map(([t,s,e])=>chip(t,S.start===s&&S.end===e,`data-dates="${s}:${e}"`)).join('')}</div><div class="cal" data-cal></div></div>`},
  {q:'Money',h:'Rent, deposit and what the rent includes. Money goes to you, never through Rentlet.',
   need:()=>{const m=[];if(!S.rent)m.push(['rent','Add the monthly rent.']);else if(S.rent>20000)m.push(['rent','Rent can be up to $20,000 a month.']);if(!S.dep)m.push(['depc','Choose No deposit or A deposit.']);if(S.dep==='amount'&&!depAmt())m.push(['dep','Add the deposit amount, or choose No deposit.']);if(S.dep==='amount'&&typeof S.refund!=='boolean')m.push(['refund','Choose whether the deposit is refundable.']);return m},
@@ -552,11 +586,12 @@ const STEPS=[
   need:()=>!S.photos.bedroom.length?[['photos','Add at least one photo of the bedroom.']]:photoCount()>MAXPH?[['photos',`Remove photos until there are ${MAXPH} or fewer.`]]:[],
   body:()=>`${lostPhotosNote()}<div class="grp" data-need="photos">${nm('photos',1)}${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?esc(S.video):'Optional · MP4, MOV or WebM, up to 60 MB'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk" tabindex="0" role="button"><input type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" data-video hidden>Add</label>`}</div></div><p class="note">${photoCount()} of ${MAXPH} photos · ${areasDone()} of ${AREAS.length} areas done. Photos that don’t match the place can be reported to the Rentlet team.</p>`},
  {q:'Prove it’s yours',h:'Signing in with your school email (.edu) counts as verification. A badge shows what was checked; it is not a guarantee.',
-  need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length?[['proof','Add a photo of the lease or the landlord’s email, or choose School email.']]:[],
+  need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length&&!(EDIT&&EDIT.proof)?[['proof','Add a photo of the lease or the landlord’s email, or choose School email.']]:[],
   body:()=>`${lostProofNote()}<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','School email','Verified when you signed in with your .edu email','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>`},
- {q:'Check and publish',h:'This is how it will look. After publishing you can’t edit it, but you can mark it as taken or take it down from Profile.',body:()=>{
+ {q:'Check and publish',h:'This is how it will look. After publishing you can edit it, mark it as taken or take it down from Profile.',body:()=>{
    const ok=i=>!missing(i).length,bld=String(val('building','')).trim(),adr=String(val('addr','')).trim(),rmN=String(val('rmN','')).trim(),who=String(val('rmWho','')).trim(),extra=dollars(val('extra','')),items=S.multi.items.length,pc=photoCount();
-   return `<div class="grp">${card()}</div>
+   const nameNote=EDIT&&EDIT.newName&&bld?`<p class="lost" role="status">Saving shows “${esc(bld)}” as this listing’s title. To keep the name private, clear it under Where.</p>`:'';
+   return `${nameNote}<div class="grp">${card()}</div>
    <dl class="review grp">${[
      ['Type',line([S.subletType&&typeName()],ok(0)),0],
      ['Where',line([S.campus&&esc(S.campus),bld&&esc(bld),adr&&`${esc(adr)} (only you see this)`,(bld||adr)&&'exact spot on the map'],ok(1)),1],
@@ -569,23 +604,38 @@ const STEPS=[
      ['What stays',S.furn==='none'?'Not furnished':S.furn?line([`${S.furn==='full'?'Fully':'Partly'} furnished`,items&&`${items} item${items===1?'':'s'}`,S.terms==='gift'?'theirs to keep':S.terms==='use'?'use during the stay':''],ok(8)):NS,8],
      ['Rules',Object.values(S.prefs).filter(Boolean).join(' · ')||'None set',9],
      ['Photos',line([`${pc} photo${pc===1?'':'s'}`,`${areasDone()} of ${AREAS.length} areas`,S.video&&'video'],ok(10)),10],
-     ['Verification',S.proof==='student'?'School email ✓':S.proof==='lease'?line([`School email ✓ · lease proof (${PROOF.length} file${PROOF.length===1?'':'s'})`],ok(11)):NS,11]
+     ['Verification',S.proof==='student'?'School email ✓':S.proof==='lease'?line([`School email ✓ · lease proof (${nOf(PROOF.length+(EDIT&&EDIT.proof||0),'file')})`],ok(11)):NS,11]
    ].map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
    ${grp('A note for the listing',ta('note','','e.g. I’m away for winter quarter. Quiet room with a proper desk.'),'optional · shows as a quote')}
-   <p class="note">Goes live as soon as you publish, with a listing number, and leaves search after the move-out day. Up to 3 listings at a time.</p>`}}];
+   <p class="note">${EDIT?'Your changes show as soon as you save.':'Goes live as soon as you publish, with a listing number, and leaves search after the move-out day. Up to 3 listings at a time.'}</p>`}}];
 /* what a step still needs, and the first step (from the top) that still needs something */
 const missing=i=>STEPS[i]&&STEPS[i].need?STEPS[i].need():[];
 const firstGap=()=>{for(let i=0;i<STEPS.length;i++){const m=missing(i);if(m.length)return [i,m[0]]}return null};
 /* the step dots go back anywhere, and forward past answered steps up to the first one that still needs something */
-const reach=()=>{for(let k=S.step;k<STEPS.length;k++)if(missing(k).length)return k;return STEPS.length-1};
+const reach=()=>{if(EDIT)return STEPS.length-1;for(let k=S.step;k<STEPS.length;k++)if(missing(k).length)return k;return STEPS.length-1};
 
-const page=()=>{const n=STEPS.length,i=Math.min(S.step,n-1),s=STEPS[i];
-  if(S.done)return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Your listing is live</h2><p class="hint">Listing #${S.code}. It’s in search now. You can mark it as taken or take it down from Profile.</p><div class="grp" style="text-align:left">${card()}</div><div class="acts"><a class="btn sec" href="room.html?room=${S.code}">See your listing</a><a class="btn" href="index.html">Back to home</a></div></div></div>`;
-  return `${header('<button type="button" class="save" data-save title="Your answers are saved in this browser as you go">Save and exit</button>')}<div class="a-top"><i style="width:${(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">Step ${i+1} of ${n}</p><h2 class="q">${s.q}</h2><p class="hint">${s.h}</p>${s.body()}</div></div>
-  <div class="a-foot"><div class="wrap"><button class="btn lnk" data-back ${i===0?'disabled':''}>Back</button><div class="a-steps">${STEPS.map((x,k)=>`<button type="button" data-go="${k}" aria-label="Step ${k+1}: ${x.q}"${k===i?' aria-current="step"':''}>${k+1}</button>`).join('')}</div><button class="btn" data-next>${i===n-1?'Publish':'Next'}</button></div></div>`};
+/* edit mode, before the form: the shape of the review step while it loads, or why it can't open */
+const skB=(w,h=13,x='')=>`<i class="sk" style="width:${w};height:${h}px;${x}"></i>`;
+const editLoadingView=()=>`${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q" role="status" aria-busy="true" aria-label="Loading your listing"><div aria-hidden="true">${skB('120px',13)}${skB('min(320px,70%)',30,'margin-top:14px;border-radius:9px')}${skB('90%',14,'margin-top:14px')}
+  <div class="rcard" style="margin-top:26px;padding:14px;display:grid;gap:9px">${skB('100%',150,'border-radius:12px')}${skB('62%',15)}${skB('40%',12)}</div>
+  <dl class="review grp">${Array.from({length:6},()=>`<div class="rrow"><dt>${skB('70px',12)}</dt><dd>${skB('78%',13)}</dd><span>${skB('26px',12)}</span></div>`).join('')}</dl></div></div></div>`;
+const editStateView=()=>{if(EDIT.state==='loading')return editLoadingView();
+  const back=`<a class="btn sec" href="profile.html#listings">Back to Profile</a>`,[h,p,acts]={
+    signin:['Sign in to edit this listing','Use the school Google account you posted it with.',`<button type="button" class="btn" data-edit-signin>Sign in with Google</button>`],
+    denied:['You can’t edit this listing','Only the host who posted it can.',back],
+    missing:['We couldn’t find this listing','It may have been deleted, or the link may be wrong.',back],
+    error:['Couldn’t load your listing','Check your connection and try again.',`${back}<button type="button" class="btn" data-edit-retry>Try again</button>`]}[EDIT.state];
+  return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><h2 class="q">${h}</h2><p class="hint">${p}</p><div class="acts">${acts}</div></div></div>`};
+const editedView=()=>`${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Your changes are saved</h2><p class="hint">Listing #${S.code}. ${EDIT.status==='active'?'The listing shows them now.':'It’s still off search.'}</p><div class="grp" style="text-align:left">${card()}</div><div class="acts">${EDIT.status==='active'?`<a class="btn sec" href="room.html?room=${S.code}">See your listing</a>`:''}<a class="btn" href="profile.html#listings">Back to Profile</a></div></div></div>`;
+const page=()=>{if(EDIT&&EDIT.state!=='ok')return editStateView();
+  const n=STEPS.length,i=Math.min(S.step,n-1),s=STEPS[i],last=i===n-1;
+  if(S.done&&EDIT)return editedView();
+  if(S.done)return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Your listing is live</h2><p class="hint">Listing #${S.code}. It’s in search now. You can edit it, mark it as taken or take it down from Profile.</p><div class="grp" style="text-align:left">${card()}</div><div class="acts"><a class="btn sec" href="room.html?room=${S.code}">See your listing</a><a class="btn" href="index.html">Back to home</a></div></div></div>`;
+  return `${header(EDIT?'<button type="button" class="save" data-cancel>Cancel</button>':'<button type="button" class="save" data-save title="Your answers are saved in this browser as you go">Save and exit</button>')}<div class="a-top"><i style="width:${EDIT?100:(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">${EDIT?`Listing #${EDIT.code}`:`Step ${i+1} of ${n}`}</p><h2 class="q">${EDIT&&last?'Edit your listing':s.q}</h2><p class="hint">${EDIT&&last?'Change what you need, then save. The listing number and link stay the same.':s.h}</p>${s.body()}</div></div>
+  <div class="a-foot"><div class="wrap"><button class="btn lnk" data-back ${EDIT?'style="visibility:hidden" tabindex="-1" aria-hidden="true"':i===0?'disabled':''}>Back</button><div class="a-steps">${STEPS.map((x,k)=>`<button type="button" data-go="${k}" aria-label="Step ${k+1}: ${x.q}"${k===i?' aria-current="step"':''}>${k+1}</button>`).join('')}</div><button class="btn" data-next>${EDIT?(last?'Save changes':'Done'):last?'Publish':'Next'}</button></div></div>`};
 /* the dots' state follows the answers, also while one is being typed (typing doesn't redraw the step) */
 function syncDots(){const i=S.step,r=reach();document.querySelectorAll('.a-steps [data-go]').forEach(b=>{const k=+b.dataset.go;
-  b.className=k===i?'on':k<i&&!missing(k).length?'done':'';b.disabled=k>r;b.title=k>r?`Finish step ${r+1} first`:STEPS[k].q})}
+  b.className=k===i?'on':(k<i||EDIT)&&!missing(k).length?'done':'';b.disabled=k>r;b.title=k>r?`Finish step ${r+1} first`:STEPS[k].q})}
 
 /* the missing-answer line stays only while that answer is still missing on this step */
 const stillNeeded=()=>NEED&&NEED.step===S.step&&missing(NEED.step).some(([k,m])=>k===NEED.key&&m===NEED.msg);
@@ -630,9 +680,12 @@ addEventListener('pagehide',()=>{if(SAVE_T)saveDraft()});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&SAVE_T)saveDraft()});
 
 document.addEventListener('click',e=>{const t=e.target;
-  const nx=t.closest('[data-next]');if(nx){if(S.step>=STEPS.length-1){publish(nx);return}
+  if(t.closest('[data-cancel]')){location.href='profile.html#listings';return}
+  if(t.closest('[data-edit-retry]')){loadEdit();return}
+  if(t.closest('[data-edit-signin]')){RL.signIn();return}
+  const nx=t.closest('[data-next]');if(nx){if(S.step>=STEPS.length-1){(EDIT?saveEdit:publish)(nx);return}
     const m=missing(S.step)[0];if(m){showNeed(S.step,m);return}
-    S.step++;render();window.scrollTo(0,0);return}
+    S.step=EDIT?STEPS.length-1:S.step+1;render();window.scrollTo(0,0);return}
   const rp=t.closest('[data-rmproof]');if(rp){PROOF.splice(+rp.dataset.rmproof,1);render();return}
   if(t.closest('[data-back]')){S.step=Math.max(0,S.step-1);render();return}
   if(t.closest('[data-edit]')){S.done=false;S.step=STEPS.length-1;render();return}
@@ -675,7 +728,8 @@ document.addEventListener('change',e=>{const el=e.target,file=el.files&&el.files
     if(file.size>=10*1024*1024)return toast('That file is over 10 MB. Try a smaller photo or PDF.');
     if(PROOF.length<3){PROOF.push(file);render()}}});
 /* from here on, changes save themselves; an older draft moves to the new key on the first save */
-SAVED=FROM_OLD?'':JSON.stringify(draftState());
+if(!EDIT)SAVED=FROM_OLD?'':JSON.stringify(draftState());
+if(EDIT&&EDIT.state==='loading'){addEventListener('rentlet:ready',loadEdit,{once:true});setTimeout(()=>{if(EDIT.state==='loading'){EDIT.state='error';render()}},20000)}
 render();
 </script>
 <script type="module" src="/src/rentlet.ts"></script>

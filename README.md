@@ -35,7 +35,7 @@ HERE Geocoding & Search and Routing run behind three Cloud Functions in `functio
 (`src/lib/apartments.ts`) and the Street address field lists full addresses from HERE; a published listing
 stores the picked place's area, walk to campus and exact map spot (`location`) and the building name
 (`building`, the room page's title), while the street address and website stay in the host-only
-`listings/{id}/private/location`. Without the functions the
+`listings/{id}/private/location`. Hosts reopen the same form from Profile to edit a listing (`post.html?edit={code}`). Without the functions the
 site still works: no address suggestions, a picked building uses the directory's walking estimate, a typed
 address gets its area from the text, and a listing with no picked place has no walk or map spot. Setup and
 deploy steps: [functions/README.md](functions/README.md).
@@ -45,7 +45,7 @@ deploy steps: [functions/README.md](functions/README.md).
 `firestore.rules` is the source of truth for who can read and write what:
 
 - Anyone can browse active listings and open requests.
-- Writing needs a signed-in, verified `@u.northwestern.edu` or `@northwestern.edu` Google account.
+- Writing needs a signed-in, verified Google account with a school email (`.edu`).
 - People edit only their own profile, listings and requests; conversations and messages are visible
   only to the two participants; timestamps must come from the server.
 

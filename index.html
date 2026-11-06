@@ -520,7 +520,9 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 /* 2 · frosted glass: the reel shows through, blurred */
 .bar4[data-skin=glass]{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.14),0 2px 6px rgba(30,25,40,.06)}
 .bar4[data-skin=glass] .seg4:hover{background:rgba(255,255,255,.55)}
-.bar4[data-skin=glass] .find4{background:rgba(34,34,34,.88)}
+.bar4[data-skin=glass] .find4{color:#17151f;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(255,255,255,.56));-webkit-backdrop-filter:blur(16px) saturate(1.8);backdrop-filter:blur(16px) saturate(1.8);border:1px solid rgba(255,255,255,.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 8px 18px -8px rgba(20,16,40,.3)}
+.bar4[data-skin=glass] .find4:hover{background:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 10px 22px -8px rgba(20,16,40,.42)}
+.bar4[data-skin=glass] .find4:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 /* Apple-style liquid glass: a real lens. The backdrop is refracted by an SVG displacement filter,
    with a bright rim and a highlight that follows the pointer */
 .bar4[data-skin=liquid]{background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(3px) saturate(1.8) brightness(1.05);backdrop-filter:url(#lg4) blur(2px) saturate(1.9) brightness(1.05);border:1px solid rgba(255,255,255,.55);box-shadow:inset 1.5px 1.5px 0 -.5px rgba(255,255,255,.95),inset -1.5px -1.5px 0 -.5px rgba(255,255,255,.55),inset 0 0 18px rgba(255,255,255,.35),inset 0 -14px 24px -16px rgba(80,70,120,.35),0 24px 60px rgba(30,25,40,.18),0 2px 8px rgba(30,25,40,.08);--vc:#2f2f36;--sep:rgba(0,0,0,.08)}

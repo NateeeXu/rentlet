@@ -402,17 +402,18 @@ async function plWalk(){const p=S.place;if(!p||!window.RentletPlace)return;
   if(my===PL_WALKS&&PL_BUSY==='walk')PL_BUSY='';
   if(S.place===p){p.walk=w!=null?w:RentletPlace.walkEstimate(p.lat,p.lng,S.campusId);p.campusId=S.campusId}
   plShowNote()}
+/* picking a directory building replaces all it fills in, so nothing from an earlier pick stays behind */
 function plBuilding(b){
-  plSet('building',b.name);plSet('addr',b.address);
-  if(b.website&&!String(S.f.site||'').trim())plSet('site',b.website);
+  plSet('building',b.name);plSet('addr',b.address);plSet('site',b.website||'');
   PL_FAILED=null;S.place={lat:b.lat,lng:b.lng,area:b.area,zip:null,walk:null,label:b.address,apartmentId:b.id,campusId:S.campusId};
   plWalk()}
-/* a directory building picked by its street address: the Building and website fields fill in only when empty */
-function plDirAddress(id){const b=window.RentletPlace&&RentletPlace.building(id,S.campusId);if(!b)return;
-  plSet('addr',b.address);if(!String(S.f.building||'').trim())plSet('building',b.name);
-  if(b.website&&!String(S.f.site||'').trim())plSet('site',b.website);
-  PL_FAILED=null;S.place={lat:b.lat,lng:b.lng,area:b.area,zip:null,walk:null,label:b.address,apartmentId:b.id,campusId:S.campusId};
-  plWalk()}
+/* a directory building picked by its street address does the same */
+function plDirAddress(id){const b=window.RentletPlace&&RentletPlace.building(id,S.campusId);if(b)plBuilding(b)}
+/* any other street address picked: a directory building's name and website go with its old address, unless this is
+   the same building. A name or website the host typed themselves stays. */
+function plLeaveBuilding(label){const n=String(S.f.building||'').trim(),d=n&&window.RentletPlace?RentletPlace.buildings(n,S.campusId).find(b=>b.name===n):null;
+  if(!d||plNorm(label).startsWith(plNorm(d.street)))return;
+  plSet('building','');if(d.website&&S.f.site===d.website)plSet('site','')}
 /* a new campus: a building from another place is cleared, with what picking it filled in; otherwise the walk is
    measured again (from the moved pin when the host moved it) */
 function placeCampus(){const p=S.place;if(!p||!window.RentletPlace)return;
@@ -494,7 +495,7 @@ function placeField(el){
   function pick(x){close();if(!x)return;seq++;clearTimeout(timer);clearTimeout(again);PL_SEARCH=false;
     if(kind==='building'){plBuilding(x);return}
     if(x.apartmentId){plDirAddress(x.apartmentId);return}
-    plSet('addr',x.label);S.place=null;plLookup(x.id,x.label)}
+    plLeaveBuilding(x.label);plSet('addr',x.label);S.place=null;plLookup(x.id,x.label)}
   /* the directory answers at once, from the first focus (popular buildings) to every letter typed */
   const directory=()=>{if(!window.RentletPlace)return;list=RentletPlace.buildings(el.value,S.campusId);open()};
   if(kind==='building')el.addEventListener('focus',directory);

@@ -915,7 +915,7 @@ $('#lb').addEventListener('click',e=>{if(e.target.id==='lb'||e.target.id==='lbSt
 addEventListener('keydown',e=>{if($('#lb').hidden)return;if(e.key==='Escape')closeLb();if(e.key==='ArrowLeft')$('#lbPrev').click();if(e.key==='ArrowRight')$('#lbNext').click()});
 /* price card: tap and a receipt prints out of a slot, in the card's own height */
 /* line under the rent: the original rent struck through, then how it compares with your budget (nothing with No max) */
-const saveLine=()=>{const u=BUDGET-ROOM.price,b=BUDGET===Infinity?'':u>=0?`<span class="ok">${money(u)} under your budget</span>`:`<span class="wa">${money(-u)} over your budget</span>`;
+const saveLine=()=>{const u=BUDGET-ROOM.price,b=BUDGET===Infinity?'':u===0?'<span class="ok">Right at your budget</span>':u>0?`<span class="ok">${money(u)} under your budget</span>`:`<span class="wa">${money(-u)} over your budget</span>`;
   return (ROOM.orig>ROOM.price?`<s aria-label="Original rent ${money(ROOM.orig)}">${money(ROOM.orig)}</s>`:'')+b};
 /* one card on the right: the host, the price, the room's dates, Message; the estimate row prints a receipt below itself */
 /* the receipt says only what the host answered: unknown other costs or deposit read "ask the host", an unanswered

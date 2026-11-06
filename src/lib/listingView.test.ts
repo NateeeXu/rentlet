@@ -97,6 +97,12 @@ describe('page shapes', () => {
     expect(r.matesText).toContain('a &amp; b');
     expect(toCard(evil).who).not.toContain('<');
   });
+  it('carries the building name for the room title, escaped, and leaves it empty when the host gave none', () => {
+    expect(toRoom({ ...listing, building: '  E2 Apartments ' }).building).toBe('E2 Apartments');
+    expect(toRoom({ ...listing, building: '<b>A & B</b>' }).building).toBe('&lt;b&gt;A &amp; B&lt;/b&gt;');
+    expect(toRoom({ ...listing, building: 'x'.repeat(200) }).building).toHaveLength(80);
+    expect(toRoom({ ...listing, building: undefined }).building).toBe('');
+  });
   it('builds the homepage card', () => {
     const c = toCard(listing);
     expect(c).toMatchObject({ id: '48271936', key: '48271936', type: 'Short sublet', who: 'Emily', img: 'https://example.test/a.jpg', school: 'nu-evn', laundry: true });

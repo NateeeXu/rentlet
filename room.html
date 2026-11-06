@@ -230,6 +230,9 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .titlebar>div>p{grid-column:1;grid-row:2}
 .t-when{font-weight:650;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
 .titlebar h1{font-family:var(--serif);font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-.6px;margin:0}
+/* a listing with a building name: the name is the title, and the room type sits beside it in a small pill */
+.titlebar h1.tn{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.tk{align-self:center;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;font-size:13px;font-weight:600;line-height:1.3;letter-spacing:0;color:var(--ink2);white-space:nowrap;padding:4px 11px;border-radius:99px;background:#fff;box-shadow:0 0 0 1px #e6e6ea}
 .titlebar p{margin:8px 0 0;font-size:15px;color:var(--ink2);display:flex;gap:4px 14px;align-items:baseline;flex-wrap:wrap}
 .tb-acts{grid-column:2;grid-row:2;justify-self:end;display:flex;gap:6px;margin-top:6px}
 .tb-acts .btn[aria-pressed=true] .ic{fill:var(--ink)}
@@ -758,6 +761,8 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
   /* title block: the name across the top, then the quiet line with Share and Save beside it */
   .titlebar{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:8px;row-gap:6px;padding:14px 0 6px}
   .titlebar h1{grid-column:1/-1;font-size:28px;line-height:1.12;letter-spacing:-.4px}
+  .titlebar h1.tn{gap:4px 10px}
+  .tk{font-size:12px;padding:3px 10px}
   .titlebar>div>p{grid-column:1;grid-row:2;margin:0;font-size:14px;gap:2px 12px}
   .tb-acts{grid-column:2;grid-row:2;gap:0;margin:-6px -8px -6px 0}
   .tb-acts .btn{width:44px!important;height:44px!important}
@@ -1081,7 +1086,7 @@ const byline=()=>`${ROOM.who}, the host`;
 const saveBtn=()=>{const c=String(ROOM.code||'');if(!/^[1-9][0-9]{7}$/.test(c))return '';
   const on=!!(window.RL&&typeof RL.isSaved==='function'&&RL.isSaved('room',c));
   return `<button type="button" class="btn btn-ghost btn-sm" data-rl-save="room:${c}" aria-pressed="${on}" aria-label="Save this room">${ic('heart','sm')}<span class="sv-off">Save</span><span class="sv-on">Saved</span></button>`};
-const titlebar=()=>`<div class="titlebar"><div><h1>${ROOM.title}</h1><p class="t-sub"><span>${ROOM.area}</span><span>${ROOM.type}</span>${titleDates()}${ended()?'<span class="badge n t-end">Ended</span>':''}<button type="button" class="lcode" data-code="${ROOM.code}" aria-label="Copy listing number ${ROOM.code}">Listing #${ROOM.code}${ic2('copy')}</button></p></div><div class="tb-acts"><button class="btn btn-ghost btn-sm" data-share aria-label="Share this room">${ic('share','sm')}<span>Share</span></button>${saveBtn()}<button class="btn btn-ghost btn-sm" data-report aria-label="Report this listing">${ic2('flag')}<span>Report</span></button></div></div>`;
+const titlebar=()=>`<div class="titlebar"><div>${ROOM.building?`<h1 class="tn"><span>${ROOM.building}</span><span class="tk">${ROOM.title}</span></h1>`:`<h1>${ROOM.title}</h1>`}<p class="t-sub"><span>${ROOM.area}</span><span>${ROOM.type}</span>${titleDates()}${ended()?'<span class="badge n t-end">Ended</span>':''}<button type="button" class="lcode" data-code="${ROOM.code}" aria-label="Copy listing number ${ROOM.code}">Listing #${ROOM.code}${ic2('copy')}</button></p></div><div class="tb-acts"><button class="btn btn-ghost btn-sm" data-share aria-label="Share this room">${ic('share','sm')}<span>Share</span></button>${saveBtn()}<button class="btn btn-ghost btn-sm" data-report aria-label="Report this listing">${ic2('flag')}<span>Report</span></button></div></div>`;
 const below=()=>`<div class="below"><details><summary>Room details ${ic('down')}</summary><div class="in">${ROOM.facts.map(f=>f[2]?`${f[1]} (${f[2]})`:f[1]).join(' · ')}.</div></details><details><summary>About ${ROOM.type==='Lease takeover'?'taking over the lease':'this sublet'} ${ic('down')}</summary><div class="in">${ROOM.type==='Lease takeover'?`You take over ${ROOM.who}’s lease until ${mdy(ROOM.end)}. The landlord signs the transfer; ask about any transfer fee.`:`You sublet from ${ROOM.who} until ${mdy(ROOM.end)}. ${ROOM.who} stays on the lease.`}</div></details><details><summary>Safety ${ic('down')}</summary><div class="in">Never pay before you’ve seen the room and the lease. <button class="chip" data-report>Report this listing</button></div></details></div>`;
 /* an ended listing has no Message here either: the bar says when it ended and leads back to search */
 const dock=()=>`<div class="dock"><div class="dock-in"><div class="dp"><b>${money(ROOM.price)}</b><span>/ mo</span><small>${ended()?`Ended ${mdy(ROOM.end)}`:span(ROOM.start,ROOM.end)}</small></div>${ended()?`<a class="btn btn-secondary btn-sm" href="index.html">Search rooms</a>`:`<button class="btn btn-primary btn-sm" data-msg>${ic('chat','sm')}<span>Message<span class="dk-who"> ${ROOM.who}</span></span></button>`}</div></div>`;
@@ -1192,7 +1197,7 @@ function attachWhere(){const seg=$('.msearch .seg-w');if(!seg||!window.WhereSear
 function render(){if(STATE!=='ok'||!loaded())return boot();
   /* a listing the page can't draw shows Couldn't load (with Try again) instead of leaving the skeleton up */
   let html;try{html=page()}catch(e){console.error(e);return setState('error')}
-  setVh();shareMeta();document.title=`${ROOM.title} · ${ROOM.area} | Rentlet`;$('#msgT').textContent=`Message ${ROOM.who}`;const fromSk=!!$('.sk-page',site);site.innerHTML=html;if(fromSk)$('main',site).classList.add('sk-in');bindGal();attachWhere();requestAnimationFrame(nbFade);requestAnimationFrame(()=>{const p=$('[data-clamp]'),m=$('[data-more]');if(p&&m&&p.scrollHeight<=p.clientHeight+2)m.hidden=true});$$('[data-flip]').forEach(sizeFlip);
+  setVh();shareMeta();document.title=`${plainTx(ROOM.building||ROOM.title)} · ${ROOM.area} | Rentlet`;$('#msgT').textContent=`Message ${ROOM.who}`;const fromSk=!!$('.sk-page',site);site.innerHTML=html;if(fromSk)$('main',site).classList.add('sk-in');bindGal();attachWhere();requestAnimationFrame(nbFade);requestAnimationFrame(()=>{const p=$('[data-clamp]'),m=$('[data-more]');if(p&&m&&p.scrollHeight<=p.clientHeight+2)m.hidden=true});$$('[data-flip]').forEach(sizeFlip);
   site.scrollTop=0;drawNearMap()}
 $('#roomTabs').innerHTML=Object.entries(ROOMS).map(([k,R])=>`<button onclick="location.href='room.html?room=${k}'" aria-selected="${k===KEY}">${R.who}</button>`).join('');
 let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}

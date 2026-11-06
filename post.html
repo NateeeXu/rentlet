@@ -504,11 +504,11 @@ const STEPS=[
  {q:'What are you leaving?',h:'This sets the rules for dates and the hand-over.',
   need:()=>S.subletType?[]:[['type','Choose a short sublet or a lease takeover.']],
   body:()=>`<div data-need="type"><div class="opts" style="margin-top:28px">${opt(S.subletType==='sublet','Short sublet','You keep the lease and come back. They stay for a fixed stretch.','data-set="subletType:sublet"')}${opt(S.subletType==='takeover','Lease takeover','They take over your lease until it ends. The landlord signs the transfer.','data-set="subletType:takeover"')}</div>${nm('type')}</div>`},
- {q:'Where is it?',h:'Campus first, then the building. The listing shows the exact spot on a map. The street address, building name and website are visible only to you.',
+ {q:'Where is it?',h:'Campus first, then the building. The listing shows the building name and the exact spot on a map. The street address and website are visible only to you.',
   need:()=>{const m=[],a=String(S.f.addr||'').trim();if(!S.campusId)m.push(['campus','Choose the campus.']);if(a.length<5)m.push(['addr',a?'Add the full street address.':'Add the street address.']);return m},
   body:()=>
    grp('Campus',`<form data-wform><div class="in ws" data-wseg><span data-wval>${esc(S.campus||'')}</span>${CHEV}</div></form>${nm('campus')}`,'','campus')+
-   grp('Building',inp('building','','','','Start typing; the apartment directory fills the rest'),'optional · from the apartment directory, or type your own')+
+   grp('Building',inp('building','','','','Start typing; the apartment directory fills the rest'),'optional · shown as your listing’s title, so leave out your unit number')+
    `<div class="grp" data-need="addr">${plMapHtml()}<span class="lbl">Street address</span>${inp('addr','','','','e.g. 733 Colfax St, Evanston')}${nm('addr')}<p class="note" style="margin-top:8px" data-place-note>${esc(placeNote())}</p></div>`+
    grp('Apartment website',inp('site','','','','Paste the building’s website'),'optional')},
  {q:'When is it free?',h:'Move-in is the first night they can sleep there. Dates can’t start before today.',
@@ -555,11 +555,11 @@ const STEPS=[
   need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length?[['proof','Add a photo of the lease or the landlord’s email, or choose School email.']]:[],
   body:()=>`${lostProofNote()}<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','School email','Verified when you signed in with your .edu email','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>`},
  {q:'Check and publish',h:'This is how it will look. After publishing you can’t edit it, but you can mark it as taken or take it down from Profile.',body:()=>{
-   const ok=i=>!missing(i).length,where=String(val('building','')||val('addr','')).trim(),rmN=String(val('rmN','')).trim(),who=String(val('rmWho','')).trim(),extra=dollars(val('extra','')),items=S.multi.items.length,pc=photoCount();
+   const ok=i=>!missing(i).length,bld=String(val('building','')).trim(),adr=String(val('addr','')).trim(),rmN=String(val('rmN','')).trim(),who=String(val('rmWho','')).trim(),extra=dollars(val('extra','')),items=S.multi.items.length,pc=photoCount();
    return `<div class="grp">${card()}</div>
    <dl class="review grp">${[
      ['Type',line([S.subletType&&typeName()],ok(0)),0],
-     ['Where',line([S.campus&&esc(S.campus),where&&`${esc(where)} (only you see this)`,where&&'exact spot on the map'],ok(1)),1],
+     ['Where',line([S.campus&&esc(S.campus),bld&&esc(bld),adr&&`${esc(adr)} (only you see this)`,(bld||adr)&&'exact spot on the map'],ok(1)),1],
      ['Dates',ok(2)?WhenPicker.label(S.start,S.end):S.start&&S.end?'<span class="ns">Pick new dates</span>':NS,2],
      ['Money',line([S.rent&&`${money(S.rent)} / mo`,S.orig&&`was ${money(S.orig)}`,depLine(),extra&&`~${money(extra)} other costs`],ok(3)),3],
      ['Room',line([S.unit&&unitName(),S.layout&&esc(layoutName()),S.bath&&`${S.bath} bath`,val('sqft','')&&`${esc(val('sqft',''))} sq ft`],ok(4)),4],

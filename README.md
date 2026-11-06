@@ -33,8 +33,9 @@ HERE Geocoding & Search and Routing run behind three Cloud Functions in `functio
 `placeLookup`, `nearby`), so the HERE API key stays a Firebase secret and never reaches the browser.
 `src/place.ts` calls them. On the post form, the Building field lists the apartment directory
 (`src/lib/apartments.ts`) and the Street address field lists full addresses from HERE; a published listing
-stores the picked place's area, walk to campus and exact map spot (`location`), while the street address,
-building name and website stay in the host-only `listings/{id}/private/location`. Without the functions the
+stores the picked place's area, walk to campus and exact map spot (`location`) and the building name
+(`building`, the room page's title), while the street address and website stay in the host-only
+`listings/{id}/private/location`. Without the functions the
 site still works: no address suggestions, a picked building uses the directory's walking estimate, a typed
 address gets its area from the text, and a listing with no picked place has no walk or map spot. Setup and
 deploy steps: [functions/README.md](functions/README.md).

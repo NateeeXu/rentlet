@@ -40,7 +40,8 @@ const AREA_CAPTION: Record<string, string> = {
   kitchen: 'Kitchen',
   building: 'Window or building',
 };
-// Fields that stay private to the host (shared only after both sides agree).
+// Form fields kept out of the public answers. The street address and website stay private to the host
+// (shared only after both sides agree); the building name also goes on the listing, as its room page title.
 const PRIVATE_FIELDS = ['addr', 'building', 'site'];
 
 export type PublishStep = 'photos' | 'saving';
@@ -234,7 +235,7 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
   // refundable only means something with a deposit, and furniture terms only with furniture
   if (form.dep !== 'amount') (form as { refund: boolean | null }).refund = null;
   if (form.furn !== 'full' && form.furn !== 'part') form.terms = null;
-  // every listing shows at its spot on the map; the street address, building and website stay host-only
+  // every listing shows at its spot on the map; the street address and website stay host-only
   form.map = true;
   const spot = listingPlace(await placing, location.addr || '', campusId);
   // places around the spot for the room page's Getting around (fails soft to none)
@@ -255,6 +256,7 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
     campusId,
     kind: S.subletType,
     title: titleOf(form),
+    building: (location.building || '').slice(0, 80),
     area: spot.area,
     price,
     start: S.start,

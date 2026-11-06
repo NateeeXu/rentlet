@@ -54,6 +54,7 @@ export interface ListingDoc {
   campusId: CampusId;
   kind: 'sublet' | 'takeover';
   title: string;
+  building?: string; // optional, and absent on listings posted before it went public
   area: string;
   price: number;
   start: string;
@@ -355,6 +356,7 @@ export function toRoom(d: ListingDoc, today: string = localDay()) {
     role: 'Student',
     reply: 'verified school email',
     title: html(str(r.title)),
+    building: html(str(r.building).trim().slice(0, 80)),
     area: html(str(r.area)),
     walk: walkOf(r.walk),
     price,

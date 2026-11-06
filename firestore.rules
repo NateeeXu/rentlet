@@ -86,6 +86,7 @@ service cloud.firestore {
         && d.campus in ['evanston', 'chicago', 'downtown']
         && validCampus(d)
         && d.title is string && d.title.size() > 0 && d.title.size() <= 120
+        && optText(d, 'building', 80)
         && d.price is int && d.price > 0 && d.price <= 20000
         && isDate(d.start) && isDate(d.end) && d.start < d.end
         && d.status in ['active', 'taken', 'hidden']

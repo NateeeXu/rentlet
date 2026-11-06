@@ -193,7 +193,7 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
 <div class="stage" id="stage"></div>
 <script src="where-search.js?v=50645075"></script>
 <script src="when-picker.js?v=7860cfd6"></script>
-<script src="budget-picker.js?v=552d4e21"></script>
+<script src="budget-picker.js?v=e44ece74"></script>
 <script>
 const $=s=>document.querySelector(s);
 /* everything the form knows, so a click anywhere can redraw the screen without losing anything. Every fact starts
@@ -540,28 +540,28 @@ const STEPS=[
  {q:'What are you leaving?',h:'This sets the rules for dates and the hand-over.',
   need:()=>S.subletType?[]:[['type','Choose a short sublet or a lease takeover.']],
   body:()=>`<div data-need="type"><div class="opts" style="margin-top:28px">${opt(S.subletType==='sublet','Short sublet','You keep the lease and come back. They stay for a fixed stretch.','data-set="subletType:sublet"')}${opt(S.subletType==='takeover','Lease takeover','They take over your lease until it ends. The landlord signs the transfer.','data-set="subletType:takeover"')}</div>${nm('type')}</div>`},
- {q:'Where is it?',h:'Campus first, then the building. The listing shows the building name and the exact spot on a map. The street address and website are visible only to you.',
+ {q:'Where is it?',
   need:()=>{const m=[],a=String(S.f.addr||'').trim();if(!S.campusId)m.push(['campus','Choose the campus.']);if(a.length<5)m.push(['addr',a?'Add the full street address.':'Add the street address.']);return m},
   body:()=>
    grp('Campus',`<form data-wform><div class="in ws" data-wseg><span data-wval>${esc(S.campus||'')}</span>${CHEV}</div></form>${nm('campus')}`,'','campus')+
-   grp('Building',inp('building','','','','Start typing; the apartment directory fills the rest'),'optional · shown as your listing’s title, so leave out your unit number')+
+   grp('Building',inp('building','','','','Start typing; the apartment directory fills the rest'),'optional')+
    `<div class="grp" data-need="addr">${plMapHtml()}<span class="lbl">Street address</span>${inp('addr','','','','e.g. 733 Colfax St, Evanston')}${nm('addr')}<p class="note" style="margin-top:8px" data-place-note>${esc(placeNote())}</p></div>`+
    grp('Apartment website',inp('site','','','','Paste the building’s website'),'optional')},
- {q:'When is it free?',h:'Move-in is the first night they can sleep there. Dates can’t start before today.',
+ {q:'When is it free?',
   need:()=>!S.start?[['dates','Pick the move-in day.']]:S.start<TODAY&&!(EDIT&&S.start===EDIT.start)?[['dates','Move-in can’t be before today. Pick a new move-in day.']]:!S.end?[['dates','Pick the move-out day.']]:S.end<=S.start?[['dates','Move-out has to be after move-in.']]:[],
   body:()=>`<div class="grp" data-need="dates"><div class="row2"><div><span class="lbl">Move in</span>${side('in',S.start)}</div><div><span class="lbl">Move out</span>${side('out',S.end)}</div></div>${nm('dates')}</div><div class="grp"><div class="chips">${PRESETS.map(([t,s,e])=>chip(t,S.start===s&&S.end===e,`data-dates="${s}:${e}"`)).join('')}</div><div class="cal" data-cal></div></div>`},
- {q:'Money',h:'Rent, deposit and what the rent includes. Money goes to you, never through Rentlet.',
+ {q:'Money',
   need:()=>{const m=[];if(!S.rent)m.push(['rent','Add the monthly rent.']);else if(S.rent>20000)m.push(['rent','Rent can be up to $20,000 a month.']);if(!S.dep)m.push(['depc','Choose No deposit or A deposit.']);if(S.dep==='amount'&&!depAmt())m.push(['dep','Add the deposit amount, or choose No deposit.']);if(S.dep==='amount'&&typeof S.refund!=='boolean')m.push(['refund','Choose whether the deposit is refundable.']);return m},
   body:()=>
    `<div class="grp"><div class="row2"><div data-need="rent"><span class="lbl">Rent per month</span>${moneyIn('rent','Rent per month, in dollars','e.g. 1,450')}${nm('rent')}</div><div><span class="lbl">Original rent<small>optional · what you pay now</small></span>${moneyIn('orig','Original rent per month, in dollars','e.g. 1,600')}</div></div></div>`+
    grp('Deposit',`<div class="opts two" data-need="depc">${opt(S.dep==='none','No deposit','','data-set="dep:none"')}${opt(S.dep==='amount','A deposit','Paid to you','data-set="dep:amount"')}</div>${nm('depc')}${S.dep==='amount'?`<div class="row2" style="margin-top:10px"><div>${inp('dep','','one-time','$','e.g. 600','inputmode="decimal" autocomplete="off"')}</div><div class="chips" style="min-height:var(--ctl);align-items:center" data-need="refund">${chip('Refundable',S.refund===true,'data-refund="1"')}${chip('Non-refundable',S.refund===false,'data-refund="0"')}</div></div>`:''}${nm('dep')}${nm('refund')}`,'','dep')+
    grp('Rent includes',`<div class="chips">${multi('fees',FEES)}</div>`)+
    `<div class="grp"><div class="row2"><div><span class="lbl">Other costs<small>about, per month</small></span>${inp('extra','','','$','e.g. 60 for utilities','inputmode="decimal" autocomplete="off"')}</div><div><span class="lbl">Negotiable?</span><div class="chips" style="height:var(--ctl);align-items:center">${one('neg',[['little','A little'],['no','No']])}</div></div></div></div>`},
- {q:'The room',h:'What people compare first.',
+ {q:'The room',
   need:()=>{const m=[];if(!S.unit)m.push(['unit','Choose a private room or the whole place.']);if(!S.layout)m.push(['layout','Choose the layout.']);else if(S.layout==='Other'&&!String(val('layoutOther','')).trim())m.push(['layout','Type the layout, e.g. 4B2B.']);if(!S.bath)m.push(['bath','Choose a private or shared bathroom.']);return m},
   body:()=>
    grp('Renting out',`<div class="opts two">${opt(S.unit==='room','A private room','In a shared place','data-set="unit:room"')}${opt(S.unit==='whole','The whole place','Studio or apartment','data-set="unit:whole"')}</div>${nm('unit')}`,'','unit')+
-   grp('Layout',`<div class="chips">${LAYOUTS.map(l=>chip(l,l===S.layout,`data-set="layout:${l}"`)).join('')}</div>${S.layout==='Other'?`<div style="margin-top:10px">${inp('layoutOther','','','','e.g. 4B2B')}</div>`:''}${nm('layout')}<p class="note">The first number counts bedrooms, the second bathrooms.</p>`,'','layout')+
+   grp('Layout',`<div class="chips">${LAYOUTS.map(l=>chip(l,l===S.layout,`data-set="layout:${l}"`)).join('')}</div>${S.layout==='Other'?`<div style="margin-top:10px">${inp('layoutOther','','','','e.g. 4B2B')}</div>`:''}${nm('layout')}`,'','layout')+
    grp('Bathroom',`<div class="chips">${one('bath',[['private','Private'],['shared','Shared']])}</div>${nm('bath')}`,'','bath')+
    `<div class="grp"><div class="row2"><div><span class="lbl">Size<small>optional</small></span>${inp('sqft','','sq ft','','e.g. 140','inputmode="numeric" autocomplete="off"')}</div><div><span class="lbl">Floor<small>optional</small></span>${inp('floor','','','','e.g. 3','inputmode="numeric" autocomplete="off"')}</div></div></div>`+
    grp('View',`<div class="chips">${one('view',['Street','Courtyard','Lake','Garden'].map(v=>[v,v]))}</div>`,'optional')},
@@ -633,7 +633,7 @@ const page=()=>{if(EDIT&&EDIT.state!=='ok')return editStateView();
   const n=STEPS.length,i=Math.min(S.step,n-1),s=STEPS[i],last=i===n-1;
   if(S.done&&EDIT)return editedView();
   if(S.done)return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Your listing is live</h2><p class="hint">Listing #${S.code}. It’s in search now. You can edit it, mark it as taken or take it down from Profile.</p><div class="grp" style="text-align:left">${card()}</div><div class="acts"><a class="btn sec" href="room.html?room=${S.code}">See your listing</a><a class="btn" href="index.html">Back to home</a></div></div></div>`;
-  return `${header(EDIT?'<button type="button" class="save" data-cancel>Cancel</button>':'<button type="button" class="save" data-save title="Your answers are saved in this browser as you go">Save and exit</button>')}<div class="a-top"><i style="width:${EDIT?100:(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">${EDIT?`Listing #${EDIT.code}`:`Step ${i+1} of ${n}`}</p><h2 class="q">${EDIT&&last?'Edit your listing':s.q}</h2><p class="hint">${EDIT&&last?'Change what you need, then save. The listing number and link stay the same.':s.h}</p>${s.body()}</div></div>
+  return `${header(EDIT?'<button type="button" class="save" data-cancel>Cancel</button>':'<button type="button" class="save" data-save title="Your answers are saved in this browser as you go">Save and exit</button>')}<div class="a-top"><i style="width:${EDIT?100:(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">${EDIT?`Listing #${EDIT.code}`:`Step ${i+1} of ${n}`}</p><h2 class="q">${EDIT&&last?'Edit your listing':s.q}</h2>${EDIT&&last?'<p class="hint">Change what you need, then save. The listing number and link stay the same.</p>':s.h?`<p class="hint">${s.h}</p>`:''}${s.body()}</div></div>
   <div class="a-foot"><div class="wrap"><button class="btn lnk" data-back ${EDIT?'style="visibility:hidden" tabindex="-1" aria-hidden="true"':i===0?'disabled':''}>Back</button><div class="a-steps">${STEPS.map((x,k)=>`<button type="button" data-go="${k}" aria-label="Step ${k+1}: ${x.q}"${k===i?' aria-current="step"':''}>${k+1}</button>`).join('')}</div><button class="btn" data-next>${EDIT?(last?'Save changes':'Done'):last?'Publish':'Next'}</button></div></div>`};
 /* the dots' state follows the answers, also while one is being typed (typing doesn't redraw the step) */
 function syncDots(){const i=S.step,r=reach();document.querySelectorAll('.a-steps [data-go]').forEach(b=>{const k=+b.dataset.go;
@@ -708,7 +708,7 @@ document.addEventListener('click',e=>{const t=e.target;
   /* the price picker, in its rent mode, from the chart button inside each rent field */
   const p=t.closest('[data-pk]');if(p){const k=p.dataset.pk;
     const pr=rents();document.body.classList.toggle('rl-norents',!pr.length);
-    return BudgetPicker.open({anchor:p,mode:'rent',value:S[k]||0,prices:pr,title:k==='orig'?'What you pay now':'Your rent a month',note:k==='orig'?'Shown struck through next to your rent.':pr.length?'Or type any amount in the field.':'Too few rooms listed here yet to compare. Or type any amount in the field.',onDone:v=>{S[k]=v;render()}})}
+    return BudgetPicker.open({anchor:p,mode:'rent',value:S[k]||0,prices:pr,title:k==='orig'?'What you pay now':'Your rent a month',note:k==='orig'?'Shown struck through next to your rent.':'',onDone:v=>{S[k]=v;render()}})}
   const nb=t.closest('.in.num');if(nb&&!t.closest('input,button'))nb.querySelector('input').focus()});
 /* the photo and file tiles open their file chooser from the keyboard too */
 document.addEventListener('keydown',e=>{const l=e.target.closest&&e.target.closest('label[tabindex]');if(l&&(e.key==='Enter'||e.key===' ')){e.preventDefault();l.click()}});

@@ -157,7 +157,7 @@
     const scrim = document.createElement('div'); scrim.className = 'bp-scrim';
     const el = document.createElement('div'); el.className = 'bp'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', title);
     el.innerHTML = `<div class="bp-b">${bodyHtml(prices, rent, title)}</div>
-      <div class="bp-f"><span>${opts.note || (rent ? 'You can change it any time.' : 'Rooms up to 5% over your budget still show.')}</span><button type="button" class="bp-done">Done</button></div>`;
+      <div class="bp-f"><span>${opts.note != null ? opts.note : rent ? 'You can change it any time.' : 'Rooms up to 5% over your budget still show.'}</span><button type="button" class="bp-done">Done</button></div>`;
     /* inside a phone preview frame the picker belongs to the frame */
     const host = opts.anchor.closest('.stage.phone') || document.body;
     host.appendChild(scrim); host.appendChild(el);

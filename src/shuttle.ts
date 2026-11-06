@@ -157,6 +157,11 @@ function fitPoints(points: { lat: number; lng: number }[], maxZoom = 16, animate
 // The whole route shown, with the price pins along it.
 const fitRoute = (animate?: boolean) => fitPoints([...dirs().flatMap((id) => routePath(id)), ...shown()], 16, animate);
 
+// What the map opens on: Northwestern's Evanston campus and downtown Evanston beside it. The whole-route button
+// and the route chips show the full line.
+const fitHome = (animate?: boolean) =>
+  fitPoints(ZONES.filter((z) => z.id === 'nu-campus' || z.id === 'downtown-evanston').flatMap((z) => z.points), 16, animate);
+
 // Puts a point in the middle of the part of the map nothing covers.
 function centerOn(at: L.LatLng, zoom: number): void {
   const c = covered();
@@ -918,8 +923,8 @@ function onListings(list: ListingDoc[] | null): void {
   computeRooms();
   drawPins();
   renderSheet();
-  // the area chips just made the sheet taller: fit the route again, unless the map has been moved
-  if (firstList && !touched) requestAnimationFrame(() => fitRoute(false));
+  // the area chips just made the sheet taller: fit the opening view again, unless the map has been moved
+  if (firstList && !touched) requestAnimationFrame(() => fitHome(false));
 }
 // Exactly one subscription: src/rentlet.ts subscribes RL_onListings if it runs after this module (the dev
 // server, where the page's scripts run in order); in the build its code sits in a shared chunk this one
@@ -985,10 +990,10 @@ renderStatus();
 state.open = !(phone() && stage.clientHeight < 700);
 applyOpen();
 measure();
-fitRoute(false);
+fitHome(false);
 requestAnimationFrame(() => {
   measure();
   map.invalidateSize({ animate: false });
-  fitRoute(false);
+  fitHome(false);
 });
 if (!document.hidden) start();

@@ -210,6 +210,7 @@ const S={step:0,done:false,f:{},
    state: loading, ok, signin, denied, missing or error. An edit never reads or writes the draft. */
 const EDIT_PARAM=new URLSearchParams(location.search).get('edit'),EDIT_OK=/^[1-9][0-9]{7}$/.test(EDIT_PARAM||'');
 let EDIT=EDIT_PARAM===null?null:{code:EDIT_OK?EDIT_PARAM:'',state:EDIT_OK?'loading':'missing'};
+if(EDIT)document.title='Edit your listing · Rentlet';
 /* the campus the visitor picked on the homepage (their own choice), then the draft saved in this browser */
 try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&WhereSearch.SCHOOLS.find(x=>x[0]===p.school);if(row){S.campusId=row[0];S.campus=row[1]}}catch(_){}
 /* the draft: every answer is saved in this browser (localStorage) as the host goes, so a reload, a closed tab or a

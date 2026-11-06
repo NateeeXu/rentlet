@@ -26,7 +26,7 @@
     + '.rl-mav{width:32px;height:32px;border-radius:50%;background:#222;color:#fff;display:grid;place-items:center;overflow:hidden;font:700 13px/1 ' + F + ';flex:none}'
     + '.rl-mav.out{background:#717171}.rl-mav.out svg{width:20px;height:20px;fill:#fff;stroke:none}'
     + '.rl-mlist{position:absolute;right:0;top:calc(100% + 8px);z-index:70;width:248px;max-width:calc(100vw - 32px);padding:8px;background:#fff;border-radius:16px;box-shadow:0 0 0 1px rgba(0,0,0,.04),0 12px 32px rgba(0,0,0,.16);text-align:left;box-sizing:border-box}'
-    + '.rl-mlist[hidden]{display:none}'
+    + '.rl-mlist[hidden],.rl-mlist a[hidden],.rl-mlist hr[hidden]{display:none}'
     + '.rl-mlist a,.rl-mlist button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%!important;min-height:44px;margin:0;padding:0 14px;border:0;border-radius:10px;background:none;font:500 15px/1.3 ' + F + ';color:#222;text-decoration:none;text-align:left;cursor:pointer;box-sizing:border-box;white-space:nowrap}'
     + '.rl-mlist .rl-b{font-weight:650}'
     + '.rl-mlist a:hover,.rl-mlist button:hover,.rl-mlist a:focus-visible,.rl-mlist button:focus-visible{background:#f2f2f4;outline:none}'
@@ -125,6 +125,22 @@
     if (window.Rentlet) go(); else addEventListener('rentlet:ready', go, { once: true });
   }, true);
 
+  /* a link already in plain sight in the header is left out of the menu, so nothing shows twice. This is worked
+     out when the menu opens, because it varies: phones and the room page show fewer links up top, and the post
+     forms none. A separator goes when there is nothing on one side of it. */
+  var skipRepeats = function (b, list) {
+    var box = b.parentNode.parentNode, shown = {};
+    box.querySelectorAll('a.rl-top,a.rl-msgs').forEach(function (a) {
+      if (a.getClientRects().length) shown[a.getAttribute('href')] = 1;
+    });
+    list.querySelectorAll('a[href]').forEach(function (a) { a.hidden = !!shown[a.getAttribute('href')]; });
+    var last = null;
+    Array.prototype.forEach.call(list.children, function (el) {
+      if (el.tagName === 'HR') { el.hidden = !last || last.tagName === 'HR'; if (!el.hidden) last = el; }
+      else if (!el.hidden) last = el;
+    });
+    if (last && last.tagName === 'HR') last.hidden = true;
+  };
   /* the menu: opens and closes on its button, closes on a click outside, Escape, or Tab out of it */
   var closeMenus = function (except) {
     document.querySelectorAll('[data-rl-menu][aria-expanded="true"]').forEach(function (b) {
@@ -147,9 +163,10 @@
       if (open) dispatchEvent(new Event('rentlet:menu'));
       b.setAttribute('aria-expanded', String(open));
       var l = b.parentNode.querySelector('.rl-mlist');
+      if (l && open) skipRepeats(b, l);
       if (l) {
         l.hidden = !open;
-        var first = l.querySelector('a,button');
+        var first = l.querySelector('a:not([hidden]),button');
         if (open && first && e.detail === 0) first.focus(); /* opened from the keyboard */
       }
       return;

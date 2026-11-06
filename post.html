@@ -537,7 +537,7 @@ if(window.visualViewport)visualViewport.addEventListener('resize',()=>{if(PL_OPE
 /* the screens; each one maps onto the mini program's listing form fields. need() lists the answers a step still
    lacks, in screen order, as [key, message]: Next stops on the first one, and Publish checks every step again. */
 const STEPS=[
- {q:'What are you leaving?',h:'This sets the rules for dates and the hand-over.',
+ {q:'What are you leaving?',
   need:()=>S.subletType?[]:[['type','Choose a short sublet or a lease takeover.']],
   body:()=>`<div data-need="type"><div class="opts" style="margin-top:28px">${opt(S.subletType==='sublet','Short sublet','You keep the lease and come back. They stay for a fixed stretch.','data-set="subletType:sublet"')}${opt(S.subletType==='takeover','Lease takeover','They take over your lease until it ends. The landlord signs the transfer.','data-set="subletType:takeover"')}</div>${nm('type')}</div>`},
  {q:'Where is it?',
@@ -565,16 +565,16 @@ const STEPS=[
    grp('Bathroom',`<div class="chips">${one('bath',[['private','Private'],['shared','Shared']])}</div>${nm('bath')}`,'','bath')+
    `<div class="grp"><div class="row2"><div><span class="lbl">Size<small>optional</small></span>${inp('sqft','','sq ft','','e.g. 140','inputmode="numeric" autocomplete="off"')}</div><div><span class="lbl">Floor<small>optional</small></span>${inp('floor','','','','e.g. 3','inputmode="numeric" autocomplete="off"')}</div></div></div>`+
    grp('View',`<div class="chips">${one('view',['Street','Courtyard','Lake','Garden'].map(v=>[v,v]))}</div>`,'optional')},
- {q:'Who lives there?',h:'Roommates, if any, and how the home runs.',
+ {q:'Who lives there?',
   need:()=>!S.hasRoommates?[['mates','Choose whether there are roommates.']]:S.hasRoommates==='yes'&&!(parseInt(String(val('rmN','')).replace(/\D/g,''),10)>0)?[['rmN','Add how many roommates.']]:[],
   body:()=>
    grp('Roommates',`<div class="opts two">${opt(S.hasRoommates==='no','Just them','','data-set="hasRoommates:no"')}${opt(S.hasRoommates==='yes','Yes, roommates','','data-set="hasRoommates:yes"')}</div>${nm('mates')}`,'','mates')+
    (S.hasRoommates==='yes'?`<div class="grp" data-need="rmN"><div class="row2"><div><span class="lbl">How many</span>${inp('rmN','','','','e.g. 2','inputmode="numeric" autocomplete="off"')}</div><div><span class="lbl">Who<small>optional</small></span>${inp('rmWho','','','','e.g. grad students')}</div></div>${nm('rmN')}</div>`+grp('Gender',`<div class="chips">${one('gender',GENDER.map(g=>[g,g]))}</div>`,'optional')+grp('Schedule and habits',`<div class="chips">${multi('habits',['Early risers','Quiet weeknights','Cook most nights','Non-smoking','Guests on weekends'])}</div>`,'optional')+grp('Anything else',ta('rmNote','','e.g. Two grad students, quiet weeknights'),'optional'):'')},
- {q:'Getting to campus',h:'Does the school shuttle cover this address? Your answer helps match the listing with people who want the shuttle.',
+ {q:'Getting to campus',
   need:()=>S.shuttle?[]:[['shuttle','Choose whether the shuttle covers this address.']],
   body:()=>grp('Shuttle',`<div class="opts">${opt(S.shuttle==='covered','Yes, covered','','data-set="shuttle:covered"')}${opt(S.shuttle==='not_covered','Not covered','','data-set="shuttle:not_covered"')}${opt(S.shuttle==='unknown','Not sure','','data-set="shuttle:unknown"')}</div>${nm('shuttle')}`,'','shuttle')+(S.shuttle==='covered'?grp('Route',`<div class="chips">${one('route',ROUTES.map(r=>[r,r]))}</div>`,'optional'):'')},
- {q:'In the building',h:'Optional. Pick any the building has.',body:()=>grp('Amenities',`<div class="chips">${multi('amen',AMEN)}</div>`)},
- {q:'What stays?',h:'Furniture that will be there, and on what terms.',
+ {q:'In the building',body:()=>grp('Amenities',`<div class="chips">${multi('amen',AMEN)}</div>`)},
+ {q:'What stays?',
   need:()=>{if(!S.furn)return [['furn','Choose how furnished it is.']];const m=[];if(S.furn==='none')return m;
     if(!S.multi.items.length)m.push(['items','Pick at least one item that stays, or choose Not furnished.']);
     if(!S.terms)m.push(['terms','Choose whether the furniture is for use during the stay or theirs to keep.']);return m},
@@ -583,7 +583,7 @@ const STEPS=[
    (S.furn==='full'||S.furn==='part'?`<div class="grp" data-need="items"><span class="lbl">Items</span>${nm('items',1)}${FURN.map(([g,items],gi)=>`<p class="sub" style="margin-top:${gi?12:0}px">${g}</p><div class="chips">${multi('items',items)}</div>`).join('')}</div>`+
    grp('Terms',`<div class="opts two">${opt(S.terms==='use','Use during the stay','Left as found','data-set="terms:use"')}${opt(S.terms==='gift','Theirs to keep','Usual for takeovers','data-set="terms:gift"')}</div>${nm('terms')}`,'','terms'):'')+
    grp('Also staying, or please note',ta('furnNote','','e.g. A monitor and a desk mat'),'optional')},
- {q:'House rules',h:'What you ask of the person moving in. Pick only what applies; tap again to clear.',body:()=>PREFS.map(([g,items])=>grp(g,`<div class="chips">${items.map(t=>chip(t,S.prefs[g]===t,`data-pref="${g}:${t}"`)).join('')}</div>`)).join('')+grp('Anything else',ta('ruleNote','','e.g. Quiet after 10 pm'),'optional')},
+ {q:'House rules',body:()=>PREFS.map(([g,items])=>grp(g,`<div class="chips">${items.map(t=>chip(t,S.prefs[g]===t,`data-pref="${g}:${t}"`)).join('')}</div>`)).join('')+grp('Anything else',ta('ruleNote','','e.g. Quiet after 10 pm'),'optional')},
  {q:'Photos',h:`At least one of the bedroom. Best with 2 of the bedroom and 1 of each other area, up to ${MAXPH} photos. Phone photos in daylight are fine.`,
   need:()=>!S.photos.bedroom.length?[['photos','Add at least one photo of the bedroom.']]:photoCount()>MAXPH?[['photos',`Remove photos until there are ${MAXPH} or fewer.`]]:[],
   body:()=>`${lostPhotosNote()}<div class="grp" data-need="photos">${nm('photos',1)}${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?esc(S.video):'Optional · MP4, MOV or WebM, up to 60 MB'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk" tabindex="0" role="button"><input type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" data-video hidden>Add</label>`}</div></div><p class="note">${photoCount()} of ${MAXPH} photos · ${areasDone()} of ${AREAS.length} areas done. Photos that don’t match the place can be reported to the Rentlet team.</p>`},

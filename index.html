@@ -474,11 +474,6 @@ button{cursor:pointer}
 .h-a4 .sq{width:calc(var(--w) * var(--k,1) * 1px);height:calc(var(--h) * var(--k,1) * 1px);margin-top:0;border-radius:28px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 10px 28px rgba(0,0,0,.12)}
 .h-a4 .sq:hover{transform:translateY(-6px)}
 .h-a4 .sq .sq-chip{font-size:14px;font-weight:650;padding:7px 13px}
-/* frosted glass, the search bar's material; where a browser can't blur behind it the pill stays solid white */
-@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .h-a4 .sq .sq-chip{color:#17151f;background:linear-gradient(135deg,rgba(255,255,255,.62),rgba(255,255,255,.34));-webkit-backdrop-filter:blur(16px) saturate(1.8);backdrop-filter:blur(16px) saturate(1.8);border:1px solid rgba(255,255,255,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(255,255,255,.2),0 8px 22px -6px rgba(20,16,40,.32)}
-}
-@media (prefers-reduced-transparency:reduce){.h-a4 .sq .sq-chip{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
 @container (max-width:1000px){.h-a4{padding-top:56px}}
 @media (prefers-reduced-motion:reduce){.t3,.t3in{transition:none!important}.x3.press{animation:none}}
 
@@ -775,6 +770,17 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .reel-none{position:relative;z-index:2;max-width:420px;margin:96px auto 0;text-align:center}
 .reel-none p{margin:0 0 16px;font-size:16px;color:var(--ink2)}
 .reel-none[hidden]{display:none}
+/* frosted glass on everything that sits on a photo or the map: the search bar's material (Founder, Nov 6).
+   src/homemap.ts uses the same values for the map's price pills and buttons. Where a browser can't blur behind
+   an element, or someone asks for less transparency, these stay solid. */
+:root{--gl-bg:linear-gradient(135deg,rgba(255,255,255,.62),rgba(255,255,255,.34));--gl-fx:blur(16px) saturate(1.8);--gl-bd:1px solid rgba(255,255,255,.72);--gl-sh:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(255,255,255,.2),0 8px 22px -6px rgba(20,16,40,.32);--gl-ink:#17151f}
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .h-a4 .sq .sq-chip,.cx-card .ctg,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle{color:var(--gl-ink);background:var(--gl-bg);-webkit-backdrop-filter:var(--gl-fx);backdrop-filter:var(--gl-fx);border:var(--gl-bd);box-shadow:var(--gl-sh)}
+  .cx-shuttle:hover{background:linear-gradient(135deg,rgba(255,255,255,.8),rgba(255,255,255,.55))}
+  /* several lines of small text, so a little more white behind them */
+  .cx-card .cfx{background:linear-gradient(135deg,rgba(255,255,255,.76),rgba(255,255,255,.56));-webkit-backdrop-filter:var(--gl-fx);backdrop-filter:var(--gl-fx);border:var(--gl-bd);box-shadow:var(--gl-sh)}
+}
+@media (prefers-reduced-transparency:reduce){.h-a4 .sq .sq-chip,.cx-card .ctg,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle,.cx-card .cfx{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
@@ -893,13 +899,15 @@ const priceTag=l=>`<span class="price"><b>${money(l.price)}</b><span class="unit
    never opens); src/rentlet.ts signs the visitor in, saves it to their account and keeps aria-pressed current */
 const ROOM_CODE=/^[1-9][0-9]{7}$/;
 const roomSaved=c=>!!(window.RL&&typeof RL.isSaved==='function'&&RL.isSaved('room',String(c)));
-const heartBtn=(l,cls)=>ROOM_CODE.test(String(l.code||''))?`<button type="button" class="${cls}" data-rl-save="room:${l.code}" aria-pressed="${roomSaved(l.code)}" aria-label="Save ${l.title}">${ic('heart')}</button>`:'';
+/* a room's name on the homepage: its building, else its type */
+const roomName=l=>l.building||l.title;
+const heartBtn=(l,cls)=>ROOM_CODE.test(String(l.code||''))?`<button type="button" class="${cls}" data-rl-save="room:${l.code}" aria-pressed="${roomSaved(l.code)}" aria-label="Save ${roomName(l)}">${ic('heart')}</button>`:'';
 function hcard(l,p,i){
   const [s1,t1]=legStart(l,p),[s2,t2]=legEnd(l,p);
-  return `<article class="card rise" style="--i:${Math.min(i,7)}" data-id="${l.id}" tabindex="0" aria-label="${l.title}, ${l.area}, ${money(l.price)} per month">
+  return `<article class="card rise" style="--i:${Math.min(i,7)}" data-id="${l.id}" tabindex="0" aria-label="${roomName(l)}, ${l.area}, ${money(l.price)} per month">
     <div class="ph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ph-tag">${l.type}</span>${heartBtn(l,'save')}<span class="walk">${ic('walk','sm')}${l.walk} min to campus</span></div>
     <div class="cb">
-      <div class="ct"><h3>${l.title}</h3>${priceTag(l)}</div>
+      <div class="ct"><h3>${roomName(l)}</h3>${priceTag(l)}</div>
       <p class="meta">${l.area} · ${ic('shield','sm')}${l.who}, verified school email</p>
       ${fitLine(l,p)}
       <div class="legs">
@@ -1005,11 +1013,11 @@ let CXF='All',CXS='fit',CXALR=null,CXFREQ='instant';
 const lfacts=l=>[l.furnished?'Furnished':'Not furnished',l.bath==='private'?'Private bath':'Shared bath',l.laundry?'Laundry in building':'Ask about laundry'];
 const walkTx=l=>l.walk!=null?`${l.walk} min walk`:'';
 function cxCard(l,i,sub,more=''){const f=lfacts(l);
-  return `<article class="cx-card" role="link" tabindex="0" data-cxhref="room.html?room=${l.key}" ${more} style="--i:${i}" aria-label="${l.title}, ${l.area}, ${money(l.price)} a month. ${[walkTx(l)&&walkTx(l)+' to campus',...f].filter(Boolean).join(', ')}">
+  return `<article class="cx-card" role="link" tabindex="0" data-cxhref="room.html?room=${l.key}" ${more} style="--i:${i}" aria-label="${roomName(l)}${l.building?`, ${l.title}`:''}, ${l.area}, ${money(l.price)} a month. ${[walkTx(l)&&walkTx(l)+' to campus',...f].filter(Boolean).join(', ')}">
     <div class="cph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ctg">${wl(l.start,l.end)}</span>
       ${heartBtn(l,'csv')}
       <span class="cfx" aria-hidden="true">${l.walk!=null?`<span>${fic('walk')}${l.walk} min to campus</span>`:''}<span>${fic('sofa')}${f[0]}</span><span>${fic('bath')}${f[1]}</span><span>${fic('wash')}${f[2]}</span></span></div>
-    <div class="cbd"><div class="ct"><span>${l.title.replace(/-/g,'\u2011')}</span><b>${money(l.price)}<small> / mo</small></b></div><div class="cm">${l.area}</div><div class="cf">${sub}</div><div class="cf2">${[walkTx(l),f[0],f[1]].filter(Boolean).join(' · ')}</div></div></article>`}
+    <div class="cbd"><div class="ct"><span>${roomName(l).replace(/-/g,'\u2011')}</span><b>${money(l.price)}<small> / mo</small></b></div><div class="cm">${l.building?`${l.title.replace(/-/g,'\u2011')} · `:''}${l.area}</div><div class="cf">${sub}</div><div class="cf2">${[walkTx(l),f[0],f[1]].filter(Boolean).join(' · ')}</div></div></article>`}
 const cxEmpty=(t,x,a='')=>`<div class="cx-empty"><h3>${t}</h3><p>${x}</p>${a}</div>`;
 function cxPlaceInd(root=document){$$('.cx-seg',root).forEach(sg=>{const b=$('[aria-selected=true]',sg),i=$('.ind',sg);if(b&&i){i.style.width=b.offsetWidth+'px';i.style.transform=`translateX(${b.offsetLeft}px)`}})}
 /* rooms for the search in the bar */
@@ -1044,7 +1052,7 @@ function cxNear(){const box=$('#cxNearBox');if(!box)return;
     ${pinned?`<div class="cx-mapbar"><button type="button" class="cx-showmap" data-cxshowmap aria-haspopup="dialog">${ic('map')}Show map</button></div>`:''}</div></section>`;
   cxNearMap()}
 function cxNearMap(){const el=$('#cxMap');if(!el||!window.RentletHomeMap)return;
-  const rooms=L.filter(l=>l.school===plan.school&&l.lat!=null&&l.lng!=null).map(l=>({code:l.key,lat:l.lat,lng:l.lng,price:l.price,title:l.title,img:pic(l.img),dates:wl(l.start,l.end)}));
+  const rooms=L.filter(l=>l.school===plan.school&&l.lat!=null&&l.lng!=null).map(l=>({code:l.key,lat:l.lat,lng:l.lng,price:l.price,title:roomName(l),img:pic(l.img),dates:wl(l.start,l.end)}));
   RentletHomeMap.draw(el,rooms,{label:`Map of rooms near ${schoolName(plan.school)}`,onHover:code=>$$('.cx-near .cx-card[data-code]').forEach(c=>c.classList.toggle('pin-hot',c.dataset.code===code))})}
 /* src/homemap.ts calls this once it has loaded, in case the list was drawn first */
 window.RL_homeMap=cxNearMap;
@@ -1199,7 +1207,7 @@ const RATIO=[16/9,3/4,4/3,1,16/9,3/4,4/3],TIER=[350,320,285];
 const ratioOf=(p,i)=>Math.max(.75,Math.min(16/9,p.ratio||RATIO[i%RATIO.length]));
 const roomsHere=()=>CAMPUS_ROOMS[plan.school]||[];
 function a4Card(p,i,dup){const h=TIER[i%3],w=Math.round(h*ratioOf(p,i));
-  return `<a class="sq m${i%3}" style="--w:${w};--h:${h}" href="room.html?room=${p.key}" data-a4room="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${p.title}, ${p.area}. ${wl(p.start,p.end)}. ${money(p.price)} per month."><img src="${pic(p.img)}" alt="" class="${p.flip?'flip':''}"><span class="sq-chip">${wl(p.start,p.end)}</span></a>`} /* the room's own dates, in the site's one format; the old "their move-out → your move-in" chip is gone with the hand-off motif */
+  return `<a class="sq m${i%3}" style="--w:${w};--h:${h}" href="room.html?room=${p.key}" data-a4room="${p.key}" ${dup?'tabindex="-1" aria-hidden="true"':''} aria-label="${roomName(p)}, ${p.area}. ${wl(p.start,p.end)}. ${money(p.price)} per month."><img src="${pic(p.img)}" alt="" class="${p.flip?'flip':''}"><span class="sq-chip">${wl(p.start,p.end)}</span></a>`} /* the room's own dates, in the site's one format; the old "their move-out → your move-in" chip is gone with the hand-off motif */
 /* three identical copies so one straight reel can cross the page */
 const a4Track=()=>{const R=roomsHere(),one=dup=>R.map((p,i)=>a4Card(p,i,dup)).join('');return one()+one(1)+one(1)};
 const SPARK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c.5 4.6 2.9 7 7.5 7.5-4.6.5-7 2.9-7.5 7.5-.5-4.6-2.9-7-7.5-7.5 4.6-.5 7-2.9 7.5-7.5z"/><path d="M19 15.5c.2 1.8 1.2 2.8 3 3-1.8.2-2.8 1.2-3 3-.2-1.8-1.2-2.8-3-3 1.8-.2 2.8-1.2 3-3z"/></svg>';

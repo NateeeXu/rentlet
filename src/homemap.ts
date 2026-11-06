@@ -33,6 +33,14 @@ const CSS = `
 .hm-pin{background:none;border:0;outline:none}
 .hm-pin .hm-pill{position:absolute;left:0;top:0;transform:translate(-50%,calc(-50% + var(--dy,0px)));display:flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;background:#fff;color:#222;font-size:13px;font-weight:700;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.18);cursor:pointer;transition:transform .15s ease,background-color .15s,color .15s,box-shadow .15s}
 .hm-pin .hm-pill::before{content:"";position:absolute;inset:-8px -4px}
+/* frosted glass: the --gl values are in index.html */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .hm-pin:not(.on) .hm-pill,.hm-x,.hm-map.leaflet-container .leaflet-bar{color:var(--gl-ink);background:var(--gl-bg);-webkit-backdrop-filter:var(--gl-fx);backdrop-filter:var(--gl-fx);border:var(--gl-bd);box-shadow:var(--gl-sh)}
+  .hm-map.leaflet-container .leaflet-bar a{background:transparent;color:var(--gl-ink);border-bottom-color:rgba(255,255,255,.5)}
+  .hm-map.leaflet-container .leaflet-bar a:hover{background:rgba(255,255,255,.4);color:var(--gl-ink)}
+  .hm-map.leaflet-container .leaflet-bar a.leaflet-disabled{background:transparent;color:rgba(23,21,31,.38)}
+}
+@media (prefers-reduced-transparency:reduce){.hm-pin:not(.on) .hm-pill,.hm-x,.hm-map.leaflet-container .leaflet-bar{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
 .hm-pin:hover .hm-pill{transform:translate(-50%,calc(-50% + var(--dy,0px))) scale(1.06);box-shadow:0 0 0 1px rgba(0,0,0,.14),0 4px 10px rgba(0,0,0,.22)}
 .hm-pin.on .hm-pill{background:#222;color:#fff;transform:translate(-50%,calc(-50% + var(--dy,0px))) scale(1.08);box-shadow:0 0 0 1px #222,0 4px 12px rgba(0,0,0,.28)}
 .hm-pin:focus-visible{outline:none}

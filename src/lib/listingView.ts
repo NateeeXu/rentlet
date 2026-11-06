@@ -283,7 +283,7 @@ export function usableListing(d: unknown): boolean {
   );
 }
 
-// index.html card row: {id, key, title, area, walk, price, start, end, type, who, img, school, lat, lng}
+// index.html card row: {id, key, title, building, area, walk, price, start, end, type, who, img, school, lat, lng}
 // Never throws: a field that is missing or odd comes out blank. school is always one of our campus ids.
 // lat/lng place the listing's price pin on the homepage map: numbers inside the map's area, else null.
 export function toCard(d: ListingDoc) {
@@ -299,6 +299,7 @@ export function toCard(d: ListingDoc) {
     key: code,
     code,
     title: html(str(r.title)),
+    building: html(str(r.building).trim().slice(0, 80)),
     area: html(str(r.area)),
     walk: walkOf(r.walk),
     price: priceOf(r.price),

@@ -103,6 +103,11 @@ describe('page shapes', () => {
     expect(toRoom({ ...listing, building: 'x'.repeat(200) }).building).toHaveLength(80);
     expect(toRoom({ ...listing, building: undefined }).building).toBe('');
   });
+  it('gives the homepage card the building name, escaped, or none', () => {
+    expect(toCard({ ...listing, building: ' The Link Evanston ' }).building).toBe('The Link Evanston');
+    expect(toCard({ ...listing, building: '<i>' }).building).toBe('&lt;i&gt;');
+    expect(toCard({ ...listing, building: undefined }).building).toBe('');
+  });
   it('builds the homepage card', () => {
     const c = toCard(listing);
     expect(c).toMatchObject({ id: '48271936', key: '48271936', type: 'Short sublet', who: 'Emily', img: 'https://example.test/a.jpg', school: 'nu-evn', laundry: true });

@@ -377,7 +377,7 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
   .site[data-fill=C] .panel.mid .gal{aspect-ratio:16/9}
   .site[data-fill=C] .panel.mid .thumbs{display:none}
 }
-/* the right column's one card: host, price, the room's dates, Message, quick asks, first-month estimate */
+/* the right column's one card: host, price, the room's dates, Message, first-month estimate */
 .bookc .host{margin-top:0}
 .bookc .host>div>span{display:block;line-height:1.4;margin-top:2px}
 .bk-hr{border:0;border-top:1px solid var(--hair);margin:18px 0}
@@ -400,7 +400,6 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .bk-end b{font-size:15px;font-weight:650;line-height:1.35}
 .t-end{align-self:center}
 .dock a.btn{color:var(--ink);text-decoration:none}
-.bookc .asks{margin:14px 0 0}
 .bookc .safe{margin-top:12px}
 /* estimate row: the receipt prints out of a slot under it and hangs over the page; the card keeps its size */
 .billc.estc{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair);z-index:5}
@@ -503,7 +502,6 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .safe{display:block;text-align:center;font-size:13px;margin-top:10px}
 .avatar{width:44px;height:44px;border-radius:99px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
 .host b{display:block;font-size:15px}.host span{font-size:13px;color:var(--muted)}
-.asks{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
 .chip{min-height:32px;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:500;color:var(--ink2);text-align:left;width:auto}
 .chip:hover{border-color:var(--ink)}
 /* gallery tile */
@@ -928,7 +926,6 @@ const bookCard=()=>{const L=(k,v)=>`<div class="rl"><span>${k}</span><i></i><b>$
   <hr class="bk-hr"><div class="bk-pr"><b>${money(ROOM.price)}</b><small>/ mo</small>${ROOM.neg?'<span class="badge n bk-neg">Negotiable</span>':''}</div><p class="bk-save" data-bsave>${saveLine()}</p>
   <div class="bk-dates"><div><small>Move in</small><span>${d0}</span></div><div><small>Move out</small><span>${d1}</span></div></div>
   ${ended()?endedBox():`<button class="btn btn-primary bk-msg" data-msg>${ic('chat','sm')}Message ${ROOM.who}</button>
-  <div class="asks">${ROOM.asks.slice(0,2).map(a=>`<button class="chip" data-ask="${a}">${a}</button>`).join('')}</div>
   <div class="billc estc" data-flip role="button" tabindex="0" aria-label="Print the first-month estimate"><div class="fi"><div class="fa"><u>First-month estimate</u><span>${money(allIn())} ${ic2('arrow')}</span></div>
     <div class="slot" aria-hidden="true"></div><div class="feed"><div class="paper fin" role="group" aria-label="First-month estimate">
     <p class="rh"><span>FIRST-MONTH ESTIMATE</span><span>${ROOM.who.toUpperCase()} · ${esc(KEY.toUpperCase())}</span></p>
@@ -1150,7 +1147,6 @@ const loadingView=()=>`${head()}<main class="wrap f2 sk-page" role="status" aria
       <hr class="bk-hr"><div class="bk-pr">${skB('148px',36,'border-radius:10px')}</div><p class="bk-save">${skB('64%',14,'margin:4px 0 3px')}</p>
       <div class="bk-dates">${skN(2,()=>`<div>${skB('56%',11)}${skB('82%',14,'margin-top:7px')}</div>`)}</div>
       <i class="sk bk-msg" style="border-radius:999px"></i>
-      <div class="asks">${skB('128px',32,'border-radius:999px')}${skB('96px',32,'border-radius:999px')}</div>
       <div class="sk-est">${skB('46%',14)}${skB('22%',14)}</div>${skB('72%',12,'margin:18px auto 3px')}</div>
     <div class="blk fblk"><div class="sk-fh">${skB('56%',14)}${skB('26%',14)}</div><div class="fl">${skN(8,()=>`<span>${skB('20px',20,'border-radius:6px')}${skB('62%',13,'flex:1')}</span>`)}</div>${skB('86%',13,'margin-top:18px')}</div></div>
 </div></div></main>
@@ -1210,9 +1206,8 @@ document.addEventListener('click',e=>{const t=e.target;
   const nc=t.closest('[data-ncat]');if(nc){nb.cat=nc.dataset.ncat;nb.on=0;drawNear();return}
   const nm=t.closest('[data-nmode]');if(nm){nb.mode=nm.dataset.nmode;drawNear();return}
   const no=t.closest('[data-non]');if(no){nb.on=+no.dataset.non;drawNear();return}
-  if((t.closest('[data-msg]')||t.closest('[data-ask]'))&&ended())return toast('This listing has ended.');
+  if(t.closest('[data-msg]')&&ended())return toast('This listing has ended.');
   if(t.closest('[data-msg]')){gate('message',()=>{$('#msgBox').value=`Hi ${ROOM.who}! I’m looking at ${span(plan.start,plan.end)}. Is the room still available?`;$('#msg').classList.add('on')});return}
-  const a=t.closest('[data-ask]');if(a){gate('message',()=>{$('#msgBox').value=`Hi ${ROOM.who}! ${a.dataset.ask}`;$('#msg').classList.add('on')});return}
   if(t.closest('[data-share]')){shareRoom();return}
   if(t.closest('[data-sh=copy]')){const u=shareUrl();(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Link copied'),()=>toast(`Link: ${u}`));return}
   const wq=t.closest('[data-sh=wechat]');if(wq){const q=$('#shQr'),on=q.hidden;q.hidden=!on;wq.setAttribute('aria-pressed',on);if(on&&!q.innerHTML)q.innerHTML=`<div class="qr" role="img" aria-label="QR code for this room">${window.RentletQR?RentletQR(shareUrl()):''}</div><p>Scan with WeChat to send this room to a chat.</p>`;return}

@@ -405,7 +405,6 @@ export function toRoom(d: ListingDoc, today: string = localDay()) {
     // what the rent includes; '' when the host picked nothing, and rentOnly when they picked "Nothing extra"
     included: html(fees.join(' + ')),
     rentOnly: !fees.length && multi.fees.includes('Nothing extra'),
-    asks: ['Video tour?', 'Still free?', f.subletType === 'takeover' ? 'Transfer fee?' : 'Flexible dates?'],
     code: html(str(r.code)),
     layout: html(code),
     orig: orig > price ? orig : 0,

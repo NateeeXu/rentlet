@@ -474,6 +474,11 @@ button{cursor:pointer}
 .h-a4 .sq{width:calc(var(--w) * var(--k,1) * 1px);height:calc(var(--h) * var(--k,1) * 1px);margin-top:0;border-radius:28px;box-shadow:0 1px 2px rgba(0,0,0,.06),0 10px 28px rgba(0,0,0,.12)}
 .h-a4 .sq:hover{transform:translateY(-6px)}
 .h-a4 .sq .sq-chip{font-size:14px;font-weight:650;padding:7px 13px}
+/* frosted glass, the search bar's material; where a browser can't blur behind it the pill stays solid white */
+@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .h-a4 .sq .sq-chip{color:#17151f;background:linear-gradient(135deg,rgba(255,255,255,.62),rgba(255,255,255,.34));-webkit-backdrop-filter:blur(16px) saturate(1.8);backdrop-filter:blur(16px) saturate(1.8);border:1px solid rgba(255,255,255,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(255,255,255,.2),0 8px 22px -6px rgba(20,16,40,.32)}
+}
+@media (prefers-reduced-transparency:reduce){.h-a4 .sq .sq-chip{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
 @container (max-width:1000px){.h-a4{padding-top:56px}}
 @media (prefers-reduced-motion:reduce){.t3,.t3in{transition:none!important}.x3.press{animation:none}}
 

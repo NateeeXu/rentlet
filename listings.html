@@ -31,7 +31,7 @@ img{display:block}
 .main{flex:1 0 auto;padding:28px 0 56px}
 h1{font-family:var(--serif);font-size:38px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin:0}
 
-/* the toolbar: Where | When | Budget in one glass bar (the Requests page's), the room types, the sort menu, the view */
+/* the toolbar: Where | When | Budget in one glass bar (the Requests page's), the sort menu, the view */
 h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:15px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:10px;vertical-align:middle}
 .fld{height:44px;border:1px solid var(--line);border-radius:999px;background:#fff;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px;font-weight:600;min-width:0;position:relative;margin:0}
 .fld:hover{border-color:#b8b8bd}
@@ -80,12 +80,6 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-
 .sk-card .tall{height:36px;margin-bottom:16px;border-radius:12px}
 @keyframes shimmer{from{background-position:100% 0}to{background-position:0 0}}
 .cx-lnk{border:0;background:none;padding:0;font-size:14px;font-weight:650;color:var(--ink);text-decoration:underline;text-underline-offset:3px;white-space:nowrap;cursor:pointer}
-.cx-chips{display:flex;gap:8px;flex-wrap:wrap}
-.cx-chip{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
-.cx-chip:hover{border-color:var(--ink)}
-.cx-chip[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
-.cx-chip em{font-style:normal;font-weight:600;color:var(--muted);font-size:12px}
-.cx-chip[aria-pressed=true] em{color:#bdbdc2}
 .cx-swap>*{animation:cxin .42s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i,0)*45ms)}
 @keyframes cxin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .cx-card{display:block;color:inherit;text-decoration:none;cursor:pointer;outline:none;min-width:0}
@@ -164,7 +158,6 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-
 .foot{margin-top:auto}
 
 @container (max-width:1040px){
-  .dbar .cx-chips{order:9;flex:1 1 100%}
 }
 @container (max-width:900px){
   .cx-grid,.split.map .cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -178,7 +171,6 @@ h1 .cnt{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-
   .rseg+.rseg::before{display:none}
   .rsb{padding:0 18px;border-radius:22px}
   .dbar .sp{display:none}
-  .dbar .cx-chips{order:2;flex:1 1 0;min-width:0}
   .dbar .f-sort{order:3}
   .mapbar{position:sticky;z-index:6;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;margin-top:24px;pointer-events:none}
   .mapbar[hidden]{display:none}
@@ -238,7 +230,6 @@ const ROOM_CODE=/^[1-9][0-9]{7}$/;
 const roomSaved=c=>!!(window.RL&&typeof RL.isSaved==='function'&&RL.isSaved('room',String(c)));
 const roomName=l=>l.building||l.title;
 const heartBtn=(l,cls)=>ROOM_CODE.test(String(l.code||''))?`<button type="button" class="${cls}" data-rl-save="room:${l.code}" aria-pressed="${roomSaved(l.code)}" aria-label="Save ${roomName(l)}">${ic('heart')}</button>`:'';
-const ltype=l=>l.title.startsWith('Private room')?'Private room':l.title.startsWith('Entire')?'Entire place':'Studio';
 const lfacts=l=>[l.furnished?'Furnished':'Not furnished',l.bath==='private'?'Private bath':'Shared bath',l.laundry?'Laundry in building':'Ask about laundry'];
 const walkTx=l=>l.walk!=null?`${l.walk} min walk`:'';
 function cxCard(l,i,sub,more=''){const f=lfacts(l);
@@ -254,14 +245,13 @@ const SCH=WhereSearch.SCHOOLS;
 const schoolName=id=>(SCH.find(x=>x[0]===id)||[])[1]||'';
 const SORTS=[['new','Newest'],['low','Lowest price'],['high','Highest price'],['soon','Soonest move-in'],['near','Closest to campus']];
 const BY={new:(a,b)=>b.createdAtMs-a.createdAtMs,low:(a,b)=>a.price-b.price,high:(a,b)=>b.price-a.price,soon:(a,b)=>T(a.start)-T(b.start),near:(a,b)=>(a.walk==null?1e9:a.walk)-(b.walk==null?1e9:b.walk)};
-const TYPES=['Private room','Entire place','Studio'];
 const read=k=>{try{return JSON.parse(sessionStorage.getItem(k)||'null')||{}}catch(_){return{}}};
 const was=read('rl-all');
 const S={school:[was.school,read('cs-plan').school].find(id=>id&&schoolName(id))||SCH[0][0],
   start:was.start&&was.end?was.start:null,end:was.start&&was.end?was.end:null,
   budget:typeof was.budget==='number'&&was.budget>0?was.budget:Infinity,
-  type:typeof was.type==='string'?was.type:'All',sort:BY[was.sort]?was.sort:'new',view:was.view==='map'?'map':'grid',sortOpen:false};
-const save=()=>{try{sessionStorage.setItem('rl-all',JSON.stringify({view:S.view,sort:S.sort,type:S.type,school:S.school,start:S.start,end:S.end,budget:S.budget===Infinity?null:S.budget}))}catch(_){}};
+  sort:BY[was.sort]?was.sort:'new',view:was.view==='map'?'map':'grid',sortOpen:false};
+const save=()=>{try{sessionStorage.setItem('rl-all',JSON.stringify({view:S.view,sort:S.sort,school:S.school,start:S.start,end:S.end,budget:S.budget===Infinity?null:S.budget}))}catch(_){}};
 const L=[];let LOADED=false,FAILED=false,painted=false,CUR=[],hasPins=false;
 
 /* the homepage's rule for whether a room suits the dates: the whole stay, or at least 30 nights and at least half of it */
@@ -287,7 +277,6 @@ $('#site').innerHTML=header()+`<main class="main"><div class="wrap">
       <div class="rseg r-when"><button type="button" class="rsb" data-when aria-haspopup="dialog" aria-expanded="false"><span class="rbl">When</span><span class="rbv" data-whenv></span></button><button type="button" class="rx" data-clear aria-label="Clear dates" hidden>×</button></div>
       <div class="rseg r-bud"><button type="button" class="rsb" data-bud aria-haspopup="dialog" aria-expanded="false"><span class="rbl">Budget</span><span class="rbv" data-budv></span></button></div>
     </div>
-    <div class="cx-chips" id="types" role="group" aria-label="Room type"></div>
     <span class="sp"></span>
     <div class="fld f-sort" id="sortF"><button type="button" class="fd" data-sortbtn aria-haspopup="listbox" aria-expanded="false">${ic('sort')}</button></div>
     <div class="vseg" id="vseg" role="group" aria-label="View"><i class="ind"></i><button type="button" data-view="grid">${ic('grid','sm')}Grid</button><button type="button" data-view="map">${ic('map','sm')}Map</button></div>
@@ -363,13 +352,8 @@ const emptyHtml=()=>{const none=!L.some(l=>l.school===S.school);
 function update(anim=true){
   syncBar();
   if(!LOADED){grid.innerHTML=FAILED?`<div class="cx-empty"><h3>Couldn’t load the rooms</h3><p>Check your connection and try again.</p><div class="cx-empty-a"><button type="button" class="cx-pri" data-retry>Try again</button></div></div>`:skeleton(4);hasPins=false;syncView();grid.setAttribute('aria-busy',String(!FAILED));return}
-  const all=scoped(),kinds=TYPES.filter(k=>all.some(l=>ltype(l)===k));
-  if(S.type!=='All'&&!kinds.includes(S.type))S.type='All';
-  CUR=all.filter(l=>S.type==='All'||ltype(l)===S.type).sort((a,b)=>BY[S.sort](a,b)||b.createdAtMs-a.createdAtMs);
+  CUR=scoped().sort((a,b)=>BY[S.sort](a,b)||b.createdAtMs-a.createdAtMs);
   $('#cnt').textContent=plural(CUR.length,'room');
-  const fc=document.activeElement&&document.activeElement.dataset&&document.activeElement.dataset.type;
-  $('#types').innerHTML=all.length?['All',...kinds].map(k=>`<button type="button" class="cx-chip" data-type="${k}" aria-pressed="${S.type===k}">${k}<em>${k==='All'?all.length:all.filter(l=>ltype(l)===k).length}</em></button>`).join(''):'';
-  if(fc){const b=$(`[data-type="${fc}"]`);if(b)b.focus()}
   hasPins=CUR.some(l=>l.lat!=null&&l.lng!=null);
   const first=!painted,html=CUR.length?CUR.map((l,i)=>cxCard(l,i,agoOf(l.createdAtMs),`data-code="${l.key}"`)).join(''):emptyHtml();
   const paint=()=>{grid.classList.toggle('cx-swap',first);grid.innerHTML=html;grid.setAttribute('aria-busy','false');split.classList.toggle('map',shown()==='map');$('#endn').hidden=!CUR.length;syncView()};
@@ -395,11 +379,10 @@ document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest)return;
   const so=t.closest('[data-sort]');if(so){const kb=e.detail===0;S.sort=so.dataset.sort;closeSort(kb);update();return}
   if(S.sortOpen&&!t.closest('.sort-pop'))closeSort(false);
   const v=t.closest('[data-view]');if(v){setView(v.dataset.view);return}
-  const ty=t.closest('[data-type]');if(ty){S.type=ty.dataset.type;update();return}
   const w=t.closest('[data-when]');if(w){WhenPicker.open({anchor:w,mode:'leave',start:S.start,end:S.end,onDone:(s,en)=>{S.start=s;S.end=en;update()}});return}
   if(t.closest('[data-clear]')){S.start=S.end=null;update();return}
   const bd=t.closest('[data-bud]');if(bd){BudgetPicker.open({anchor:bd,value:S.budget,prices:L.filter(l=>l.school===S.school).map(l=>l.price),onDone:v2=>{S.budget=v2;update()}});return}
-  if(t.closest('[data-clearall]')){S.start=S.end=null;S.budget=Infinity;S.type='All';update();return}
+  if(t.closest('[data-clearall]')){S.start=S.end=null;S.budget=Infinity;update();return}
   if(t.closest('[data-ask]')){ask();return}
   if(t.closest('[data-retry]')){location.reload();return}
   const m=t.closest('[data-showmap]');if(m){ensureMap();if(window.RentletHomeMap)RentletHomeMap.open(m);return}

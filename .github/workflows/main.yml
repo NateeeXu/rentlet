@@ -13,12 +13,12 @@ jobs:
           node-version: '26'
           cache: npm
       - run: npm ci
-      - run: npm run build --if-present
-      - run: npm test
 
       # Root `npm test` also collects functions/src/*.test.ts, which need the
       # functions' own dependencies; build them too so CI typechecks them.
       - run: npm ci
         working-directory: functions
+      - run: npm run build --if-present
+      - run: npm test
       - run: npm run build
         working-directory: functions

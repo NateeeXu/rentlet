@@ -135,7 +135,7 @@ export function composeEmail(o: { cid: string; to: string; senderId: string; con
   const settings = `${SITE}/profile#notify`;
   const heading = `${name} sent you a message`;
   const subject = oneLine(room.name ? `${name} messaged you about ${room.name}` : heading).slice(0, 180);
-  const fine = 'You get one email per chat until you open it.';
+  const fine = 'You get one email per chat until you open it. To answer, open the chat: replies to this email don’t reach them.';
   const off = 'Turn this off in Profile.';
 
   const roomText = `<div style="font-size:15px;font-weight:600;line-height:1.35">${escapeHtml(room.name)}</div>${
@@ -182,16 +182,18 @@ export async function processMessage(cid: string, mid: string, d: Deps): Promise
   }
 }
 
-const GMAIL_USER = defineSecret('GMAIL_USER');
-const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
+const MAIL_USER = defineSecret('MAIL_USER');
+const MAIL_PASSWORD = defineSecret('MAIL_PASSWORD');
 
 if (!getApps().length) initializeApp();
 
 let mailer: Transporter | null = null;
 const transport = (): Transporter =>
   (mailer ??= nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: GMAIL_USER.value(), pass: GMAIL_APP_PASSWORD.value() },
+    host: 'smtp.exmail.qq.com', // the sending mailbox is on Tencent Exmail
+    port: 465,
+    secure: true,
+    auth: { user: MAIL_USER.value(), pass: MAIL_PASSWORD.value() },
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 15_000,
@@ -229,7 +231,7 @@ const live: Deps = {
     else await ref.delete();
   },
   send: async (mail) => {
-    await transport().sendMail({ from: { name: 'Rentlet', address: GMAIL_USER.value() }, ...mail });
+    await transport().sendMail({ from: { name: 'Rentlet', address: MAIL_USER.value() }, ...mail });
   },
 };
 
@@ -238,7 +240,7 @@ export const emailOnMessage = onDocumentCreated(
   {
     document: 'conversations/{cid}/messages/{mid}',
     region: 'us-central1',
-    secrets: [GMAIL_USER, GMAIL_APP_PASSWORD],
+    secrets: [MAIL_USER, MAIL_PASSWORD],
     memory: '256MiB',
     cpu: 1,
     concurrency: 20,

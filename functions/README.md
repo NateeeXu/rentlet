@@ -52,16 +52,16 @@ people and anyone who turned it off in Profile get nothing. `notifyState/{cid}_{
 out of reach of the site. It needs two secrets, set by the founder in their own terminal from the repository root:
 
 ```bash
-npx firebase-tools functions:secrets:set GMAIL_USER --project rentlet-nu
+npx firebase-tools functions:secrets:set MAIL_USER --project rentlet-nu
 ```
 
 ```bash
-npx firebase-tools functions:secrets:set GMAIL_APP_PASSWORD --project rentlet-nu
+npx firebase-tools functions:secrets:set MAIL_PASSWORD --project rentlet-nu
 ```
 
-`GMAIL_USER` is the full Gmail address. `GMAIL_APP_PASSWORD` is an app password from that Google account (2-Step
-Verification must be on, then Security → App passwords), not the account's own password. Recipients see this address
-as the sender, so a dedicated Gmail is better than a personal one. Then deploy `emailOnMessage` with the other functions.
+`MAIL_USER` is the full address of a Tencent Exmail mailbox (mail goes out through `smtp.exmail.qq.com`, port 465). `MAIL_PASSWORD` is that
+mailbox's client password: turn on SMTP in the mailbox settings first, and if secure login is on, generate a client-specific password rather
+than using the login password. Recipients see this address as the sender, and any reply to an email lands in that mailbox. Then deploy `emailOnMessage` with the other functions.
 
 ## Develop
 

@@ -629,6 +629,15 @@ a.nb-cov{text-decoration:underline;text-underline-offset:3px}
 .nb-row em{font-style:normal;font-size:14px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
 .nb-note{margin:6px 8px;font-size:13px;line-height:1.5;color:var(--muted)}
 .nb-note b{display:block;color:var(--ink);font-size:14px}
+.nb-retry{display:flex;align-items:center;justify-content:center;width:auto!important;min-width:0;height:44px;margin:12px 0 0;padding:0 18px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:14px;font-weight:650;color:var(--ink);cursor:pointer}
+.nb-retry:hover{border-color:var(--ink)}
+.nb-sk{display:flex;align-items:center;gap:12px;padding:12px}
+.nb-sk>span{flex:1;display:grid;gap:7px;min-width:0}
+.nb-sh{height:12px;border-radius:7px}
+.nb-sq{flex:none;width:32px;height:32px;border-radius:10px}
+.nb-short{width:62%}
+.nb-min{flex:none;width:44px}
+
 @container (max-width:760px){
   .nb-box{grid-template-columns:minmax(0,1fr)}
   .nb-map{height:300px}
@@ -964,7 +973,10 @@ const shuttleCover=()=>{const c=ROOM.shuttle||{},on=c.s==='covered',t=on?`On the
 function nearList(){return window.RentletRoomMap?RentletRoomMap.rows(nb.cat,ROOM):[]}
 function nearNote(L){if(L.length)return '';
   if(nb.cat==='Shuttle')return `<p class="nb-note"><b>No campus shuttle stop nearby</b>The nearest Northwestern shuttle stop is more than a 20-minute walk away. <a href="shuttle.html">See the shuttle map</a></p>`;
-  return `<p class="nb-note"><b>Nothing to show here yet</b>${RL.authed?'No places of this kind came up within a short walk.':'Sign in with your school Google account to see places nearby.'}</p>`}
+  const st=window.RentletRoomMap?RentletRoomMap.placesState(ROOM):'loading';
+  if(st==='loading')return `<div class="nb-wait" role="status" aria-label="Finding places nearby">${[0,1,2].map(()=>'<div class="nb-sk"><i class="sk nb-sh nb-sq"></i><span><i class="sk nb-sh"></i><i class="sk nb-sh nb-short"></i></span><i class="sk nb-sh nb-min"></i></div>').join('')}</div>`;
+  if(st==='failed')return `<div class="nb-note"><b>Couldn’t load places nearby</b>Check your connection and try again.<button type="button" class="nb-retry" data-nretry>Try again</button></div>`;
+  return `<p class="nb-note"><b>Nothing to show here yet</b>${st==='signed-out'?'Sign in with your school Google account to see places nearby.':'No places of this kind came up within a short walk.'}</p>`}
 /* the drawing uses the same 300 × 180 plan as the area spots, scaled to 800 × 420 */
 const NX=8/3,NY=7/3,nP=([x,y])=>[+(x*NX).toFixed(1),+(y*NY).toFixed(1)];
 function nearMap(){return `<div class="nb-lf" id="nbMap"></div><span class="nb-cap">Exact spot · street address after you both agree</span>`}
@@ -1204,6 +1216,7 @@ document.addEventListener('click',e=>{const t=e.target;
   if(t.closest('[data-retry]')){retryLoad();return}
   const dy=t.closest('[data-wopen]');if(dy){pickDates(dy);return}
   const bo=t.closest('[data-bopen]');if(bo){pickBudget(bo);return}
+  if(t.closest('[data-nretry]')){if(window.RentletRoomMap)RentletRoomMap.retryPlaces(ROOM);return}
   const nc=t.closest('[data-ncat]');if(nc){nb.cat=nc.dataset.ncat;nb.on=0;drawNear();return}
   const nm=t.closest('[data-nmode]');if(nm){nb.mode=nm.dataset.nmode;drawNear();return}
   const no=t.closest('[data-non]');if(no){nb.on=+no.dataset.non;drawNear();return}

@@ -7,7 +7,7 @@
 import { createMap, drawPin, drawRoute, fitTo, INK, L } from './map';
 import { CAMPUS_POINT } from './lib/apartments';
 import { DIRECTIONS, LINES, metersBetween, nearestStops, routePath, walkingMinutes, type DirectionId } from './lib/shuttleData';
-import { nearbyPlaces } from './place';
+import { callState, nearbyPlaces, resetCall } from './place';
 
 type Cat = 'Schools' | 'Shuttle' | 'Transit' | 'Supermarkets' | 'Restaurants' | 'Pharmacies';
 type Kind = 'transit' | 'grocery' | 'pharmacy' | 'food';
@@ -41,7 +41,7 @@ export interface Row {
 
 declare global {
   interface Window {
-    RentletRoomMap: { rows: typeof rows; draw: typeof draw };
+    RentletRoomMap: { rows: typeof rows; draw: typeof draw; placesState: typeof placesState; retryPlaces: typeof retryPlaces };
     RL_nearSelect?: (index: number) => void;
     RL_nearRedraw?: () => void;
   }
@@ -65,25 +65,45 @@ const CAMPUS: Record<string, [string, string]> = {
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
 const miles = (m: number) => (m / 1609.344).toFixed(1);
 
-// places for listings posted before they were saved with the listing: looked up once for a
-// signed-in Northwestern viewer (the lookup needs that account)
+// Places are saved with the listing when it is posted. A listing saved without any (posted before they were
+// saved, or the lookup failed at the time) looks them up here for a signed-in school viewer, who has the
+// account the lookup needs. An empty saved list counts as none saved.
 const fetched = new Map<string, NearItem[]>();
 const pending = new Set<string>();
+const failed = new Set<string>();
+
+function lookUp(room: RoomLike, code: string, p: { lat: number; lng: number }): void {
+  pending.add(code);
+  nearbyPlaces(p.lat, p.lng, (room.school || 'nu-evn') as 'nu-evn' | 'nu-chi' | 'chi-dt').then((list) => {
+    pending.delete(code);
+    if (callState('nearby') === 'ok') fetched.set(code, list as NearItem[]);
+    else failed.add(code);
+    window.RL_nearRedraw?.();
+  });
+}
 
 function placesOf(room: RoomLike): NearItem[] {
-  if (room.near) return room.near;
+  if (room.near?.length) return room.near;
   const code = room.code || '';
   const got = fetched.get(code);
   if (got) return got;
-  const p = room.location;
-  if (p && code && !pending.has(code) && window.RL?.authed) {
-    pending.add(code);
-    nearbyPlaces(p.lat, p.lng, (room.school || 'nu-evn') as 'nu-evn' | 'nu-chi' | 'chi-dt').then((list) => {
-      fetched.set(code, list as NearItem[]);
-      window.RL_nearRedraw?.();
-    });
-  }
+  if (room.location && code && !pending.has(code) && !failed.has(code) && window.RL?.authed) lookUp(room, code, room.location);
   return [];
+}
+
+// What the list should say while it has no places to show.
+export function placesState(room: RoomLike): 'ready' | 'loading' | 'failed' | 'signed-out' {
+  const code = room.code || '';
+  if (room.near?.length || !room.location || !code || fetched.has(code)) return 'ready';
+  if (failed.has(code)) return 'failed';
+  return window.RL?.authed ? 'loading' : 'signed-out';
+}
+
+// Try again: the redraw that follows looks the places up once more.
+export function retryPlaces(room: RoomLike): void {
+  failed.delete(room.code || '');
+  resetCall('nearby');
+  window.RL_nearRedraw?.();
 }
 
 export function rows(cat: Cat, room: RoomLike): Row[] {
@@ -256,5 +276,5 @@ export function draw(el: HTMLElement | null, room: RoomLike, list: Row[], on: nu
   showMinutes(el, room, list, how);
 }
 
-window.RentletRoomMap = { rows, draw };
+window.RentletRoomMap = { rows, draw, placesState, retryPlaces };
 window.RL_nearRedraw?.();

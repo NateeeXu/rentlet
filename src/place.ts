@@ -97,6 +97,11 @@ async function call<T>(name: string, data: unknown, parse: (x: unknown) => T, fa
 // after a failure), or 'signed-out'. The post form says which under the address field.
 export const callState = (name = 'placeSuggest'): CallState => healthOf(name).last;
 
+// Someone pressed Try again: ask now, without the wait that follows a failure.
+export const resetCall = (name: string): void => {
+  health.delete(name);
+};
+
 // Up to 5 full street addresses around the campus. The timeout leaves room for a cold start.
 export function suggestPlaces(q: string, campusId: CampusId): Promise<PlaceSuggestion[]> {
   const text = q.replace(/\s+/g, ' ').trim().slice(0, 120);
@@ -128,7 +133,8 @@ export function walkTo(lat: number, lng: number, campusId: CampusId): Promise<nu
 
 // The nearest transit stop, grocery, pharmacy and food with walking minutes.
 export function nearbyPlaces(lat: number, lng: number, campusId: CampusId): Promise<NearbyPlace[]> {
-  return call('nearby', { lat, lng, campusId }, asNearby, [], 10000);
+  // a dozen HERE lookups, sometimes from a cold start: long enough for the function's own 20-second limit
+  return call('nearby', { lat, lng, campusId }, asNearby, [], 25000);
 }
 
 // area: the neighbourhood read from a typed address, the same fallback a listing uses without HERE.

@@ -8,6 +8,7 @@ import {
   CallHealth,
   clampPin,
   directoryAddresses,
+  GONE_MS,
   inServiceArea,
   listingPlace,
   mergeAddresses,
@@ -194,10 +195,11 @@ describe('calling the functions', () => {
     expect(h.allow(0)).toBe(true);
     expect(h.last).toBe('ok');
   });
-  it('stops asking only a function that is not deployed', () => {
+  it('stops asking only a function that is not deployed, and re-checks after a minute', () => {
     const h = new CallHealth();
     h.fail('functions/not-found', 0);
-    expect(h.allow(10 ** 9)).toBe(false);
+    expect(h.allow(GONE_MS - 1)).toBe(false);
+    expect(h.allow(GONE_MS)).toBe(true); // a deploy rolling out need not wait for a reload
   });
   it('does not count answers about the request or the account as failures', () => {
     const h = new CallHealth();

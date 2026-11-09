@@ -151,7 +151,9 @@ interface Route {
 }
 
 const routes = new Map<string, Route | null>(); // per place and mode; null: no route, keep the estimate
-let routesOff = false; // no /api/route here (local dev, or not deployed yet)
+let routesOffUntil = 0; // no /api/route here (local dev, or not deployed yet): retry after a minute
+const ROUTES_OFF_MS = 60_000;
+const routesOff = () => Date.now() < routesOffUntil;
 let inflight: { key: string; ctl: AbortController } | null = null;
 let lastDraw: Parameters<typeof draw> | null = null;
 let shownKey = '';
@@ -163,7 +165,7 @@ const routeModeOf = (cat: Cat, mode: Mode): RouteMode => (cat === 'Shuttle' || c
 function routeKey(room: RoomLike, r: Row | undefined, mode: RouteMode): string {
   const code = String(room.code || '');
   const p = room.location;
-  if (!r || !p || routesOff || !CODE.test(code)) return '';
+  if (!r || !p || routesOff() || !CODE.test(code)) return '';
   if (metersBetween(p, r) > REACH_METERS[mode]) return '';
   return `${code}|${r.lat.toFixed(5)},${r.lng.toFixed(5)}|${mode}`;
 }
@@ -192,7 +194,7 @@ function requestRoute(key: string, room: RoomLike, r: Row, mode: RouteMode): voi
     .then(async (res) => {
       // anything but JSON is a server without the endpoint (a dev server's page, Hosting's 404)
       if (!(res.headers.get('content-type') || '').includes('application/json')) {
-        routesOff = true;
+        routesOffUntil = Date.now() + ROUTES_OFF_MS;
         return;
       }
       routes.set(key, res.ok ? toRoute(await res.json(), from, r) : null);

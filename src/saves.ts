@@ -8,6 +8,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  runTransaction,
   serverTimestamp,
   setDoc,
   Timestamp,
@@ -79,14 +80,19 @@ export async function unsave(code: string): Promise<void> {
   await deleteDoc(saveRef(code));
 }
 
-// Returns whether the room is saved afterwards.
+// Returns whether the room is saved afterwards. One transaction, so two rapid taps can't both read
+// "not saved" and write saved, losing the second tap.
 export async function toggleSave(code: string): Promise<boolean> {
-  if (await isSaved(code)) {
-    await unsave(code);
-    return false;
-  }
-  await save(code);
-  return true;
+  const ref = saveRef(code);
+  return runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref);
+    if (snap.exists()) {
+      tx.delete(ref);
+      return false;
+    }
+    tx.set(ref, savedAt());
+    return true;
+  });
 }
 
 // Every saved listing code, most recently saved first.

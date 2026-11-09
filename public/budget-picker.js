@@ -149,7 +149,7 @@
   }
 
   function open(opts) {
-    if (cur) { const same = cur.anchor === opts.anchor; close(true); if (same) return; }
+    if (cur) { const same = cur.anchor === opts.anchor; close(same ? false : true); if (same) return; } // a second click on the same field cancels, like Escape
     if (window.WhenPicker) window.WhenPicker.close();
     ensureStyle();
     const prices = (opts.prices || []).filter(p => p > 0), rent = opts.mode === 'rent';
@@ -172,13 +172,13 @@
     bind(cur);
     scrim.addEventListener('click', () => close(true));
     cur.onResize = () => cur && place();
-    /* the popover rides with its field while the page scrolls; once the field scrolls away or under the sticky header, it closes and keeps the choice */
+    /* the popover rides with its field while the page scrolls; once the field scrolls away or under the sticky header, it closes without keeping (like Escape) */
     cur.onScroll = (e) => {
       if (!cur || cur.el.classList.contains('sheet')) return;
       const r = cur.anchor.getBoundingClientRect();
       let covered = r.width === 0 || r.bottom < 0 || r.top > window.innerHeight;
       if (!covered) { cur.scrim.style.pointerEvents = 'none'; const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); cur.scrim.style.pointerEvents = ''; covered = !(hit && (cur.anchor.contains(hit) || cur.el.contains(hit))); }
-      if (covered) close(true); else if (e.target !== document || stuck(cur.anchor)) place(); /* page scrolls carry it natively; only an inner scroller needs a re-place */
+      if (covered) close(false); else if (e.target !== document || stuck(cur.anchor)) place(); /* page scrolls carry it natively; only an inner scroller needs a re-place */
     };
     document.addEventListener('scroll', cur.onScroll, true);
     cur.onKey = ev => { if (ev.key === 'Escape' && cur) { ev.stopPropagation(); close(false); } };

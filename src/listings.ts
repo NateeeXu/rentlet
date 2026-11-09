@@ -32,10 +32,10 @@ import {
 } from './lib/listingView';
 import { AREA_CAPTION, AREA_ORDER, editState, removedFiles, type PrivateLocation } from './lib/listingEdit';
 import { asPlace, listingPlace, sameAddress, type ListingPlace, type PickedPlace } from './lib/place';
-import { proofFilePaths } from './lib/profileData';
+import { MAX_LIVE, proofFilePaths } from './lib/profileData';
 import { lookupPlace, nearbyPlaces } from './place';
 
-const MAX_ACTIVE = 3;
+// One place for the live-listing cap (src/lib/profileData.ts MAX_LIVE): publish and profile must agree.
 // Form fields kept out of the public answers. The street address and website stay private to the host
 // (shared only after both sides agree); the building name also goes on the listing, as its room page title.
 const PRIVATE_FIELDS = ['addr', 'building', 'site'];
@@ -225,7 +225,20 @@ function publicFields(
   };
 }
 
+// One publish at a time: a double-tap must not upload a second listing.
+let publishing = false;
+
 export async function publishListing(S: PostState, video: File | null, proof: File[], onStep?: (s: PublishStep) => void): Promise<string> {
+  if (publishing) throw new PublishError('failed');
+  publishing = true;
+  try {
+  return await publishListingInner(S, video, proof, onStep);
+  } finally {
+    publishing = false;
+  }
+}
+
+async function publishListingInner(S: PostState, video: File | null, proof: File[], onStep?: (s: PublishStep) => void): Promise<string> {
   const user = auth.currentUser;
   if (!user) throw new PublishError('signin');
   if (!ready(S, video, proof)) throw new PublishError('invalid');
@@ -233,7 +246,7 @@ export async function publishListing(S: PostState, video: File | null, proof: Fi
   // live listings only: one whose last day has passed no longer counts (it shows nowhere)
   const mine = await getDocs(query(collection(db, 'listings'), where('ownerId', '==', user.uid), where('status', '==', 'active')));
   const today = localDay();
-  if (mine.docs.filter((d) => !hasEnded(d.get('end'), today)).length >= MAX_ACTIVE) throw new PublishError('limit');
+  if (mine.docs.filter((d) => !hasEnded(d.get('end'), today)).length >= MAX_LIVE) throw new PublishError('limit');
 
   const code = await freeCode();
   // HERE answers while the photos upload

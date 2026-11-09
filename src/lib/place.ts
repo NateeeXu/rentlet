@@ -271,14 +271,18 @@ const NOT_FAILURES = new Set(['functions/invalid-argument', 'functions/unauthent
 
 export type CallState = 'ok' | 'failed' | 'signed-out';
 
+export const GONE_MS = 60_000; // a not-found answer is re-checked after this long (a deploy rolling out is brief)
+
 export class CallHealth {
   fails = 0;
   until = 0;
   gone = false;
+  goneUntil = 0;
   last: CallState = 'ok';
 
   // May a call go out now? When not, the last state is "failed".
   allow(now: number): boolean {
+    if (this.gone && now >= this.goneUntil) this.gone = false; // the deploy may have landed since
     if (this.gone || now < this.until) {
       this.last = 'failed';
       return false;
@@ -297,7 +301,10 @@ export class CallHealth {
     else if (NOT_FAILURES.has(code)) this.last = 'ok';
     else {
       this.last = 'failed';
-      if (code === 'functions/not-found') this.gone = true;
+      if (code === 'functions/not-found') {
+        this.gone = true;
+        this.goneUntil = now + GONE_MS;
+      }
       else this.until = now + RETRY_MS[Math.min(this.fails, RETRY_MS.length - 1)];
       this.fails++;
     }

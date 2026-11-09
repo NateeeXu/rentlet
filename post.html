@@ -229,7 +229,9 @@ const DRAFT_KEY='rl-post-draft-v3',OLD_DRAFT='rl-post-draft-v2';
 let LOST={photos:0,video:0,proof:0},FROM_OLD=false;
 if(!EDIT)try{let raw=localStorage.getItem(DRAFT_KEY);if(!raw){raw=sessionStorage.getItem(OLD_DRAFT);FROM_OLD=!!raw}
   const d=raw?JSON.parse(raw):null;
-  if(d&&typeof d==='object'){const {files,photos,...rest}=d,fl=files||{};
+  if(d&&typeof d==='object'){const {files,photos,v,...rest}=d,fl=files||{};
+    /* Getting to campus became part of Where is it? (index 6 went to 1), so a draft saved before that moves with it */
+    if(v!==2&&typeof rest.step==='number')rest.step=rest.step===6?1:rest.step>6?rest.step-1:rest.step;
     LOST={photos:+fl.photos||0,video:fl.video||rest.video?1:0,proof:+fl.proof||0};
     Object.assign(S,rest,{done:false,map:true,video:null});
     if(!S.f||typeof S.f!=='object')S.f={};if(!S.prefs||typeof S.prefs!=='object')S.prefs={};if(!S.amenD||typeof S.amenD!=='object'||Array.isArray(S.amenD))S.amenD={};
@@ -551,17 +553,20 @@ if(window.visualViewport)visualViewport.addEventListener('resize',()=>{if(PL_OPE
 
 /* the screens; each one maps onto the mini program's listing form fields. need() lists the answers a step still
    lacks, in screen order, as [key, message]: Next stops on the first one, and Publish checks every step again. */
+/* Shuttle and Route, at the end of Where is it? They are redrawn on their own, so a tap leaves the map above them alone. */
+const shuttleHtml=()=>grp('Shuttle',`<div class="chips">${one('shuttle',[['covered','Yes, covered'],['not_covered','Not covered'],['unknown','Not sure']])}</div>${nm('shuttle')}`,'','shuttle')+(S.shuttle==='covered'?grp('Route',`<div class="chips">${one('route',ROUTES.map(r=>[r,r]))}</div>`,'optional'):'');
 const STEPS=[
  {q:'What are you leaving?',
   need:()=>S.subletType?[]:[['type','Choose a short sublet or a lease takeover.']],
   body:()=>`<div data-need="type"><div class="opts" style="margin-top:28px">${opt(S.subletType==='sublet','Short sublet','You keep the lease and come back. They stay for a fixed stretch.','data-set="subletType:sublet"')}${opt(S.subletType==='takeover','Lease takeover','They take over your lease until it ends. The landlord signs the transfer.','data-set="subletType:takeover"')}</div>${nm('type')}</div>`},
  {q:'Where is it?',
-  need:()=>{const m=[],a=String(S.f.addr||'').trim();if(!S.campusId)m.push(['campus','Choose the campus.']);if(a.length<5)m.push(['addr',a?'Add the full street address.':'Add the street address.']);return m},
+  need:()=>{const m=[],a=String(S.f.addr||'').trim();if(!S.campusId)m.push(['campus','Choose the campus.']);if(a.length<5)m.push(['addr',a?'Add the full street address.':'Add the street address.']);if(!S.shuttle)m.push(['shuttle','Choose whether the shuttle covers this address.']);return m},
   body:()=>
    grp('Campus',`<form data-wform><div class="in ws" data-wseg><span data-wval>${esc(S.campus||'')}</span>${CHEV}</div></form>${nm('campus')}`,'','campus')+
    grp('Building',inp('building','','','','Start typing; the apartment directory fills the rest'),'optional')+
    `<div class="grp" data-need="addr">${plMapHtml()}<span class="lbl">Street address</span>${inp('addr','','','','e.g. 733 Colfax St, Evanston')}${nm('addr')}<p class="note" style="margin-top:8px" data-place-note>${esc(placeNote())}</p></div>`+
-   grp('Apartment website',inp('site','','','','Paste the building’s website'),'optional')},
+   grp('Apartment website',inp('site','','','','Paste the building’s website'),'optional')+
+   `<div data-shuttle>${shuttleHtml()}</div>`},
  {q:'When is it free?',
   need:()=>!S.start?[['dates','Pick the move-in day.']]:S.start<TODAY&&!(EDIT&&S.start===EDIT.start)?[['dates','Move-in can’t be before today. Pick a new move-in day.']]:!S.end?[['dates','Pick the move-out day.']]:S.end<=S.start?[['dates','Move-out has to be after move-in.']]:[],
   body:()=>`<div class="grp" data-need="dates"><div class="row2"><div><span class="lbl">Move in</span>${side('in',S.start)}</div><div><span class="lbl">Move out</span>${side('out',S.end)}</div></div>${nm('dates')}</div><div class="grp"><div class="chips">${PRESETS.map(([t,s,e])=>chip(t,S.start===s&&S.end===e,`data-dates="${s}:${e}"`)).join('')}</div><div class="cal" data-cal></div></div>`},
@@ -585,9 +590,6 @@ const STEPS=[
   body:()=>
    grp('Roommates',`<div class="opts two">${opt(S.hasRoommates==='no','Just them','','data-set="hasRoommates:no"')}${opt(S.hasRoommates==='yes','Yes, roommates','','data-set="hasRoommates:yes"')}</div>${nm('mates')}`,'','mates')+
    (S.hasRoommates==='yes'?`<div class="grp" data-need="rmN"><div class="row2"><div><span class="lbl">How many</span>${inp('rmN','','','','e.g. 2','inputmode="numeric" autocomplete="off"')}</div><div><span class="lbl">Who<small>optional</small></span>${inp('rmWho','','','','e.g. grad students')}</div></div>${nm('rmN')}</div>`+grp('Gender',`<div class="chips">${one('gender',GENDER.map(g=>[g,g]))}</div>`,'optional')+grp('Schedule and habits',`<div class="chips">${multi('habits',['Early risers','Quiet weeknights','Cook most nights','Non-smoking','Guests on weekends'])}</div>`,'optional')+grp('Anything else',ta('rmNote','','e.g. Two grad students, quiet weeknights'),'optional'):'')},
- {q:'Getting to campus',
-  need:()=>S.shuttle?[]:[['shuttle','Choose whether the shuttle covers this address.']],
-  body:()=>grp('Shuttle',`<div class="opts">${opt(S.shuttle==='covered','Yes, covered','','data-set="shuttle:covered"')}${opt(S.shuttle==='not_covered','Not covered','','data-set="shuttle:not_covered"')}${opt(S.shuttle==='unknown','Not sure','','data-set="shuttle:unknown"')}</div>${nm('shuttle')}`,'','shuttle')+(S.shuttle==='covered'?grp('Route',`<div class="chips">${one('route',ROUTES.map(r=>[r,r]))}</div>`,'optional'):'')},
  {q:'In the building',body:()=>grp('Amenities',`<div class="chips">${multi('amen',AMEN)}</div>${amenDetails()}`)},
  {q:'What stays?',
   need:()=>{if(!S.furn)return [['furn','Choose how furnished it is.']];const m=[];if(S.furn==='none')return m;
@@ -612,16 +614,16 @@ const STEPS=[
    <dl class="review grp">${[
      ['Type',line([S.subletType&&typeName()],ok(0)),0],
      ['Where',line([S.campus&&esc(S.campus),bld&&esc(bld),adr&&`${esc(adr)} (only you see this)`,(bld||adr)&&'exact spot on the map'],ok(1)),1],
+     ['Shuttle',S.shuttle==='covered'?line(['Covered',S.route]):S.shuttle==='not_covered'?'Not covered':S.shuttle==='unknown'?'Not sure':NS,1],
      ['Dates',ok(2)?WhenPicker.label(S.start,S.end):S.start&&S.end?'<span class="ns">Pick new dates</span>':NS,2],
      ['Money',line([S.rent&&`${money(S.rent)} / mo`,S.orig&&`was ${money(S.orig)}`,depLine(),extra&&`~${money(extra)} other costs`],ok(3)),3],
      ['Room',line([S.unit&&unitName(),S.layout&&esc(layoutName()),S.bath&&`${S.bath} bath`,val('sqft','')&&`${esc(val('sqft',''))} sq ft`],ok(4)),4],
      ['Roommates',S.hasRoommates==='no'?'Just them':S.hasRoommates==='yes'?line([`${esc(rmN||'Some')} ${esc((who||'roommates').toLowerCase())}`,S.gender&&S.gender.toLowerCase()],ok(5)):NS,5],
-     ['Shuttle',S.shuttle==='covered'?line(['Covered',S.route]):S.shuttle==='not_covered'?'Not covered':S.shuttle==='unknown'?'Not sure':NS,6],
-     ['Amenities',amenLine()||'None picked',7],
-     ['What stays',S.furn==='none'?'Not furnished':S.furn?line([`${S.furn==='full'?'Fully':'Partly'} furnished`,items&&`${items} item${items===1?'':'s'}`,S.terms==='gift'?'theirs to keep':S.terms==='use'?'use during the stay':''],ok(8)):NS,8],
-     ['Rules',Object.values(S.prefs).filter(Boolean).join(' · ')||'None set',9],
-     ['Photos',line([`${pc} photo${pc===1?'':'s'}`,`${areasDone()} of ${AREAS.length} areas`,S.video&&'video'],ok(10)),10],
-     ['Verification',S.proof==='student'?'School email ✓':S.proof==='lease'?line([`School email ✓ · lease proof (${nOf(PROOF.length+(EDIT&&EDIT.proof||0),'file')})`],ok(11)):NS,11]
+     ['Amenities',amenLine()||'None picked',6],
+     ['What stays',S.furn==='none'?'Not furnished':S.furn?line([`${S.furn==='full'?'Fully':'Partly'} furnished`,items&&`${items} item${items===1?'':'s'}`,S.terms==='gift'?'theirs to keep':S.terms==='use'?'use during the stay':''],ok(7)):NS,7],
+     ['Rules',Object.values(S.prefs).filter(Boolean).join(' · ')||'None set',8],
+     ['Photos',line([`${pc} photo${pc===1?'':'s'}`,`${areasDone()} of ${AREAS.length} areas`,S.video&&'video'],ok(9)),9],
+     ['Verification',S.proof==='student'?'School email ✓':S.proof==='lease'?line([`School email ✓ · lease proof (${nOf(PROOF.length+(EDIT&&EDIT.proof||0),'file')})`],ok(10)):NS,10]
    ].map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
    ${grp('A note for the listing',ta('note','','e.g. I’m away for winter quarter. Quiet room with a proper desk.'),'optional · shows as a quote')}
    <p class="note">${EDIT?'Your changes show as soon as you save.':'Goes live as soon as you publish, with a listing number, and leaves search after the move-out day. Up to 3 listings at a time.'}</p>`}}];
@@ -686,7 +688,7 @@ function render(){
   liveRents();autosave()}
 /* the draft (see DRAFT_KEY): every answer but the files, plus how many files it had; saved a moment after each change */
 const draftState=()=>{const {photos,video,done,code,...rest}=S;
-  return Object.assign(rest,{files:{photos:Math.max(photoCount(),LOST.photos),video:S.video||LOST.video?1:0,proof:S.proof==='lease'?Math.max(PROOF.length,LOST.proof):LOST.proof}})};
+  return Object.assign(rest,{v:2,files:{photos:Math.max(photoCount(),LOST.photos),video:S.video||LOST.video?1:0,proof:S.proof==='lease'?Math.max(PROOF.length,LOST.proof):LOST.proof}})};
 let SAVE_T=0,SAVED=null;
 function saveDraft(){clearTimeout(SAVE_T);SAVE_T=0;if(S.done)return;
   try{const j=JSON.stringify(draftState());if(j!==SAVED){localStorage.setItem(DRAFT_KEY,j);SAVED=j;sessionStorage.removeItem(OLD_DRAFT)}}catch(_){}}
@@ -709,6 +711,7 @@ document.addEventListener('click',e=>{const t=e.target;
   if(t.closest('[data-save]')){SAVED='';saveDraft();location.href='index.html';return}
   const g=t.closest('[data-go]');if(g){const k=+g.dataset.go;if(k>S.step&&k>reach())return;S.step=k;render();return}
   /* a single choice; an optional one clears when tapped again */
+  const sh=t.closest('[data-one^="shuttle:"],[data-one^="route:"]');if(sh){const o=sh.dataset.one,[k,v]=o.split(':');S[k]=CLEARABLE.includes(k)&&S[k]===v?null:v;if(NEED&&!stillNeeded())NEED=null;$('[data-shuttle]').innerHTML=shuttleHtml();const b=$(`[data-one="${o}"]`);if(b&&e.detail===0)b.focus();syncDots();autosave();return}
   const set=t.closest('[data-set]')||t.closest('[data-one]');if(set){const [k,v]=(set.dataset.set||set.dataset.one).split(':');S[k]=CLEARABLE.includes(k)&&S[k]===v?null:v;if(k==='dep'&&v==='none')S.refund=null;render();return}
   const rf=t.closest('[data-refund]');if(rf){S.refund=rf.dataset.refund==='1';render();return}
   const pr=t.closest('[data-pref]');if(pr){const [k,v]=pr.dataset.pref.split(':');S.prefs[k]=S.prefs[k]===v?'':v;render();return}

@@ -1,0 +1,45 @@
+src/saves.ts
+  s_ac786895318dba::t_848bdd2ab92f4a 11,83-84,86-95
+src/chat.ts
+  s_ac786895318dba::t_edb8b0d84ab601 119,308-317,336,338-339,345,351-352,389,391-392,411,416,435,437-438,441,445-446
+src/roommap.ts
+  s_ac786895318dba::t_6805bb05fb694b 132-134,175
+  s_ac786895318dba::t_5918319da307e6 146
+public/when-picker.js
+  s_ac786895318dba::t_a7d5e61512094a 213
+  s_ac786895318dba::t_d5d07ae2e0dff6 241
+public/budget-picker.js
+  s_ac786895318dba::t_8cebc02865c24a 152,175,181
+src/requests.ts
+  s_ac786895318dba::t_46f25521f45d8c 102-104,108-110,133-134
+  s_ac786895318dba::t_84176c5c895c2a 135
+src/lib/place.test.ts
+  s_ac786895318dba::t_9d24e788603d3c 198
+  s_ac786895318dba::t_d9701db05d83cf 201-202
+  s_ac786895318dba::t_e5a7fb7f88cfe2 11
+src/lib/place.ts
+  s_ac786895318dba::t_1f1784a7e39325 274-275,280,285,304-307
+src/rentlet.ts
+  s_ac786895318dba::t_d136bb38020920 264-267,275-287
+src/profile.ts
+  s_ac786895318dba::t_98b5f6faad68dd 23,291-292
+src/listings.ts
+  s_ac786895318dba::t_69f69b9ced43eb 35,38,249
+  s_ac786895318dba::t_ca0673b2cff1a8 228-230,232-241
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "524e04ece334c65a256d9baf4db4d09a3dbd221b",
+  "prompts": {},
+  "sessions": {
+    "s_ac786895318dba": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a1c246-5239-736c-90e8-f6f529209077",
+        "model": "muse-ember-1.0"
+      },
+      "human_author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}

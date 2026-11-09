@@ -58,7 +58,7 @@ const CSS = `
 .hm-card:hover .hm-t{text-decoration:underline;text-underline-offset:3px}
 .hm-card:focus-visible{outline:2px solid #222;outline-offset:-2px}
 .hm-lock,.hm-lock body{overflow:hidden}
-.hm-full{position:fixed;inset:0;z-index:400;background:#f2f2f2}
+.hm-full{position:fixed;inset:0;z-index:400;background:#f2f2f2;animation:hmfull .34s cubic-bezier(.22,1,.36,1) backwards}
 .hm-full .hm-map{position:absolute!important;inset:0;width:auto;height:auto;border:0;border-radius:0} /* Leaflet set position:relative on the element when it was made */
 .hm-full .leaflet-top{top:env(safe-area-inset-top,0px)}
 .hm-full .leaflet-right{right:env(safe-area-inset-right,0px)}
@@ -72,7 +72,8 @@ const CSS = `
 .hm-sheet .hm-ph img{position:absolute;inset:0}
 .hm-sheet .hm-bd{padding:12px 14px}
 @keyframes hmup{from{opacity:0;transform:translateY(12px)}}
-@media (prefers-reduced-motion:reduce){.hm-pin .hm-pill{transition:none}.hm-sheet{animation:none}}
+@keyframes hmfull{from{opacity:0;transform:translateY(24px)}}
+@media (prefers-reduced-motion:reduce){.hm-pin .hm-pill{transition:none}.hm-sheet,.hm-full{animation:none}}
 `;
 
 function addCss(): void {
@@ -110,6 +111,7 @@ let lastSize = 0;
 let full: HTMLElement | null = null;
 let home: HTMLElement | null = null; // where the map lives on the page while it isn't full screen
 let opener: HTMLElement | null = null;
+let closing = false; // the full-screen map is fading out; it goes back to the page when that ends
 
 const sized = () => !!mapEl && mapEl.clientWidth > 0 && mapEl.clientHeight > 0;
 
@@ -292,7 +294,7 @@ function trap(e: KeyboardEvent): void {
 
 // Phones: the map full screen over the page, a close button top left; Escape or close returns focus.
 function open(from?: HTMLElement | null): void {
-  if (!map || !mapEl || full) return;
+  if (!map || !mapEl || full || closing) return;
   closeCard();
   opener = from ?? (document.activeElement as HTMLElement | null);
   home = mapEl.parentElement;
@@ -319,10 +321,20 @@ function close(refocus = true): void {
   const box = full;
   full = null;
   document.removeEventListener('keydown', trap, true);
-  if (mapEl && home && home.isConnected) home.appendChild(mapEl);
-  box.remove();
-  document.documentElement.classList.remove('hm-lock');
-  map?.invalidateSize({ animate: false });
+  const el = mapEl;
+  const back = () => {
+    closing = false;
+    if (el && home && home.isConnected) home.appendChild(el);
+    box.remove();
+    document.documentElement.classList.remove('hm-lock');
+    map?.invalidateSize({ animate: false });
+  };
+  // Closed by the person: a short fade, and the map goes home after it. Closed from code: at once.
+  if (refocus && !reducedMotion()) {
+    closing = true;
+    box.style.pointerEvents = 'none';
+    box.animate({ opacity: [1, 0], transform: ['none', 'translateY(18px)'] }, { duration: 220, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' }).finished.then(back, back);
+  } else back();
   if (refocus) {
     const back = opener?.isConnected ? opener : document.querySelector<HTMLElement>('[data-cxshowmap]');
     back?.focus({ preventScroll: true });

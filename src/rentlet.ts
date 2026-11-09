@@ -44,6 +44,7 @@ declare global {
       signOut(): Promise<void>;
       toast(message: string): void;
       report(listingId: string, reason: string, details: string): Promise<boolean>;
+      sendFeedback(note: { type: string; text: string; email: string }): Promise<boolean>;
       toggleSave(kind: SaveKind, id: string): Promise<boolean | null>;
     };
   }

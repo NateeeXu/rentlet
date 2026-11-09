@@ -48,7 +48,7 @@ const CSS = `
 .leaflet-container .leaflet-control-attribution{background:rgba(255,255,255,.88);color:#484848;font-size:11px;line-height:1.5;padding:2px 8px;border-top-left-radius:8px}
 .leaflet-container .leaflet-control-attribution a{color:#222}
 .leaflet-touch .leaflet-bar,.leaflet-bar{border:1px solid #dddddd;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:hidden;background-clip:padding-box}
-.leaflet-touch .leaflet-bar a,.leaflet-bar a{width:44px;height:44px;line-height:44px;font:400 20px/44px -apple-system,BlinkMacSystemFont,sans-serif;color:#222;border-bottom-color:#ebebeb}
+.leaflet-touch .leaflet-bar a,.leaflet-bar a{width:44px;height:44px;line-height:44px;font:400 20px/44px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#222;border-bottom-color:#ebebeb}
 .leaflet-bar a:hover{background:#f7f7f7;color:#222}
 .leaflet-bar a.leaflet-disabled{color:#b0b0b0;background:#fff}
 .rl-map-btn{display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:0;padding:0;border:1px solid #dddddd;border-radius:12px;background:#fff;color:#222;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer}

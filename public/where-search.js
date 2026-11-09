@@ -26,7 +26,7 @@
   const css = `
 .ws-in{display:block;width:100%;min-width:0;border:0;background:none;outline:0;padding:0;margin:0;font:inherit;color:inherit;text-overflow:ellipsis}
 .ws-in::placeholder{color:#9a9aa0}
-.ws-pop{position:absolute;z-index:200;width:min(380px,calc(100vw - 24px));padding:8px;border-radius:20px;background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.16),0 2px 6px rgba(30,25,40,.06);opacity:0;transform:translateY(-6px) scale(.98);transform-origin:20% 0;transition:opacity .18s,transform .3s cubic-bezier(.22,1,.36,1);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:#222;-webkit-font-smoothing:antialiased}
+.ws-pop{position:absolute;z-index:200;width:min(380px,calc(100vw - 24px));padding:8px;border-radius:20px;background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.16),0 2px 6px rgba(30,25,40,.06);opacity:0;transform:translateY(-6px) scale(.98);transform-origin:20% 0;transition:opacity .18s,transform .3s cubic-bezier(.22,1,.36,1);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#222;-webkit-font-smoothing:antialiased}
 .ws-pop.on{opacity:1;transform:none}
 .ws-pop[hidden]{display:none}
 .ws-lab{margin:4px 8px 2px;font-size:12px;font-weight:650;color:#717171}

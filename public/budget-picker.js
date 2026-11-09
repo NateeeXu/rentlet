@@ -18,7 +18,7 @@
 
   const css = `
 .bp-scrim{position:fixed;inset:0;z-index:299;background:transparent}
-.bp{position:absolute;z-index:300;width:min(440px,calc(100vw - 24px));border-radius:26px;background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.16),0 2px 6px rgba(30,25,40,.06);display:flex;flex-direction:column;max-height:calc(100vh - 24px);color:#222;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;text-align:left;opacity:0;transform:translateY(-6px);transition:opacity .18s,transform .18s;-webkit-user-select:none;user-select:none}
+.bp{position:absolute;z-index:300;width:min(440px,calc(100vw - 24px));border-radius:26px;background:rgba(255,255,255,.66);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.16),0 2px 6px rgba(30,25,40,.06);display:flex;flex-direction:column;max-height:calc(100vh - 24px);color:#222;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;text-align:left;opacity:0;transform:translateY(-6px);transition:opacity .18s,transform .18s;-webkit-user-select:none;user-select:none}
 .bp.on{opacity:1;transform:none}
 .bp button{font:inherit;color:inherit;cursor:pointer;margin:0}
 .bp-b{padding:20px 22px 8px;overflow:auto;min-height:0}

@@ -17,7 +17,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:#e6e6ea;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+body{background:#e6e6ea;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
 button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
@@ -41,7 +41,7 @@ button{cursor:pointer}
 /* site */
 .site{container-type:inline-size;background:var(--canvas);position:relative;overflow-x:clip;min-height:100vh}
 .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
-.hdr{background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:30;height:76px}
+.hdr{background:#fff;border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:30;height:76px}
 /* logo | search | actions: the search sits in the true centre while there is room; when it gets tight it moves
    off centre instead of closer to the right-end group, so the gap to Saved, Messages and the menu never drops below 20px */
 .hdr .wrap{display:grid;grid-template-columns:minmax(max-content,1fr) auto minmax(max-content,1fr);align-items:center;gap:20px;height:76px}
@@ -178,8 +178,6 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .ai-link span{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
 .ai-link:hover span{text-decoration-thickness:2px}
 .ai-link .ic{width:16px;height:16px}
-/* a backdrop filter inside a filtered header would only see the header, so the bar goes plain white while a panel is open */
-.hdr.flat{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}
 /* phones: the search pill is hidden, so a round AI pick sits in the bar's right cluster */
 .aipk.ai-m{display:none;margin:0}
 @keyframes aishim{from{background-position:100% 0}to{background-position:0 0}}
@@ -232,7 +230,7 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .titlebar h1{font-family:var(--serif);font-size:38px;font-weight:500;line-height:1.1;letter-spacing:-.6px;margin:0}
 /* a listing with a building name: the name is the title, and the room type sits beside it in a small pill */
 .titlebar h1.tn{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
-.tk{align-self:center;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;font-size:13px;font-weight:600;line-height:1.3;letter-spacing:0;color:var(--ink2);white-space:nowrap;padding:4px 11px;border-radius:99px;background:#fff;box-shadow:0 0 0 1px #e6e6ea}
+.tk{align-self:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:13px;font-weight:600;line-height:1.3;letter-spacing:0;color:var(--ink2);white-space:nowrap;padding:4px 11px;border-radius:99px;background:#fff;box-shadow:0 0 0 1px #e6e6ea}
 .titlebar p{margin:8px 0 0;font-size:15px;color:var(--ink2);display:flex;gap:4px 14px;align-items:baseline;flex-wrap:wrap}
 .tb-acts{grid-column:2;grid-row:2;justify-self:end;display:flex;gap:6px;margin-top:6px}
 .tb-acts .btn[aria-pressed=true] .ic{fill:var(--ink)}
@@ -475,14 +473,15 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .fflip.on .ff-in{transform:rotateY(180deg)}
 .ff{grid-area:1/1;min-width:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .ff.back{transform:rotateY(180deg)}
-.fflip:not(.sw) .ff.back,.fflip.sw .ff.front{height:0;overflow:visible;pointer-events:none}
+/* the side facing away is hidden outright: backface-visibility alone let it show through, mirrored, on some computers */
+.fflip:not(.sw) .ff.back,.fflip.sw .ff.front{height:0;overflow:visible;pointer-events:none;visibility:hidden}
 .ffh{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:-12px 0 -6px}
 .ffturn{display:inline-flex!important;align-items:center;gap:6px;width:auto!important;min-width:0;height:44px;margin:0 -6px 0 0;padding:0 6px 0 12px;border:0;border-radius:999px;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap;flex:none}
 .ffturn.bk{margin:0 0 0 -6px;padding:0 12px 0 6px}
 .ffturn:hover{background:#ececef}
 .ffturn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
 .ffturn:hover svg{transform:translateX(2px)}.ffturn.bk:hover svg{transform:translateX(-2px)}
-@media (prefers-reduced-motion:reduce){.ff-in{transition:none}.fflip.on .ff-in{transform:none}.ff.back{transform:none}.fflip:not(.sw) .ff.back,.fflip.sw .ff.front{visibility:hidden}}
+@media (prefers-reduced-motion:reduce){.ff-in{transition:none}.fflip.on .ff-in{transform:none}.ff.back{transform:none}}
 /* host */
 .host{display:flex;gap:12px;align-items:center;margin-top:14px}
 .host b{display:flex!important;align-items:center;gap:8px}
@@ -830,9 +829,9 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
 <div class="toast" id="toast" role="status"></div>
 <script>/* overlays live inside the stage so the phone preview shows them inside the frame */
 ["msg","lb","rep","login","toast"].forEach(id=>{const e=document.getElementById(id);if(e)document.getElementById("stage").appendChild(e)})</script>
-<script src="where-search.js?v=50645075"></script>
-<script src="when-picker.js?v=7860cfd6"></script>
-<script src="budget-picker.js?v=e44ece74"></script>
+<script src="where-search.js?v=a730c995"></script>
+<script src="when-picker.js?v=f5fa1089"></script>
+<script src="budget-picker.js?v=43431017"></script>
 <script>
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1024,11 +1023,11 @@ function aiHtml(picks,loading){const list=loading?Array.from({length:Math.max(1,
   return `<div class="ai-h"><div><b>Rooms that fit you</b><span>${WhenPicker.label(plan.start,plan.end)} · ${BudgetPicker.label(BUDGET).toLowerCase()}</span></div><button type="button" class="ai-x" data-aiclose aria-label="Close">${ic2('x')}</button></div>
   <div class="ai-list" aria-busy="${!!loading}">${list}</div>
   <div class="ai-f"><button type="button" class="ai-btn" data-aiagain${loading||!picks.length?' disabled':''}>Pick again</button><a class="ai-link" href="index.html"><span>Browse all rooms</span>${ic('arrow','sm')}</a></div>`}
-function openAi(again){if(aiBusy)return;closeSearch();const card=$('#aiCard'),sc=$('#aiScrim'),btns=[...document.querySelectorAll('[data-aipick]')];aiBusy=true;btns.forEach(b=>{b.classList.add('picking');b.setAttribute('aria-expanded','true')});$('.hdr').classList.add('flat');
+function openAi(again){if(aiBusy)return;closeSearch();const card=$('#aiCard'),sc=$('#aiScrim'),btns=[...document.querySelectorAll('[data-aipick]')];aiBusy=true;btns.forEach(b=>{b.classList.add('picking');b.setAttribute('aria-expanded','true')});
   const picks=aiPool();if(!again)aiCount=picks.length;
   const h=again?card.offsetHeight:0;card.innerHTML=aiHtml(picks,true);card.hidden=false;sc.hidden=false;if(again)card.style.height=h+'px';
   aiT=setTimeout(()=>{aiBusy=false;btns.forEach(b=>b.classList.remove('picking'));card.innerHTML=aiHtml(picks,false);if(!again){card.style.height='';card.style.height=card.offsetHeight+'px'}},reduced?0:600)}
-function closeAi(focus){const card=$('#aiCard');if(!card||card.hidden)return;clearTimeout(aiT);aiBusy=false;card.hidden=true;card.style.height='';$('#aiScrim').hidden=true;$('.hdr').classList.remove('flat');
+function closeAi(focus){const card=$('#aiCard');if(!card||card.hidden)return;clearTimeout(aiT);aiBusy=false;card.hidden=true;card.style.height='';$('#aiScrim').hidden=true;
   [...document.querySelectorAll('[data-aipick]')].forEach(b=>{b.classList.remove('picking');b.setAttribute('aria-expanded','false')});if(focus){const b=[...document.querySelectorAll('[data-aipick]')].find(x=>x.offsetParent);b&&b.focus({preventScroll:true})}}
 /* search: an 8-digit listing number (also inside pasted share text) opens that listing, as in the mini program;
    anything else filters the public fields (title, area, layout, type, listing number) */
@@ -1046,8 +1045,8 @@ function drawSearch(){const q=$('#sQ').value,r=searchRooms(q),L=$('#sList');sRes
   else if(!r.list.length)L.innerHTML=`<p class="snone"><b>Nothing matches “${q.trim().replace(/[<>&"]/g,'')}”</b><span>Try an area, a layout, or a listing number.</span></p>`;
   else L.innerHTML=`<p class="slab">${r.list.length} room${r.list.length>1?'s':''}</p>`+r.list.map(row).join('')}
 function markSel(){$$('#sList .sitem').forEach((a,i)=>{a.classList.toggle('on',i===sSel);a.setAttribute('aria-selected',i===sSel)})}
-function openSearch(){closeAi();const c=$('#sCard');c.hidden=false;$('.hdr').classList.add('flat');$$('[data-sopen]').forEach(b=>b.setAttribute('aria-expanded','true'));requestAnimationFrame(()=>c.classList.add('on'));drawSearch();setTimeout(()=>$('#sQ').focus(),30)}
-function closeSearch(){const c=$('#sCard');if(!c||c.hidden)return;c.classList.remove('on');$('.hdr').classList.remove('flat');$$('[data-sopen]').forEach(b=>b.setAttribute('aria-expanded','false'));setTimeout(()=>{if(!c.classList.contains('on'))c.hidden=true},reduced?0:220)}
+function openSearch(){closeAi();const c=$('#sCard');c.hidden=false;$$('[data-sopen]').forEach(b=>b.setAttribute('aria-expanded','true'));requestAnimationFrame(()=>c.classList.add('on'));drawSearch();setTimeout(()=>$('#sQ').focus(),30)}
+function closeSearch(){const c=$('#sCard');if(!c||c.hidden)return;c.classList.remove('on');$$('[data-sopen]').forEach(b=>b.setAttribute('aria-expanded','false'));setTimeout(()=>{if(!c.classList.contains('on'))c.hidden=true},reduced?0:220)}
 /* the header menu opening closes the search and AI cards, so two panels never overlap */
 addEventListener('rentlet:menu',()=>{closeAi();closeSearch()});
 /* Share (Founder, Nov 4: C). Shared links go through /r/<code>, whose page gives chat apps this room's photo,
@@ -1066,7 +1065,7 @@ function shareRoom(){const u=shareUrl(),line=shareLine();
   const q=$('#shQr');q.hidden=true;q.innerHTML='';$('#shr').classList.add('on');setTimeout(()=>$('#shRow .shi').focus(),50)}
 /* What stays / House rules: turn the block over; the side away from you is inert, and focus follows the turn */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ffturn]');if(!b)return;const f=b.closest('.fflip'),on=!f.classList.contains('on'),fr=f.querySelector('.ff.front'),bk=f.querySelector('.ff.back');
-  f.classList.toggle('on',on);setTimeout(()=>f.classList.toggle('sw',on),reduced?0:120);fr.inert=on;bk.inert=!on;fr.querySelector('[data-ffturn]').setAttribute('aria-expanded',on);
+  f.classList.toggle('on',on);setTimeout(()=>f.classList.toggle('sw',on),reduced?0:80);fr.inert=on;bk.inert=!on;fr.querySelector('[data-ffturn]').setAttribute('aria-expanded',on);
   setTimeout(()=>(on?bk:fr).querySelector('[data-ffturn]').focus({preventScroll:true}),reduced?0:160)});
 /* the room's campus by name, never the stored id: toRoom's schoolName, else the id (or name) matched in where-search.js */
 const campusOf=v=>{const t=plainTx(v),r=((window.WhereSearch&&WhereSearch.SCHOOLS)||[]).find(x=>x[0]===t||x[1]===t);return r?r[1]:''};

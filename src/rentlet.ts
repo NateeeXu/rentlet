@@ -91,7 +91,7 @@ function toast(message: string) {
     el.setAttribute('aria-live', 'polite');
     el.style.cssText =
       'position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:1000;' +
-      'max-width:calc(100vw - 32px);padding:12px 18px;border-radius:14px;background:#222;color:#fff;font:600 14px/1.45 -apple-system,BlinkMacSystemFont,sans-serif;' +
+      'max-width:calc(100vw - 32px);padding:12px 18px;border-radius:14px;background:#222;color:#fff;font:600 14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;' +
       'box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .2s';
     document.body.appendChild(el);
   }

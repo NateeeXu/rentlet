@@ -967,11 +967,13 @@ const NSTOPS=['Shuttle','Transit'];
 const nb={cat:'Schools',mode:'Walk',on:0};
 const nIc=(c,sz=16)=>`<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NEAR[c].ic}</svg>`;
 /* whether this room belongs on the Shuttle map, from what the host said about the shuttle at this address */
+const shuttleOff=()=>(ROOM.shuttle||{}).s==='not_covered';
 const shuttleCover=()=>{const c=ROOM.shuttle||{},on=c.s==='covered',t=on?`On the Shuttle map${c.route?` · ${c.route}`:''}`:c.s==='not_covered'?'Shuttle map not applicable':'Shuttle map: ask the host',i=`<svg viewBox="0 0 24 24" aria-hidden="true">${ICON2.shuttle}</svg>`;
   return on?`<a class="nb-cov" href="shuttle.html">${i}${t}</a>`:`<span class="nb-cov no">${i}${t}</span>`};
 /* rows come from src/roommap.ts: the campus, the nearest shuttle stops, and the places saved with the listing */
 function nearList(){return window.RentletRoomMap?RentletRoomMap.rows(nb.cat,ROOM):[]}
 function nearNote(L){if(L.length)return '';
+  if(nb.cat==='Shuttle'&&shuttleOff())return `<p class="nb-note"><b>No shuttle at this address</b>The host says the campus shuttle doesn’t cover it.</p>`;
   if(nb.cat==='Shuttle')return `<p class="nb-note"><b>No campus shuttle stop nearby</b>The nearest Northwestern shuttle stop is more than a 20-minute walk away. <a href="shuttle.html">See the shuttle map</a></p>`;
   const st=window.RentletRoomMap?RentletRoomMap.placesState(ROOM):'loading';
   if(st==='loading')return `<div class="nb-wait" role="status" aria-label="Finding places nearby">${[0,1,2].map(()=>'<div class="nb-sk"><i class="sk nb-sh nb-sq"></i><span><i class="sk nb-sh"></i><i class="sk nb-sh nb-short"></i></span><i class="sk nb-sh nb-min"></i></div>').join('')}</div>`;
@@ -982,7 +984,7 @@ const NX=8/3,NY=7/3,nP=([x,y])=>[+(x*NX).toFixed(1),+(y*NY).toFixed(1)];
 function nearMap(){return `<div class="nb-lf" id="nbMap"></div><span class="nb-cap">Exact spot · street address after you both agree</span>`}
 const nearBody=()=>{const L=nearList();if(nb.on>=L.length)nb.on=0;
   const stops=NSTOPS.includes(nb.cat),mode=stops?'Walk':nb.mode;
-  return `<div class="nb-h"><div><h2>Getting around</h2><p class="nb-sub">${shuttleCover()}${stops?`<span>Walking time from the room to each stop.${nb.cat==='Shuttle'?' <a href="shuttle.html">Live shuttle map</a>':''}</span>`:''}</p></div><div class="nb-modes" role="group" aria-label="How you get there"${stops?' hidden':''}>${Object.keys(NMODE).map(m=>`<button type="button" data-nmode="${m}" aria-pressed="${m===mode}">${m}</button>`).join('')}</div></div>
+  return `<div class="nb-h"><div><h2>Getting around</h2><p class="nb-sub">${shuttleCover()}${stops&&!(nb.cat==='Shuttle'&&shuttleOff())?`<span>Walking time from the room to each stop.${nb.cat==='Shuttle'?' <a href="shuttle.html">Live shuttle map</a>':''}</span>`:''}</p></div><div class="nb-modes" role="group" aria-label="How you get there"${stops?' hidden':''}>${Object.keys(NMODE).map(m=>`<button type="button" data-nmode="${m}" aria-pressed="${m===mode}">${m}</button>`).join('')}</div></div>
   <div class="nb-box"><div class="nb-cats" role="tablist" aria-label="Place types">${Object.keys(NEAR).map(c=>`<button type="button" role="tab" data-ncat="${c}" aria-selected="${c===nb.cat}">${nIc(c)}${c}</button>`).join('')}</div>
     <div class="nb-map">${nearMap()}</div>
     <div class="nb-list">${L.map((x,i)=>`<button type="button" class="nb-row${i===nb.on?' on':''}" data-non="${i}"><span class="nb-i">${nIc(nb.cat,15)}</span><span class="nb-t"><b>${x.n}</b><small>${x.sub} · ${x.mi} mi</small></span><em>${NMODE[mode](x.w)} min</em></button>`).join('')}${nearNote(L)}</div></div>`};

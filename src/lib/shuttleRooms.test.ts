@@ -68,6 +68,13 @@ describe('along the route', () => {
     expect(alongRoute([evanston], ['loop-a'])[0].stop.stop.name).toBe('Noyes L');
     expect(alongRoute([evanston], ['to-chicago'])).toHaveLength(1);
   });
+
+  it('leaves out a room whose host says the shuttle does not cover it', () => {
+    const near = { lat: WARD.lat, lng: WARD.lng };
+    expect(alongRoute([{ ...near, shuttle: 'covered' }], ['to-evanston'])).toHaveLength(1);
+    expect(alongRoute([{ ...near, shuttle: 'unknown' }], ['to-evanston'])).toHaveLength(1);
+    expect(alongRoute([{ ...near, shuttle: 'not_covered' }], ['to-evanston'])).toHaveLength(0);
+  });
   it('gives each room the nearest stop of the shown directions', () => {
     const [r] = alongRoute([{ lat: NOYES.lat, lng: NOYES.lng + 0.0003 }], ['to-chicago', 'to-evanston']);
     expect(r.stop.stop.name).toBe('Noyes L');

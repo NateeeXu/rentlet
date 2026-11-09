@@ -27,6 +27,7 @@ interface RoomLike {
   walk?: number | null;
   location?: { lat: number; lng: number } | null;
   near?: NearItem[] | null;
+  shuttle?: { s: string } | null;
 }
 
 export interface Row {
@@ -118,6 +119,7 @@ export function rows(cat: Cat, room: RoomLike): Row[] {
     return [{ n, sub, w: room.walk ?? walkingMinutes(m), mi: miles(m * 1.3), lat: c[0], lng: c[1] }];
   }
   if (cat === 'Shuttle') {
+    if (room.shuttle?.s === 'not_covered') return []; // the host's answer: no stops, no route lines
     return nearestStops(p, { limit: 3, maxMeters: 1600 }).map((s) => ({
       n: esc(s.stop.name),
       sub: `${LINES[DIRECTIONS[s.direction].line].label} · ${DIRECTIONS[s.direction].label}`,

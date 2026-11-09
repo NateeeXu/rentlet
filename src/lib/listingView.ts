@@ -336,6 +336,7 @@ export function toCard(d: ListingDoc) {
     createdAtMs: created ?? 0,
     lat: spot ? spot.lat : null,
     lng: spot ? spot.lng : null,
+    shuttle: form.shuttle === 'covered' || form.shuttle === 'not_covered' ? form.shuttle : 'unknown',
   };
 }
 

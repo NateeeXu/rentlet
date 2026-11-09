@@ -36,16 +36,19 @@ export function viewParam(line: LineId, view: View): string {
 export interface Spot {
   lat: number | null;
   lng: number | null;
+  shuttle?: string; // the host's answer; 'not_covered' keeps a room off the Shuttle map
 }
 
 export type AlongRoute<T> = T & { lat: number; lng: number; stop: NearStop };
 
 // The rooms along the route of `directions` (NEAR_STOP_METERS above), in the order given, each with its
-// nearest stop of those directions (straight-line meters and an estimated walk in minutes).
+// nearest stop of those directions (straight-line meters and an estimated walk in minutes). A room whose
+// host says the shuttle doesn't cover it is left out, however close it is.
 export function alongRoute<T extends Spot>(rooms: T[], directions: DirectionId[], maxMeters = NEAR_STOP_METERS): AlongRoute<T>[] {
   if (!directions.length) return [];
   const out: AlongRoute<T>[] = [];
   for (const r of rooms) {
+    if (r.shuttle === 'not_covered') continue;
     const { lat, lng } = r;
     if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng)) continue;
     const stop = nearestStops({ lat, lng }, { directions, limit: 1, maxMeters })[0];

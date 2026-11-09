@@ -664,7 +664,8 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .cx-showmap{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:auto!important;min-width:0;flex:0 0 auto;height:48px;margin:0;padding:0 20px;border:0;border-radius:999px;background:var(--ink);color:#fff;font-size:15px;font-weight:650;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.22);cursor:pointer;pointer-events:auto;transition:transform .18s}
 .cx-showmap:active{transform:scale(.97)}
 .cx-showmap .ic{width:18px;height:18px}
-/* All rooms: Where | When | Budget in one glass bar, the sort menu, Grid / Map (the same module as listings.html) */
+/* All rooms: Where | When | Budget in one glass bar, the sort menu, Grid / Map */
+.cx-near{scroll-margin-top:72px}
 .cx-near .cx-card{transform-origin:0 0}
 .cx-near .cx-grid.moving{position:relative;z-index:2;pointer-events:none}
 .rm-bar{position:relative;z-index:10;display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 22px}
@@ -867,7 +868,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=82905b94"></script>
+<script src="/rentlet-boot.js?v=4acfa549"></script>
 </head>
 <body>
 
@@ -1271,7 +1272,7 @@ const CXFAQ=[['Is Rentlet a broker?','No. Rentlet is a place for students to pos
 const cxFaq=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-sh"><div><h2>FAQ</h2></div><button type="button" class="cx-lnk" onclick="location.href='how-it-works.html#faq'">More questions</button></div><div class="cx-faq">${CXFAQ.map((f,i)=>`<details ${i?'':'open'}><summary>${f[0]}</summary><p>${f[1]}</p></details>`).join('')}</div></div></section>`;
 const cxFooter=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers near Northwestern.</p></div>
-  <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="listings.html">All rooms</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></div>
+  <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="/?rooms=1">All rooms</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></div>
   <div><h4>Post</h4><a href="post.html">Post a listing</a><a href="request.html">Post a request</a><a href="profile.html">Your listings</a></div>
   <div><h4>Areas</h4><a href="index.html">Northwestern Evanston</a><a href="index.html">Northwestern Chicago</a></div>
   <div><h4>About</h4><a href="how-it-works.html">Safety &amp; rules</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="#feedback" data-rl-feedback>Send feedback</a></div></div>
@@ -1681,6 +1682,10 @@ cardStyle=new URLSearchParams(location.search).get('cs')||'chip';$$('[data-cs]')
 const wantAi=false; /* AI pick is taken down for now; ?ai=1 no longer starts it */
 window.RL_onAuth=()=>show(current,true);
 let booted=false;const boot=()=>{if(booted)return;booted=true;if(location.hash)renderRoute();else show(current)};
+/* All rooms in the header, menu and footers (/?rooms=1): the section on this page */
+const toRooms=smooth=>{const r=$('.cx-near');if(r)r.scrollIntoView({behavior:smooth&&!reduced?'smooth':'auto',block:'start'})};
+if(/[?&]rooms=1/.test(location.search)){history.replaceState(null,'',location.pathname+location.hash);setTimeout(()=>toRooms(false),500);setTimeout(()=>toRooms(false),1600)}
+document.addEventListener('click',e=>{const a=e.target&&e.target.closest&&e.target.closest('a[href="/?rooms=1"]');if(a){e.preventDefault();toRooms(true)}});
 /* the room page's search button lands here with ?find=1: go straight to the results for that search */
 if(/[?&]find=1/.test(location.search)){history.replaceState(null,'',location.pathname+location.hash);
   const toRes=()=>{const r=document.getElementById('res');if(r)r.scrollIntoView({block:'start'})};setTimeout(toRes,500);setTimeout(toRes,1600)}

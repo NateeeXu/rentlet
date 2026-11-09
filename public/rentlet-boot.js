@@ -93,7 +93,7 @@
       /* Requests and Post a listing stay in sight in every header (Founder, Nov 4); the forms leave them out.
          Below 900px they live only in the menu. */
       var top = here === 'post' || here === 'request' ? ''
-        : '<a class="rl-top rl-all" href="listings.html"' + (here === 'listings' ? ' aria-current="page"' : '') + '>All rooms</a>'
+        : '<a class="rl-top rl-all" href="/?rooms=1">All rooms</a>'
           + '<a class="rl-top" href="requests.html"' + (here === 'requests' ? ' aria-current="page"' : '') + '>Requests</a>'
           + '<a class="rl-top rl-post" href="post.html">Post a listing</a>';
       if (!window.RL.authed) return top;
@@ -114,7 +114,7 @@
       };
       var n = R.unread || 0;
       var req = opts.requests ? '<span class="rl-n">' + esc(opts.requests) + '<span class="rl-sr"> ' + (opts.requests == 1 ? 'match' : 'matches') + ' for your listing</span></span>' : '';
-      var pages = link('listings.html', 'All rooms') + link('requests.html', 'Requests', '', req) + link('shuttle.html', 'Shuttle')
+      var pages = link('/?rooms=1', 'All rooms') + link('requests.html', 'Requests', '', req) + link('shuttle.html', 'Shuttle')
         + '<button type="button" data-rl-feedback>Send feedback</button>';
       var items = R.authed
         ? link('post.html', 'Post a listing', 'rl-b') + link('request.html', 'Post a request', 'rl-b') + '<hr>'

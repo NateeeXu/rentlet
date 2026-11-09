@@ -768,7 +768,31 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 @media (prefers-reduced-motion:reduce){.cx-swap>*{animation:none}.cx-seg .ind,.cx-card .cfx{transition:none}}
 
 /* Rentlet: no rooms at this place yet */
-.h-a4 .reel.none,.h-a4 .reel.none~.reel-ctl{visibility:hidden}
+.h-a4 .reel.none,.h-a4 .reel-shell.none~.reel-ctl{visibility:hidden}
+/* the homepage strip, moved by hand (Founder, Nov 9, option C): drag or swipe the cards, a thin position bar under them, arrows only under a mouse */
+.reel-shell{position:relative}
+.h-a4 .reel-track{touch-action:pan-y pinch-zoom;-webkit-user-select:none;user-select:none;cursor:grab}
+.reel-shell .sq{-webkit-touch-callout:none}
+.reel-shell.dragging .reel-track,.reel-shell.dragging .sq{cursor:grabbing}
+.reel-arr{display:none;position:absolute;top:calc(50% - 32px);z-index:3;box-sizing:border-box;width:44px;height:44px;margin:0;padding:0;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;-webkit-appearance:none;appearance:none;color:#17151f;background:#fff;border:1px solid rgba(255,255,255,.72);box-shadow:0 8px 22px -6px rgba(20,16,40,.32)}
+.reel-arr svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.reel-arr.prev{left:calc(50% - 50vw + 24px)}
+.reel-arr.next{right:calc(50% - 50vw + 24px)}
+.reel-arr:active{transform:scale(.94)}
+@media (hover:hover) and (pointer:fine){
+  .reel-arr{display:flex;opacity:0;transition:opacity .18s var(--ease),transform .18s var(--ease)}
+  .reel-shell:hover .reel-arr,.reel-arr:focus-visible{opacity:1}
+}
+.reel-prog{position:absolute;left:50%;top:calc(100% + 12px);width:176px;height:6px;margin-left:-88px;border-radius:999px;overflow:hidden;background:rgba(23,21,31,.14);pointer-events:none}
+/* the bar is one loop of the rooms: the thumb leaves the right end and comes back in from the left */
+.reel-prog i{position:absolute;left:0;top:0;bottom:0;width:25%;border-radius:999px;background:rgba(23,21,31,.8)}
+.reel-prog i::after{content:"";position:absolute;top:0;bottom:0;left:var(--back,-400%);width:100%;border-radius:999px;background:inherit}
+.reel-shell.none .reel-arr,.reel-shell.none .reel-prog,.reel-shell.few .reel-arr,.reel-shell.few .reel-prog,.reel-shell.busy .reel-arr,.reel-shell.busy .reel-prog{visibility:hidden}
+@container (max-width:860px){
+  .reel-arr{top:calc(50% - 53px)}
+  .reel-prog{top:auto;bottom:23px;width:120px;margin-left:-60px}
+}
+@media (prefers-reduced-motion:reduce){.reel-arr{transition:none}}
 .reel-none{position:relative;z-index:2;max-width:420px;margin:96px auto 0;text-align:center}
 .reel-none p{margin:0 0 16px;font-size:16px;color:var(--ink2)}
 .reel-none[hidden]{display:none}
@@ -777,12 +801,12 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
    an element, or someone asks for less transparency, these stay solid. */
 :root{--gl-bg:linear-gradient(135deg,rgba(255,255,255,.62),rgba(255,255,255,.34));--gl-fx:blur(16px) saturate(1.8);--gl-bd:1px solid rgba(255,255,255,.72);--gl-sh:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(255,255,255,.2),0 8px 22px -6px rgba(20,16,40,.32);--gl-ink:#17151f}
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .h-a4 .sq .sq-chip,.cx-card .ctg,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle{color:var(--gl-ink);background:var(--gl-bg);-webkit-backdrop-filter:var(--gl-fx);backdrop-filter:var(--gl-fx);border:var(--gl-bd);box-shadow:var(--gl-sh)}
+  .h-a4 .sq .sq-chip,.cx-card .ctg,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle,.reel-arr{color:var(--gl-ink);background:var(--gl-bg);-webkit-backdrop-filter:var(--gl-fx);backdrop-filter:var(--gl-fx);border:var(--gl-bd);box-shadow:var(--gl-sh)}
   .cx-shuttle:hover{background:linear-gradient(135deg,rgba(255,255,255,.8),rgba(255,255,255,.55))}
   /* several lines of small text, so a little more white behind them */
   .cx-card .cfx{background:linear-gradient(135deg,rgba(255,255,255,.76),rgba(255,255,255,.56));-webkit-backdrop-filter:var(--gl-fx);backdrop-filter:var(--gl-fx);border:var(--gl-bd);box-shadow:var(--gl-sh)}
 }
-@media (prefers-reduced-transparency:reduce){.h-a4 .sq .sq-chip,.cx-card .ctg,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle,.cx-card .cfx{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media (prefers-reduced-transparency:reduce){.h-a4 .sq .sq-chip,.cx-card .ctg,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle,.cx-card .cfx,.reel-arr{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
@@ -1232,7 +1256,10 @@ function heroOrbit(){
       <div class="go4"><button type="button" class="ai4" id="spin4" aria-label="Let AI pick three rooms"><span class="sheen" aria-hidden="true"></span><span class="ic">${SPARK}</span><span class="t">AI pick</span></button><button type="submit" class="find4" aria-label="Find rooms">${ic('search','sm')}<span class="t">Search</span></button></div>
       <span class="spec" aria-hidden="true"></span>
     </form>
-    <div class="reel" id="reel" data-style="chip" role="region" aria-label="Rooms near campus"><div class="reel-plane"><div class="reel-track">${a4Track()}</div></div></div>
+    <div class="reel-shell" id="reelShell"><div class="reel" id="reel" data-style="chip" role="region" aria-label="Rooms near campus"><div class="reel-plane"><div class="reel-track">${a4Track()}</div></div></div>
+      <button type="button" class="reel-arr prev" id="reelPrev" aria-label="Previous rooms"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button type="button" class="reel-arr next" id="reelNext" aria-label="Next rooms"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      <div class="reel-prog" aria-hidden="true"><i></i></div></div>
     <div class="reel-none" id="reelNone" hidden><p>No rooms near <span data-ncamp>${schoolName(plan.school)}</span> yet.</p><button type="button" class="btn btn-secondary" onclick="location.href='post.html'">Post a listing</button></div>
     <div class="reel-ctl"><button class="icon-btn" id="reelBtn" aria-label="Pause moving cards">${ic('pause')}</button></div>
     <div class="search-wrap" id="searchWrap" hidden>${searchBlock()}</div>
@@ -1240,19 +1267,22 @@ function heroOrbit(){
 }
 function bindOrbit(){
   cancelAnimationFrame(window.__orbRAF);
-  const hero=$('#a4'),bar=$('#bar4'),reel=$('#reel'),track=$('.reel-track',reel),btn=$('#reelBtn'),fly=$('#fly4');
-  const st={paused:reduced,hover:false,spinning:false,picked:false,x:0};
+  const hero=$('#a4'),bar=$('#bar4'),reel=$('#reel'),shell=$('#reelShell'),track=$('.reel-track',reel),thumb=$('.reel-prog i',shell),btn=$('#reelBtn'),fly=$('#fly4');
+  const st={paused:reduced,hover:false,focus:false,spinning:false,picked:false,x:0};
   if(reduced)btn.innerHTML=ic('play');
   btn.onclick=()=>{st.paused=!st.paused;btn.innerHTML=ic(st.paused?'play':'pause');btn.setAttribute('aria-label',st.paused?'Play moving cards':'Pause moving cards')};
-  reel.addEventListener('mouseenter',()=>st.hover=true);reel.addEventListener('mouseleave',()=>st.hover=false);
+  /* on the shell, so that resting on an arrow also holds the strip still; a finger never counts as hovering */
+  shell.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch')st.hover=true});shell.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')st.hover=false});
+  shell.addEventListener('focusin',e=>{st.focus=e.target.matches(':focus-visible')});shell.addEventListener('focusout',()=>{st.focus=false});
 
   /* reel geometry is rebuilt whenever the campus changes */
-  let items,half,step;
-  const measure=()=>{items=$$('.sq',track);const n=roomsHere().length;reel.classList.toggle('none',!n);const none=$('#reelNone');if(none){none.hidden=!!n;$('[data-ncamp]',none).textContent=schoolName(plan.school)}if(!n){half=1;step=1;return}half=items[n].offsetLeft-items[0].offsetLeft;step=half/n};
-  const wrapX=x=>((x%half)+half)%half-half,place=()=>{track.style.transform=`translateX(${st.x}px)`};
+  let items,half,step,count=0,edges=[],thumbF=.25;
+  const measure=()=>{items=$$('.sq',track);const n=roomsHere().length;count=n;reel.classList.toggle('none',!n);shell.classList.toggle('none',!n);shell.classList.toggle('few',n<2);const none=$('#reelNone');if(none){none.hidden=!!n;$('[data-ncamp]',none).textContent=schoolName(plan.school)}if(!n){half=1;step=1;edges=[];return}half=items[n].offsetLeft-items[0].offsetLeft;step=half/n;
+    edges=items.slice(0,n).map(c=>c.offsetLeft-items[0].offsetLeft);thumbF=Math.min(.4,Math.max(.14,1/n));thumb.style.width=thumbF*100+'%';thumb.style.setProperty('--back',-100/thumbF+'%')};
+  const wrapX=x=>((x%half)+half)%half-half,place=()=>{track.style.transform=`translateX(${st.x}px)`;thumb.style.transform=`translateX(${-wrapX(st.x)/half/thumbF*100}%)`};
   track.style.animation='none';measure();st.x=-step*.4;place();
   function swapCampus(){redrawHead();savePlan(plan.start,plan.end);if(flying)closeFly(true);reel.classList.remove('reel-swap');void reel.offsetWidth;if(!reduced)reel.classList.add('reel-swap');
-    setTimeout(()=>{track.innerHTML=a4Track();measure();st.x=-step*.4;place()},reduced?0:250)}
+    setTimeout(()=>{track.innerHTML=a4Track();measure();st.x=-step*.4;place();glide=nudge=fling=null;if(drag)endDrag()},reduced?0:250)}
 
   /* the search bar: friendly values on top, native pickers underneath */
   const setV=(k,t)=>{$(`[data-v="${k}"]`,bar).textContent=t};
@@ -1305,12 +1335,46 @@ function bindOrbit(){
 
   /* calm idle: rest, then glide one card */
   const inout=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2,outq=t=>1-Math.pow(1-t,4);
-  let glide=null,rest=performance.now();
+  let glide=null,nudge=null,fling=null,drag=null,dragged=false,busy=false,rest=performance.now(),last=rest,restMs=3000;
+  const NUDGE_MS=520;
   function tick(now){
-    if(!st.paused&&!st.hover&&!st.spinning&&!st.picked&&!reduced){if(!glide&&now-rest>3000)glide={from:st.x,t0:now};
-      if(glide){const p=Math.min(1,(now-glide.t0)/1100);st.x=wrapX(glide.from-step*inout(p));place();if(p>=1){glide=null;rest=now}}}
+    const dt=Math.min(40,now-last),b=st.spinning||st.picked;last=now;
+    if(b!==busy){busy=b;shell.classList.toggle('busy',b);if(b){nudge=fling=null;if(drag)endDrag()}}
+    if(!b&&!drag){
+      if(nudge){const p=Math.min(1,(now-nudge.t0)/NUDGE_MS);st.x=wrapX(nudge.from+(nudge.to-nudge.from)*outq(p));place();if(p>=1){nudge=null;rest=now}}
+      else if(fling){st.x=wrapX(st.x+fling.v*dt);place();fling.v*=Math.exp(-dt/320);if(Math.abs(fling.v)<.03){fling=null;rest=now}}
+      else if(!st.paused&&!st.hover&&!st.focus&&!reduced){if(!glide&&now-rest>restMs){glide={from:st.x,t0:now};restMs=3000}
+        if(glide){const p=Math.min(1,(now-glide.t0)/1100);st.x=wrapX(glide.from-step*inout(p));place();if(p>=1){glide=null;rest=now}}}
+      else if(glide){glide=null;rest=now}} /* held mid-glide: stop where it is, so nothing jumps when the hold ends */
     window.__orbRAF=requestAnimationFrame(tick)}
   window.__orbRAF=requestAnimationFrame(tick);
+
+  /* arrows: land the next card's left edge just inside the strip's edge fade; they work while paused and leave pause alone */
+  const FADE_END=64;
+  function snapDelta(dir,base){const pad=parseFloat(getComputedStyle(track).paddingLeft)||0,pm=((FADE_END-pad-wrapX(base))%half+half)%half;
+    if(dir>0){const e=edges.find(v=>v>pm+1);return-((e===undefined?edges[0]+half:e)-pm)}
+    let e;for(let i=edges.length-1;i>=0&&e===undefined;i--)if(edges[i]<pm-1)e=edges[i];return pm-(e===undefined?edges[edges.length-1]-half:e)}
+  function press(dir){if(st.spinning||st.picked||count<2)return;measure();
+    const now=performance.now(),base=nudge?nudge.to:st.x,d=snapDelta(dir,base);glide=fling=null;rest=now;restMs=6000;
+    if(reduced){st.x=wrapX(st.x+d);place();return}
+    const from=nudge?nudge.from+(nudge.to-nudge.from)*outq(Math.min(1,(now-nudge.t0)/NUDGE_MS)):st.x;nudge={from,to:base+d,t0:now}}
+  $('#reelPrev').onclick=()=>press(-1);$('#reelNext').onclick=()=>press(1);
+
+  /* drag and swipe: the pointer is captured only once it has really moved, because capturing on press would stop the cards opening */
+  const endDrag=()=>{drag=null;shell.classList.remove('dragging')};
+  track.addEventListener('pointerdown',e=>{if(e.button!==0||st.spinning||st.picked||(drag&&drag.moved))return;dragged=false;measure();glide=nudge=fling=null;
+    drag={id:e.pointerId,x0:e.clientX,y0:e.clientY,sx:st.x,moved:false,lx:e.clientX,lt:e.timeStamp,v:0}});
+  track.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id)return;const dx=e.clientX-drag.x0,dy=e.clientY-drag.y0;
+    if(!drag.moved){if(Math.max(Math.abs(dx),Math.abs(dy))<6)return;if(Math.abs(dy)>Math.abs(dx)){drag=null;return}
+      drag.moved=dragged=true;drag.x0=drag.lx=e.clientX;drag.sx=st.x;drag.lt=e.timeStamp;shell.classList.add('dragging');try{track.setPointerCapture(e.pointerId)}catch{}return}
+    st.x=wrapX(drag.sx+dx);place();
+    const ms=e.timeStamp-drag.lt;if(ms>0){drag.v=.7*(e.clientX-drag.lx)/ms+.3*drag.v;drag.lx=e.clientX;drag.lt=e.timeStamp}});
+  track.addEventListener('pointerup',e=>{if(!drag||e.pointerId!==drag.id)return;const d=drag;endDrag();if(!d.moved)return;rest=performance.now();restMs=6000;
+    if(!reduced&&e.timeStamp-d.lt<100&&Math.abs(d.v)>.15)fling={v:Math.max(-3,Math.min(3,d.v))}});
+  track.addEventListener('pointercancel',e=>{if(!drag||e.pointerId!==drag.id)return;if(drag.moved){rest=performance.now();restMs=6000}endDrag()});
+  track.addEventListener('pointerleave',e=>{if(drag&&!drag.moved&&e.pointerId===drag.id)drag=null});
+  track.addEventListener('dragstart',e=>e.preventDefault());
+  track.addEventListener('click',e=>{if(dragged){e.preventDefault();e.stopPropagation();dragged=false}},true);
 
   /* AI pick: draw three from the best-fitting rooms, slide fast, then fly them out into a lineup */
   let flying=null;

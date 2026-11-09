@@ -1,0 +1,19 @@
+.github/workflows/main.yml
+  s_2068ec2e33c8d3::t_0d0f5844943c9c 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5015305479c1c67ac156ef41d1172e5637454864",
+  "prompts": {},
+  "sessions": {
+    "s_2068ec2e33c8d3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a1c222-4eae-7758-b5f0-5dfb1b0b5e4a",
+        "model": "glm-5.3-flash"
+      },
+      "human_author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}

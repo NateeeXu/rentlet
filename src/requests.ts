@@ -99,9 +99,15 @@ export async function myListings(): Promise<MatchListing[]> {
     .sort((a, b) => b.createdAtMs - a.createdAtMs);
 }
 
+// One publish at a time: a double-tap must not run the replace below twice.
+let publishing = false;
+
 // Posts the request. One request per person: it lives at requests/{your uid}, so posting again
 // replaces the one you have up. (Found with a query: the rules refuse a get on a missing request.)
 export async function publishRequest(form: RequestForm): Promise<{ id: string; replaced: boolean }> {
+  if (publishing) throw new RequestError('failed');
+  publishing = true;
+  try {
   const u = await signedInUser();
   if (!u) throw new RequestError('signin');
   const built = buildRequest(form, { uid: u.uid, photo: u.photoURL ?? '' }, todayISO());
@@ -123,6 +129,9 @@ export async function publishRequest(form: RequestForm): Promise<{ id: string; r
     return { id: u.uid, replaced };
   } catch {
     throw new RequestError('failed');
+  }
+  } finally {
+    publishing = false;
   }
 }
 

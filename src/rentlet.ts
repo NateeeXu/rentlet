@@ -261,6 +261,10 @@ function watchSaves(uid: string | null) {
   });
 }
 
+// One toggle per item at a time: a second tap while a write is in flight joins the first instead of
+// racing it and flipping the heart the wrong way.
+const saving = new Map<string, Promise<boolean | null>>();
+
 // Saves or removes; signs the visitor in first when needed. Returns whether it is saved afterwards,
 // or null when nothing changed (not signed in, or the write failed and was rolled back).
 async function toggleSave(kind: SaveKind, id: string): Promise<boolean | null> {
@@ -268,6 +272,19 @@ async function toggleSave(kind: SaveKind, id: string): Promise<boolean | null> {
     toast('This can’t be saved.');
     return null;
   }
+  const key = `${kind}:${id}`;
+  const inFlight = saving.get(key);
+  if (inFlight) return inFlight;
+  const run = toggleSaveInner(kind, id);
+  saving.set(key, run);
+  try {
+    return await run;
+  } finally {
+    saving.delete(key);
+  }
+}
+
+async function toggleSaveInner(kind: SaveKind, id: string): Promise<boolean | null> {
   if (!auth.currentUser && !(await signIn())) return null;
   const u = auth.currentUser;
   if (!u) return null;

@@ -116,6 +116,7 @@ let activeDocs: ListingDoc[] = [];
 const uploads = new Map<string, Upload[]>();
 const sendLog = new Map<string, number[]>(); // per conversation: when each message went out
 const photoLog = new Map<string, number[]>();
+const sending = new Set<string>(); // one send per conversation at a time: a double-tap must not send twice
 let openId: string | null = null;
 let msgSubId: string | null = null;
 let unsubList: Unsubscribe | null = null;
@@ -304,16 +305,21 @@ async function writeMessage(id: string, conv: Conv | null, body: Body, keys: Set
 }
 
 // The mini program's per-conversation limits, kept here in the browser: 12 messages in 10 seconds
-// (every kind), and 6 photos a minute.
-function allowed(id: string, photo: boolean): 'ok' | 'limit' | 'photos' {
+// (every kind), and 6 photos a minute. Check and record are separate: only a message that actually
+// went out may use up the quota, so a failed write does not lock the person out of trying again.
+function checkAllowed(id: string, photo: boolean): 'ok' | 'limit' | 'photos' {
+  const now = Date.now();
+  if (!underLimit(sendLog.get(id) ?? [], now, SEND_LIMIT)) return 'limit';
+  if (photo && !underLimit(photoLog.get(id) ?? [], now, PHOTO_LIMIT)) return 'photos';
+  return 'ok';
+}
+
+function recordSent(id: string, photo: boolean): void {
   const now = Date.now();
   const sent = sendLog.get(id) ?? [];
   const shots = photoLog.get(id) ?? [];
-  if (!underLimit(sent, now, SEND_LIMIT)) return 'limit';
-  if (photo && !underLimit(shots, now, PHOTO_LIMIT)) return 'photos';
   sendLog.set(id, [...sent.filter((t) => now - t < SEND_LIMIT.ms), now]);
   if (photo) photoLog.set(id, [...shots.filter((t) => now - t < PHOTO_LIMIT.ms), now]);
-  return 'ok';
 }
 
 const isBlocked = (c: Conv, uid: string) => !!(c.blocked[uid] || c.blocked[otherOf(c, uid)]);
@@ -327,18 +333,23 @@ async function send(id: string, raw: string, keys: SettleKey[] = [], replyId: st
   if (!conv) return 'failed';
   if (isBlocked(conv, me.uid)) return 'blocked';
   const quoted = replyId ? (msgs.get(id) ?? []).find((m) => m.id === replyId && m.kind !== 'recalled') : null;
-  const gate = allowed(id, false);
+  const gate = checkAllowed(id, false);
   if (gate !== 'ok') return gate;
+  if (sending.has(id)) return 'limit';
+  sending.add(id);
   try {
     if (draft && !convs.has(id)) {
       await createConversation(id, draft.listing, conv.hostId, conv.guestId, conv.names, conv.photos);
     }
     await writeMessage(id, conv, textBody(text, quoted ? replyTo(quoted) : null), keys);
+    recordSent(id, false);
     drafts.delete(id);
     watchMessages();
     return 'ok';
   } catch {
     return 'failed';
+  } finally {
+    sending.delete(id);
   }
 }
 
@@ -375,8 +386,10 @@ async function sendPhoto(id: string, file: File): Promise<SendResult> {
   if (!conv) return 'failed'; // a draft: the first message is text
   if (isBlocked(conv, uid)) return 'blocked';
   if (!PHOTO_TYPES.includes(file.type)) return 'type';
-  const gate = allowed(id, true);
+  const gate = checkAllowed(id, true);
   if (gate !== 'ok') return gate;
+  if (sending.has(id)) return 'limit';
+  sending.add(id);
   const up: Upload = { id: `up${++uploadSeq}`, url: URL.createObjectURL(file), w: 0, h: 0, pct: 0 };
   const list = () => uploads.get(id) ?? [];
   uploads.set(id, [...list(), up]);
@@ -395,10 +408,12 @@ async function sendPhoto(id: string, file: File): Promise<SendResult> {
     await task;
     const url = await getDownloadURL(task.snapshot.ref);
     await writeMessage(id, convs.get(id) ?? conv, imageBody(url, w, h), []);
+    recordSent(id, true);
     return 'ok';
   } catch {
     return 'failed';
   } finally {
+    sending.delete(id);
     uploads.set(id, list().filter((u) => u !== up));
     if (!uploads.get(id)?.length) uploads.delete(id);
     URL.revokeObjectURL(up.url);
@@ -417,13 +432,18 @@ async function sendListing(id: string, code: string): Promise<SendResult> {
   const L = myListings().find((d) => d.code === code);
   if (!conv || !L) return 'failed';
   if (isBlocked(conv, me.uid)) return 'blocked';
-  const gate = allowed(id, false);
+  const gate = checkAllowed(id, false);
   if (gate !== 'ok') return gate;
+  if (sending.has(id)) return 'limit';
+  sending.add(id);
   try {
     await writeMessage(id, conv, listingBody(listingCard(L)), []);
+    recordSent(id, false);
     return 'ok';
   } catch {
     return 'failed';
+  } finally {
+    sending.delete(id);
   }
 }
 

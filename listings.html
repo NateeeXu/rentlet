@@ -376,6 +376,8 @@ function update(anim=true){
   if(anim&&!first)flip(paint);else paint();
   painted=true;
   if(shown()==='map')ensureMap();
+  /* on wide screens the map is drawn ahead of time, while the page is idle, so its tiles are there for the first switch */
+  else if(hasPins&&wide()&&!mapOn)(window.requestIdleCallback||setTimeout)(ensureMap);
   drawPins();save()}
 
 /* a request filled in from what is on screen */

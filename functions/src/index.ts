@@ -173,3 +173,5 @@ export { mapTile } from './tiles.js';
 export { sharePreview } from './share.js';
 // real walk / bike / drive routes from a listing to a nearby place (GET /api/route)
 export { routeLine } from './route.js';
+// an email when someone messages you and you haven't opened the chat
+export { emailOnMessage } from './notify.js';

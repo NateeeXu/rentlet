@@ -60,7 +60,7 @@ declare global {
 }
 
 const page = (patch: Record<string, unknown>) => window.RLP?.update(patch);
-const EMPTY = { profile: null, listings: null, requests: null, contact: null };
+const EMPTY = { profile: null, listings: null, requests: null, contact: null, notify: null };
 const RECENT_MS = 4 * 60_000; // Firebase asks for a fresh sign-in before deleting an account after about 5 minutes
 
 let uid: string | null = null;
@@ -152,6 +152,7 @@ function start(u: User) {
     ),
   );
   loadContact(my, u.uid);
+  loadNotify(my, u.uid);
 }
 
 async function loadContact(my: number, id: string) {
@@ -162,6 +163,16 @@ async function loadContact(my: number, id: string) {
     page({ contact: { ...contact } });
   } catch {
     if (my === gen) page({ contact: 'error' });
+  }
+}
+
+// Email about new messages is on unless it was turned off.
+async function loadNotify(my: number, id: string) {
+  try {
+    const d = (await getDoc(doc(db, 'users', id, 'private', 'notifications'))).data() ?? {};
+    if (my === gen) page({ notify: { email: d.emailMessages !== false } });
+  } catch {
+    if (my === gen) page({ notify: 'error' });
   }
 }
 
@@ -301,6 +312,11 @@ const api = {
     await setDoc(doc(db, 'users', u.uid, 'private', 'contact'), next);
     contact = next;
     return { ...next, changed: true };
+  },
+
+  async saveEmailPref(on: boolean): Promise<void> {
+    const u = need();
+    await setDoc(doc(db, 'users', u.uid, 'private', 'notifications'), { emailMessages: on });
   },
 
   // Deletes everything the person owns, then the sign-in itself. Call it straight from the tap: when

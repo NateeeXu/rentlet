@@ -44,6 +44,25 @@ typed address gets its area from the text, and publishing still works.
 To rotate the key, set the secret again and redeploy. To check that it works, sign in on the site, open
 Post a listing → Where is it?, and type a street address: suggestions should appear under the field.
 
+## Message emails
+
+`emailOnMessage` runs on each new message in `conversations/{cid}/messages/{mid}`. It waits 30 seconds, then emails
+the other person if they still haven't read it, at most once per chat until they open it. Muted chats, blocked
+people and anyone who turned it off in Profile get nothing. `notifyState/{cid}_{uid}` records the last email and is
+out of reach of the site. It needs two secrets, set by the founder in their own terminal from the repository root:
+
+```bash
+npx firebase-tools functions:secrets:set GMAIL_USER --project rentlet-nu
+```
+
+```bash
+npx firebase-tools functions:secrets:set GMAIL_APP_PASSWORD --project rentlet-nu
+```
+
+`GMAIL_USER` is the full Gmail address. `GMAIL_APP_PASSWORD` is an app password from that Google account (2-Step
+Verification must be on, then Security → App passwords), not the account's own password. Recipients see this address
+as the sender, so a dedicated Gmail is better than a personal one. Then deploy `emailOnMessage` with the other functions.
+
 ## Develop
 
 ```bash

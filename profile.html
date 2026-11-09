@@ -286,7 +286,7 @@ const GOOGLE=`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d
    null = still loading, 'error' = could not load. */
 const me0=RL.authed&&RL.user?RL.user:null;
 const S={sheet:null,editName:false,active:'you',tmp:{},busy:{},
-  authed:!!me0,me:me0,profile:null,listings:null,requests:null,contact:null,
+  authed:!!me0,me:me0,profile:null,listings:null,requests:null,contact:null,notify:null,
   f:{instagram:'',cemail:''},csave:'',csaveErr:false};
 const ready=v=>v&&v!=='error';
 const nm=()=>(ready(S.profile)&&S.profile.name)||(S.me&&S.me.name)||'You';
@@ -356,8 +356,10 @@ function secContact(){const C=S.contact;
   <div class="grp"><span class="lbl">Email</span><label class="in"><input data-f="cemail" type="email" value="${esc(S.f.cemail)}" placeholder="you@example.com" autocomplete="email" maxlength="254" aria-label="Contact email"><span data-cestate>${cemailState()}</span></label><button type="button" class="lk" data-act="useNu" ${showUseNu()?'':'hidden'}>Use my school email</button></div>
   <p class="note">Never public. Shared only when you choose to share it in a conversation.</p>`}
 
-function secNotify(){
-  return `<p class="note" style="margin-top:0">Rentlet doesn’t send email or push notifications yet. Replies show up in Messages.</p><div class="acts"><a class="btn sec" href="messages.html">Open Messages</a></div>`}
+function secNotify(){const N=S.notify;
+  if(N===null)return loading('Loading your settings…');
+  if(N==='error')return failed('Couldn’t load this setting.');
+  return `<div class="tog" data-act="toggleEmail"><div><b id="ntfL">Email me about new messages</b><span>One email per chat until you open it. Muted chats never email.</span></div><button type="button" class="sw ${N.email?'':'off'}" id="ntfSw" role="switch" aria-checked="${N.email}" aria-labelledby="ntfL" data-act="toggleEmail"></button></div>`}
 
 function secAccount(){
   return `<div class="rows"><div class="row"><div class="rl"><b>Sign out</b><span>${nuEmail()?`Signed in as ${esc(nuEmail())}`:'On this device'}</span></div><span></span><div class="ra"><button type="button" class="btn sec" data-act="signout">Sign out</button></div></div>
@@ -496,6 +498,11 @@ document.addEventListener('click',e=>{const t=e.target;
   switch(act){
     case 'signin':RL.signIn();return;
     case 'retry':{const P=api();if(P)P.retry();return}
+    case 'toggleEmail':{const P=api(),N=S.notify;if(!P||!ready(N)||S.busy.notify)return;
+      /* the switch is repainted in place, so it keeps its focus */
+      const paint=on=>{S.notify={email:on};const s=$('#ntfSw');if(s){s.classList.toggle('off',!on);s.setAttribute('aria-checked',String(on))}};
+      const next=!N.email;paint(next);S.busy.notify=true;
+      P.saveEmailPref(next).catch(()=>{paint(!next);toast('Couldn’t save that. Try again.')}).finally(()=>{delete S.busy.notify});return}
     case 'editName':S.editName=true;S.tmp.name=nm();S.tmp.focusName=true;render();return;
     case 'cancelName':S.editName=false;S.tmp.name=null;render();return;
     case 'saveName':{const P=api();if(!P||S.busy.name)return;const n=(S.tmp.name||'').trim();if(!n){toast('First name can’t be empty.');return}

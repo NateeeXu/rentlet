@@ -41,6 +41,7 @@ export interface PostForm {
   campusId: CampusId;
   multi: { fees: string[]; amen: string[]; habits: string[]; items: string[] };
   prefs: Record<string, string>;
+  amenD?: Record<string, Record<string, string>>;
   f: Record<string, string>;
 }
 
@@ -190,6 +191,24 @@ const AMEN_KEY: Record<string, string> = {
   'Package room': 'package',
   Parking: 'parking',
 };
+// Optional details under an amenity on the post form, and the amenity each one describes on the room page.
+const AMEN_DETAIL = [
+  { key: 'laundry', room: 'washer', place: ['In unit', 'In building'], cost: ['Free', 'Paid'] },
+  { key: 'gym', room: 'gym', place: [] as string[], cost: ['Free', 'Paid'] },
+  { key: 'parking', room: 'parking', place: ['Indoor', 'Outdoor', 'Street'], cost: ['Free', 'Paid'] },
+];
+// "In unit · Free" for each amenity with details, keeping only the choices the form offers.
+function amenDetails(raw: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!isObj(raw)) return out;
+  for (const { key, room, place, cost } of AMEN_DETAIL) {
+    const d = own(raw, key) ? raw[key] : null;
+    if (!isObj(d)) continue;
+    const parts = [place.find((x) => x === d.place), cost.find((x) => x === d.cost)].filter(Boolean);
+    if (parts.length) out[room] = parts.join(' · ');
+  }
+  return out;
+}
 // House rules as the host chose them on the post form, in a fixed order, each with its category icon.
 const PREF_ORDER = ['Smoking', 'Pets', 'Cooking', 'Cleaning', 'Visitors'] as const;
 const PREF_ICON: Record<string, string> = { Smoking: 'smoking', Pets: 'pets', Cooking: 'cooking', Cleaning: 'cleaning', Visitors: 'visitors' };
@@ -332,6 +351,7 @@ export function toRoom(d: ListingDoc, today: string = localDay()) {
   const multi = { fees: strList(m.fees), amen: strList(m.amen), habits: strList(m.habits), items: strList(m.items) };
   const prefs = isObj(f.prefs) ? f.prefs : {};
   const pref = (c: string) => str(prefs[c]).trim();
+  const amenD = amenDetails(f.amenD);
   const text = (k: string) => str(ff[k]).trim();
   const code = layoutCode({ layout: f.layout, f: ff });
   const beds = bedrooms(code);
@@ -382,7 +402,7 @@ export function toRoom(d: ListingDoc, today: string = localDay()) {
       ],
       ['info-bathroom', f.bath === 'private' ? 'Own bath' : 'Shared bath', f.bath === 'private' ? 'Private' : mates ? `With ${mates} roommate${mates > 1 ? 's' : ''}` : 'Shared'],
       ['info-floor', floor ? `${ordinal(floor)} floor` : 'Floor', floorMore || (floor ? '' : 'Ask the host')],
-      ['wash', 'Laundry', multi.amen.includes('Washer & dryer') ? 'In the building' : 'Ask the host'],
+      ['wash', 'Laundry', multi.amen.includes('Washer & dryer') ? amenD.washer || 'In the building' : 'Ask the host'],
     ],
     sqft: sqft || null,
     // items with an icon on the room page, and the rest by name
@@ -411,6 +431,7 @@ export function toRoom(d: ListingDoc, today: string = localDay()) {
     orig: orig > price ? orig : 0,
     shuttle: shuttle === 'covered' ? { s: shuttle, route: html(str(f.route)) } : { s: shuttle },
     amen: multi.amen.filter((x) => own(AMEN_KEY, x)).map((x) => AMEN_KEY[x]),
+    amenD,
     furnished: f.furn === 'full' ? 'Fully furnished' : f.furn === 'part' ? 'Partly furnished' : 'Not furnished',
     extra: html(text('furnNote')),
     usage: html(text('ruleNote')),
@@ -423,9 +444,9 @@ export function toRoom(d: ListingDoc, today: string = localDay()) {
       guests: html(pref('Visitors') || 'Ask the host'),
       note: html(text('rmNote')),
     },
-    // only what something real backs: the school (.edu) sign-in, and a lease proof the host uploaded (in review).
-    // There is no separate landlord approval yet, so that mark is always "Not submitted".
-    ver: { student: 'ok', lease: f.proof === 'lease' ? 'pending' : 'none', landlord: 'none' },
+    // only what something real backs: the school (.edu) sign-in, and a lease proof the host sent. Nobody reviews
+    // that proof, and there is no landlord answer yet, so the room page must not show either as checked.
+    ver: { student: 'ok', lease: f.proof === 'lease' ? 'sent' : 'none', landlord: 'none' },
     // the map: the exact spot and the places saved with the listing (names are escaped when drawn)
     location: spotOf(r.location),
     near: nearOf(r.near),

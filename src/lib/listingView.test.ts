@@ -225,7 +225,7 @@ describe('room page answers', () => {
   });
   it('shows only verification something backs', () => {
     expect(toRoom(bare).ver).toEqual({ student: 'ok', lease: 'none', landlord: 'none' });
-    expect(toRoom({ ...bare, form: { ...required, proof: 'lease' } }).ver).toEqual({ student: 'ok', lease: 'pending', landlord: 'none' });
+    expect(toRoom({ ...bare, form: { ...required, proof: 'lease' } }).ver).toEqual({ student: 'ok', lease: 'sent', landlord: 'none' });
     expect(toRoom(listing).ver.landlord).toBe('none');
   });
   it('shows the view whether or not there is an elevator', () => {
@@ -319,6 +319,21 @@ describe('hostile values', () => {
     expect(r.furn).toEqual(['desk']);
     expect(r.furnMore).toEqual(['constructor', '__proto__']);
     expect(r.prefs).toEqual([]);
+  });
+
+  it('shows only the amenity details the form offers', () => {
+    const r = toRoom(
+      loose({
+        ...listing,
+        form: {
+          ...form,
+          multi: { ...form.multi, amen: ['Washer & dryer', 'Gym', 'Parking'] },
+          amenD: { laundry: { place: 'In unit', cost: 'Free' }, gym: { cost: '<b>' }, parking: { place: 'Outdoor' }, constructor: { cost: 'Free' } },
+        },
+      }),
+    );
+    expect(r.amenD).toEqual({ washer: 'In unit · Free', parking: 'Outdoor' });
+    expect(r.facts[3][2]).toBe('In unit · Free');
   });
   it('keeps numbers numbers and caps the roommates it draws', () => {
     const r = toRoom(loose({ ...listing, price: '<b>9</b>', walk: '5 min', form: { ...form, f: { ...form.f, rmN: '99999999' } } }));

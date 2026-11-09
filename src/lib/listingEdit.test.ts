@@ -45,6 +45,7 @@ describe('photosByArea', () => {
   it('drops anything that is not a link and survives missing lists', () => {
     expect(photosByArea(['javascript:x', 7], ['Bedroom']).bedroom).toEqual([]);
     expect(photosByArea(undefined, undefined).bedroom).toEqual([]);
+    expect(photosByArea(['https://a', 'https://b'], ['Bedroom', 'Amenities']).amenities).toEqual(['https://b']);
   });
 });
 

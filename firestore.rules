@@ -104,6 +104,7 @@ service cloud.firestore {
         && (!('f' in d.form) || d.form.f is map)
         && (!('multi' in d.form) || d.form.multi is map)
         && (!('prefs' in d.form) || d.form.prefs is map)
+        && (!('amenD' in d.form) || d.form.amenD is map)
         && (!('walk' in d) || d.walk == null || (d.walk is int && d.walk > 0 && d.walk < 1000))
         && (!('near' in d) || (d.near is list && d.near.size() <= 12))
         && (!('location' in d) || d.location == null

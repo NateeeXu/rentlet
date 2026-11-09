@@ -9,9 +9,10 @@ export const AREA_CAPTION: Record<string, string> = {
   bath: 'Bathroom',
   kitchen: 'Kitchen',
   building: 'Window or building',
+  amenities: 'Amenities',
 };
 // The order photos are stored in: the first bedroom photo is the listing's cover.
-export const AREA_ORDER = ['bedroom', 'living', 'kitchen', 'bath', 'building'];
+export const AREA_ORDER = ['bedroom', 'living', 'kitchen', 'bath', 'building', 'amenities'];
 
 // listings/{code}/private/location, which only the host can read.
 export interface PrivateLocation {
@@ -49,6 +50,7 @@ export function editState(l: ListingDoc, loc: PrivateLocation) {
     rent: l.price,
     multi: { fees: [], amen: [], habits: [], items: [], ...(form.multi ?? {}) },
     prefs: form.prefs ?? {},
+    amenD: form.amenD ?? {},
     photos: photosByArea(l.photos, l.captions),
     video: l.video ? 'Current video' : null,
     place:

@@ -322,6 +322,8 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .amen-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .amen-row span{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:6px 11px 6px 9px;border-radius:99px;background:#fff;box-shadow:0 0 0 1px #e6e6ea}
 .amen-row .ic{width:15px;height:15px;stroke-width:1.6}
+.amen-row small{font-size:12px;font-weight:500;color:var(--muted);margin-left:1px}
+.amen-row small::before{content:"· "}
 .amen-row span.off{color:var(--muted);background:transparent;box-shadow:0 0 0 1px #e6e6ea;font-weight:500;text-decoration:line-through;text-decoration-color:#b0b0b5}
 .amen-row span.off .ic{opacity:.5}
 /* gallery: a full-screen button and the video slide */
@@ -485,19 +487,14 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 /* host */
 .host{display:flex;gap:12px;align-items:center;margin-top:14px}
 .host b{display:flex!important;align-items:center;gap:8px}
-.host .marks{margin-left:auto}
-.marks{display:inline-flex;gap:4px}
-.vm{position:relative;width:26px!important;height:26px;min-width:0;margin:0;padding:0;border:0;border-radius:50%;background:var(--soft);color:var(--ink2);display:inline-flex;align-items:center;justify-content:center;cursor:default;transition:transform .25s var(--ease),background .2s}
-.vm .ic{width:14px;height:14px}
-.vm i{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;display:grid;place-items:center;box-shadow:0 0 0 2px #fff}
-.vm i svg{width:9px;height:9px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.vm.ok i{background:var(--ok)}.vm.wa i,.vm.pending i,.vm.more i{background:#e07912}.vm.rejected i{background:#c13515}.vm.none i{background:#b0b0b0}
-.vm.none .ic,.vm.rejected .ic{opacity:.55}
-.vm:hover,.vm:focus-visible{transform:translateY(-2px);background:#ececef}
-.vm::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);background:var(--ink);color:#fff;font-size:12px;font-weight:600;padding:4px 9px;border-radius:8px;width:max-content;max-width:190px;white-space:normal;text-align:center;line-height:1.35;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s var(--ease);z-index:5}
-.vm:hover::after,.vm:focus-visible::after,.vm.show::after{opacity:1;transform:translateX(-50%)}
-.marks .vm:last-child::after{left:auto;right:-6px;transform:translateY(4px)}
-.marks .vm:last-child:hover::after,.marks .vm:last-child:focus-visible::after,.marks .vm:last-child.show::after{transform:none}
+/* what has been checked, in words, under the title. Green is only for the school email */
+.trust{grid-column:1/-1;grid-row:3;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
+.tchip{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:6px 13px 6px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;font-weight:600;line-height:1.25;color:var(--ink);box-sizing:border-box}
+.tchip .ic{width:16px;height:16px;flex:none}
+.tchip.ok{background:#eaf5ee;border-color:#c5e3cf;color:#14632b}
+.tchip.none{background:transparent;color:var(--muted)}
+.tmore{display:inline-flex;align-items:center;min-height:34px;margin-left:4px;font-size:13px;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.trust .sk{height:34px;border-radius:99px}
 .safe{display:block;text-align:center;font-size:13px;margin-top:10px}
 .avatar{width:44px;height:44px;border-radius:99px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
 .host b{display:block;font-size:15px}.host span{font-size:13px;color:var(--muted)}
@@ -542,7 +539,6 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .site.flat .tri{column-gap:8px}
 .site.flat .panel.mid{padding-left:4px}.site.flat .panel.rgt{padding-right:4px}
 .site.flat .panel .blk{border-top-color:#e6e6ea}
-.site.flat .vm{background:#fff;box-shadow:0 0 0 1px #e6e6ea}
 .site.flat .facts4 div{border-left-color:#e2e2e6}
 .site.flat .billc .fa{background:none}
 .panel.rgt{padding-left:24px;padding-right:24px;border-radius:0 28px 28px 0;transform-origin:0 50%;border-left:1px dashed var(--hair)}
@@ -574,7 +570,7 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .facts4 img,.facts4 .ic{width:20px;height:20px;display:block;margin-bottom:9px}
 .facts4 img{filter:brightness(0);opacity:.86} /* the icon files come in different colours; show them all in ink */
 .lgb{position:relative;height:18px!important;width:18px!important;margin:-2px 0 -2px 2px!important} /* the (i) no longer pushes the first fact down */
-.lgb::before,.vm::before,.more-btn::before,.lcode::before{content:"";position:absolute;inset:-13px;border-radius:inherit}
+.lgb::before,.more-btn::before,.lcode::before{content:"";position:absolute;inset:-13px;border-radius:inherit}
 .lcode{position:relative}
 .more-btn::before{inset:-12px -8px} /* 44px hit areas around small controls */
 .more-btn{position:relative}
@@ -921,7 +917,7 @@ const bookCard=()=>{const L=(k,v)=>`<div class="rl"><span>${k}</span><i></i><b>$
   inc=ROOM.included?L(ROOM.included,'INCL.'):ROOM.rentOnly?L('Utilities','NOT INCL.'):'',
   dep=L(ROOM.refund?'Deposit*':'Deposit',ROOM.deposit===null?'ASK THE HOST':ROOM.deposit?money(ROOM.deposit):'NONE'),
   foot=[ROOM.refund==='yes'?'*refundable':ROOM.refund==='no'?'*non-refundable':'',ROOM.util===null?'':'~ estimated',`paid to ${ROOM.who}, not Rentlet`].filter(Boolean).join(' · ');
-  return `<div class="host"><div class="avatar">${ROOM.who[0]}</div><div style="min-width:0;flex:1"><b>${ROOM.who}<span class="marks">${marks()}</span></b><span>Verified school email</span></div></div>
+  return `<div class="host"><div class="avatar">${ROOM.who[0]}</div><div style="min-width:0;flex:1"><b>${ROOM.who}</b><span>Verified school email</span></div></div>
   <hr class="bk-hr"><div class="bk-pr"><b>${money(ROOM.price)}</b><small>/ mo</small>${ROOM.neg?'<span class="badge n bk-neg">Negotiable</span>':''}</div><p class="bk-save" data-bsave>${saveLine()}</p>
   <div class="bk-dates"><div><small>Move in</small><span>${d0}</span></div><div><small>Move out</small><span>${d1}</span></div></div>
   ${ended()?endedBox():`<button class="btn btn-primary bk-msg" data-msg>${ic('chat','sm')}Message ${ROOM.who}</button>
@@ -998,11 +994,10 @@ const furnTile=()=>`<div class="fflip"><div class="ff-in"><div class="ff front">
 const pplTile=()=>`<p class="tl">You’ll live with</p><button type="button" class="mates" data-mates aria-expanded="false" aria-controls="mdet"><span class="ppl">${ROOM.mates.map((m,i)=>`<i style="background:${['#3d3d45','#6a5a8c'][i%2]}">${m}</i>`).join('')}<i style="background:#ecebf0;color:var(--ink);font-size:11px">You</i></span><span class="msum"><b>${ROOM.mates.length} roommate${ROOM.mates.length>1?'s':''}</b><span>${[ROOM.mate.gender,ROOM.mate.identity].filter(Boolean).join(' · ')||'Ask the host about them'}</span></span>${ic2('down')}</button>
   <div class="mdet" id="mdet"><div><dl>${[['Schedule',ROOM.mate.schedule],['Cooking',ROOM.mate.cooking],['Cleaning',ROOM.mate.clean],['Guests',ROOM.mate.guests]].map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p>${ROOM.matesText}</p>${ROOM.mate.note?`<p class="mnote">${ROOM.mate.note}</p>`:''}</div></div>`;
 /* host + what we've checked, in one block: each check is a small mark beside the name (tap or hover for the words) */
-const VM={cap:'<path d="M2.5 9L12 4.5 21.5 9 12 13.5z"/><path d="M6.5 11v4.5c1.5 1.3 3.4 2 5.5 2s4-.7 5.5-2V11"/>',doc:'<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/>',key:'<circle cx="8" cy="15.5" r="3.8"/><path d="M10.8 12.7L19 4.5M16 7.5l2.5 2.5"/>'};
-const VST={ok:['Verified','<path d="M3 6.2l2 2 4-4.2"/>'],pending:['In review','<path d="M6 3.4V6l1.8 1.2"/>'],more:['More info needed','<path d="M6 3.5V6.5M6 8.6v.1"/>'],rejected:['Not approved','<path d="M4 4l4 4M8 4L4 8"/>'],none:['Not submitted','<path d="M3.8 6h4.4"/>']};
-const marks=()=>{const v=ROOM.ver,L=ROOM.type==='Lease takeover'?'takeover':'sublet';
-  return [['cap','student','School email (.edu)'],['doc','lease','Lease proof'],['key','landlord',`Landlord OK for the ${L}`]]
-  .map(([k,f,name])=>{const st=v[f],t=`${name}: ${VST[st][0].toLowerCase()}`;return `<button type="button" class="vm ${st}" data-tip="${t}" aria-label="${t}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${VM[k]}</svg><i aria-hidden="true"><svg viewBox="0 0 12 12">${VST[st][1]}</svg></i></button>`}).join('')};
+const VM={doc:'<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/>',key:'<circle cx="8" cy="15.5" r="3.8"/><path d="M10.8 12.7L19 4.5M16 7.5l2.5 2.5"/>'};
+/* Nobody reviews lease proof and Rentlet has no landlord answer, so neither may read as checked */
+const trustRow=()=>{const sent=(ROOM.ver||{}).lease==='sent',svg=p=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
+  return `<div class="trust"><span class="tchip ok">${ic('check')}School email verified</span><span class="tchip${sent?'':' none'}">${svg(VM.doc)}${sent?'Lease proof sent, not reviewed':'No lease proof yet'}</span><span class="tchip none">${svg(VM.key)}Landlord approval: ask the host</span><a class="tmore" href="how-it-works.html#verification">What this means</a></div>`};
 const factIcon=f=>f[0]==='wash'?ic('wash'):`<img src="img/icons/${f[0]}.svg" alt="">`;
 function moreCards(all){const list=Object.entries(ROOMS).filter(([k])=>all&&STATE!=='expired'&&STATE!=='removed'?true:k!==KEY).map(([k,R])=>({k,R,f:fitOf(R)})).filter(x=>x.f.k!=='no'&&x.R.price<=BUDGET*1.05).sort((a,b)=>(b.f.k==='ok')-(a.f.k==='ok')||b.f.ov-a.f.ov).slice(0,3);
   if(!list.length)return '<p class="mut">No other rooms fit these dates yet.</p>';
@@ -1082,7 +1077,7 @@ const byline=()=>`${ROOM.who}, the host`;
 const saveBtn=()=>{const c=String(ROOM.code||'');if(!/^[1-9][0-9]{7}$/.test(c))return '';
   const on=!!(window.RL&&typeof RL.isSaved==='function'&&RL.isSaved('room',c));
   return `<button type="button" class="btn btn-ghost btn-sm" data-rl-save="room:${c}" aria-pressed="${on}" aria-label="Save this room">${ic('heart','sm')}<span class="sv-off">Save</span><span class="sv-on">Saved</span></button>`};
-const titlebar=()=>`<div class="titlebar"><div>${ROOM.building?`<h1 class="tn"><span>${ROOM.building}</span><span class="tk">${ROOM.title}</span></h1>`:`<h1>${ROOM.title}</h1>`}<p class="t-sub"><span>${ROOM.area}</span><span>${ROOM.type}</span>${titleDates()}${ended()?'<span class="badge n t-end">Ended</span>':''}<button type="button" class="lcode" data-code="${ROOM.code}" aria-label="Copy listing number ${ROOM.code}">Listing #${ROOM.code}${ic2('copy')}</button></p></div><div class="tb-acts"><button class="btn btn-ghost btn-sm" data-share aria-label="Share this room">${ic('share','sm')}<span>Share</span></button>${saveBtn()}<button class="btn btn-ghost btn-sm" data-report aria-label="Report this listing">${ic2('flag')}<span>Report</span></button></div></div>`;
+const titlebar=()=>`<div class="titlebar"><div>${ROOM.building?`<h1 class="tn"><span>${ROOM.building}</span><span class="tk">${ROOM.title}</span></h1>`:`<h1>${ROOM.title}</h1>`}<p class="t-sub"><span>${ROOM.area}</span><span>${ROOM.type}</span>${titleDates()}${ended()?'<span class="badge n t-end">Ended</span>':''}<button type="button" class="lcode" data-code="${ROOM.code}" aria-label="Copy listing number ${ROOM.code}">Listing #${ROOM.code}${ic2('copy')}</button></p></div><div class="tb-acts"><button class="btn btn-ghost btn-sm" data-share aria-label="Share this room">${ic('share','sm')}<span>Share</span></button>${saveBtn()}<button class="btn btn-ghost btn-sm" data-report aria-label="Report this listing">${ic2('flag')}<span>Report</span></button></div>${trustRow()}</div>`;
 const below=()=>`<div class="below"><details><summary>Room details ${ic('down')}</summary><div class="in">${ROOM.facts.map(f=>f[2]?`${f[1]} (${f[2]})`:f[1]).join(' · ')}.</div></details><details><summary>About ${ROOM.type==='Lease takeover'?'taking over the lease':'this sublet'} ${ic('down')}</summary><div class="in">${ROOM.type==='Lease takeover'?`You take over ${ROOM.who}’s lease until ${mdy(ROOM.end)}. The landlord signs the transfer; ask about any transfer fee.`:`You sublet from ${ROOM.who} until ${mdy(ROOM.end)}. ${ROOM.who} stays on the lease.`}</div></details><details><summary>Safety ${ic('down')}</summary><div class="in">Never pay before you’ve seen the room and the lease. <button class="chip" data-report>Report this listing</button></div></details></div>`;
 /* an ended listing has no Message here either: the bar says when it ended and leads back to search */
 const dock=()=>`<div class="dock"><div class="dock-in"><div class="dp"><b>${money(ROOM.price)}</b><span>/ mo</span><small>${ended()?`Ended ${mdy(ROOM.end)}`:span(ROOM.start,ROOM.end)}</small></div>${ended()?`<a class="btn btn-secondary btn-sm" href="index.html">Search rooms</a>`:`<button class="btn btn-primary btn-sm" data-msg>${ic('chat','sm')}<span>Message<span class="dk-who"> ${ROOM.who}</span></span></button>`}</div></div>`;
@@ -1090,7 +1085,7 @@ const page=()=>`${head()}<main class="wrap f2">${titlebar()}<div class="tri-wrap
   <div class="panel mid">${gallery()}
     <div class="thumbs">${MEDIA().map((m,i)=>`<button class="${i?'':'on'} ${m.t==='video'?'vid':''}" data-thumb="${i}" aria-label="Show ${m.cap}"><img src="${m.t==='img'?m.src:m.poster}" alt="" class="${m.flip?'flip':''}">${m.t==='video'?`<span class="vb">${ic2('play')}</span>`:''}</button>`).join('')}</div>
     <div class="about"><div class="facts4">${ROOM.facts.map((f,i)=>{const sub=i?f[2]:[f[1]===ROOM.layout?'':f[1],f[2]].filter(Boolean).join(' · '),sp=sub?`<span>${sub}</span>`:'';return i?`<div>${factIcon(f)}<b>${f[1]}</b>${sp}</div>`:`<div class="lgc">${factIcon(f)}<b>${ROOM.layout}<button type="button" class="lgb" data-layout aria-expanded="false" aria-label="How to read ${ROOM.layout}">${ic2('info')}</button></b>${sp}<div class="lgpop" role="dialog" aria-label="How to read ${ROOM.layout}"><b>How to read ${ROOM.layout}</b><p>${LAYOUT_EN[ROOM.layout]||LAYOUT_RULE}</p><p>${ROOM.layout==='Studio'?LAYOUT_RULE:LAYOUT_EN.Studio}</p>${ROOM.sqft?`<p>${ROOM.sqft} sq ft is about ${Math.round(ROOM.sqft*0.093)} m². 1 sq ft ≈ 0.093 m².</p>`:''}</div></div>`}).join('')}</div>
-    ${ROOM.amen.length?`<div class="amen"><p class="tl">In the building</p><div class="amen-row">${AMEN.map(([k,l,d])=>{const on=ROOM.amen.includes(k);return `<span class="${on?'':'off'}" title="${on?l:l+': not available'}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>${l}${on?'':'<em class="sr">, not available</em>'}</span>`}).join('')}</div></div>`:''}${ROOM.about?`<blockquote class="hquote" aria-label="A note from ${ROOM.who}, the host"><p class="clamp" data-clamp>“${ROOM.about}”</p><button type="button" class="more-btn" data-more>Read more</button><cite>${byline()}</cite></blockquote>`:''}</div>${FILL==="A"?"":`<div class="blk fblk">${furnTile()}</div>${ROOM.mates.length?`<div class="blk pblk">${pplTile()}</div>`:''}`}</div>
+    ${ROOM.amen.length?`<div class="amen"><p class="tl">In the building</p><div class="amen-row">${[...AMEN.filter(a=>ROOM.amen.includes(a[0])),...AMEN.filter(a=>!ROOM.amen.includes(a[0]))].map(([k,l,d])=>{const on=ROOM.amen.includes(k),x=on&&(ROOM.amenD||{})[k];return `<span class="${on?'':'off'}" title="${on?l:l+': not available'}"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>${l}${x?`<small>${x}</small>`:''}${on?'':'<em class="sr">, not available</em>'}</span>`}).join('')}</div></div>`:''}${ROOM.about?`<blockquote class="hquote" aria-label="A note from ${ROOM.who}, the host"><p class="clamp" data-clamp>“${ROOM.about}”</p><button type="button" class="more-btn" data-more>Read more</button><cite>${byline()}</cite></blockquote>`:''}</div>${FILL==="A"?"":`<div class="blk fblk">${furnTile()}</div>${ROOM.mates.length?`<div class="blk pblk">${pplTile()}</div>`:''}`}</div>
   <div class="panel rgt"><div class="blk bookc">${bookCard()}</div>${FILL==="A"?`<div class="blk fblk">${furnTile()}</div>${ROOM.mates.length?`<div class="blk pblk">${pplTile()}</div>`:''}`:""}</div>
 </div></div>
 ${ROOM.location&&window.RentletRoomMap?nearSection():''}
@@ -1134,7 +1129,7 @@ const stIcon=k=>`<span class="st-ic"><svg viewBox="0 0 24 24" aria-hidden="true"
 const skB=(w,h=13,x='')=>`<i class="sk sk-b" style="width:${w};height:${h}px;${x}"></i>`;
 const skN=(n,f)=>Array.from({length:n},f).join('');
 const loadingView=()=>`${head()}<main class="wrap f2 sk-page" role="status" aria-busy="true" aria-label="Loading this room">
-<div class="titlebar" aria-hidden="true"><div><h1>${skB('min(520px,78%)',30,'border-radius:9px')}</h1><p>${skB('130px')}${skB('92px')}${skB('150px')}${skB('112px')}</p></div><div class="tb-acts">${skN(3,()=>'<i class="sk sk-act"></i>')}</div></div>
+<div class="titlebar" aria-hidden="true"><div><h1>${skB('min(520px,78%)',30,'border-radius:9px')}</h1><p>${skB('130px')}${skB('92px')}${skB('150px')}${skB('112px')}</p></div><div class="tb-acts">${skN(3,()=>'<i class="sk sk-act"></i>')}</div><div class="trust">${[168,150,216].map(w=>`<i class="sk" style="width:${w}px"></i>`).join('')}</div></div>
 <div class="tri-wrap" aria-hidden="true"><div class="tri">
   <div class="panel mid"><div class="sqr gal sk"></div>
     <div class="thumbs">${skN(6,()=>'<i class="sk"></i>')}</div>
@@ -1227,7 +1222,6 @@ document.addEventListener('click',e=>{const t=e.target;
   if(t.closest('[data-report]')){gate('report',()=>{if(!repBusy){$$('#rep input[name=rr]').forEach(r=>r.checked=false);$('#repTx').value='';$('#repGo').disabled=true}$('#rep').classList.add('on')});return}
   if(t.closest('#repGo')){sendReport();return}
   const mo=t.closest('[data-more]');if(mo){const p=$('[data-clamp]'),o=p.classList.toggle('open');mo.textContent=o?'Show less':'Read more';return}
-  const vm=t.closest('.vm');if(vm){vm.classList.add('show');clearTimeout(vm._t);vm._t=setTimeout(()=>vm.classList.remove('show'),1800);return}
   if(t.closest('[data-close]')||t.classList.contains('ov'))$$('.ov').forEach(o=>o.classList.remove('on'))});
 /* Report: src/rentlet.ts stores the reason and details for the owner to review (signed in only; the gate above
    asks first). The sheet closes and thanks the reporter only once the report is stored; otherwise it stays open. */

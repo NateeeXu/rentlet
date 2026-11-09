@@ -67,6 +67,14 @@ h2.q{font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.5p
 .opt .tk{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);flex:none;display:grid;place-items:center;font-size:11px;color:#fff}
 .opt.on .tk{background:var(--ink);border-color:var(--ink)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
+.ad{margin-top:16px;border-top:1px solid #ececef}
+.ad-r{display:grid;grid-template-columns:132px minmax(0,1fr);gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #ececef}
+.ad-r b{font-size:14px;font-weight:650}
+.ad-c{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ad-c .g{display:flex;flex-wrap:wrap;gap:6px}
+.ad-c .g+.g{padding-left:10px;border-left:1px solid #dedee3}
+.ad-n{margin:10px 0 0;font-size:13px;color:var(--muted)}
+@media (max-width:560px){.ad-r{grid-template-columns:1fr;gap:8px}.ad-c .g+.g{padding-left:0;border-left:0}}
 .chip{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:600;display:inline-flex;align-items:center;cursor:pointer;-webkit-user-select:none;user-select:none}
 .chip:hover{border-color:#b8b8bd}
 .chip.on,.chip.on:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -203,9 +211,9 @@ const S={step:0,done:false,f:{},
   subletType:null,transferChannel:null,dep:null,refund:null,map:true,hasRoommates:null,gender:null,shuttle:null,route:null,layout:null,
   start:null,end:null,act:'in',rent:null,orig:null,unit:null,bath:null,furn:null,neg:null,view:null,terms:null,proof:null,
   campus:'',campusId:null,video:null,
-  multi:{fees:[],amen:[],habits:[],items:[]},
+  multi:{fees:[],amen:[],habits:[],items:[]},amenD:{},
   prefs:{},
-  photos:{bedroom:[],living:[],bath:[],kitchen:[],building:[]}};
+  photos:{bedroom:[],living:[],bath:[],kitchen:[],building:[],amenities:[]}};
 /* edit mode (post.html?edit={listing number}, from Profile): the same steps, filled in from the published listing.
    state: loading, ok, signin, denied, missing or error. An edit never reads or writes the draft. */
 const EDIT_PARAM=new URLSearchParams(location.search).get('edit'),EDIT_OK=/^[1-9][0-9]{7}$/.test(EDIT_PARAM||'');
@@ -224,7 +232,7 @@ if(!EDIT)try{let raw=localStorage.getItem(DRAFT_KEY);if(!raw){raw=sessionStorage
   if(d&&typeof d==='object'){const {files,photos,...rest}=d,fl=files||{};
     LOST={photos:+fl.photos||0,video:fl.video||rest.video?1:0,proof:+fl.proof||0};
     Object.assign(S,rest,{done:false,map:true,video:null});
-    if(!S.f||typeof S.f!=='object')S.f={};if(!S.prefs||typeof S.prefs!=='object')S.prefs={};
+    if(!S.f||typeof S.f!=='object')S.f={};if(!S.prefs||typeof S.prefs!=='object')S.prefs={};if(!S.amenD||typeof S.amenD!=='object'||Array.isArray(S.amenD))S.amenD={};
     S.multi=Object.assign({fees:[],amen:[],habits:[],items:[]},S.multi);for(const k in S.multi)if(!Array.isArray(S.multi[k]))S.multi[k]=[]}}catch(_){}
 const money=v=>'$'+v.toLocaleString('en-US');
 const val=(k,d)=>k in S.f?S.f[k]:d;
@@ -307,6 +315,9 @@ const multi=(g,list)=>list.map(t=>chip(t,S.multi[g].includes(t),`data-multi="${g
 /* optional single choices: tapping the chosen one again clears it */
 const CLEARABLE=['view','neg','route','gender'];
 /* key: the answer this group holds, so a missing-answer line can find it and focus its first control */
+const amenDetails=()=>{const on=AMEN_D.filter(([n])=>S.multi.amen.includes(n));if(!on.length)return '';
+  return `<div class="ad">${on.map(([n,k,groups])=>`<div class="ad-r"><b>${esc(n)}</b><div class="ad-c">${groups.map(([g,list])=>`<span class="g">${list.map(v=>chip(v,(S.amenD[k]||{})[g]===v,`data-amend="${k}:${g}:${v}"`)).join('')}</span>`).join('')}</div></div>`).join('')}</div><p class="ad-n">Details are optional.</p>`};
+const amenLine=()=>S.multi.amen.map(n=>{const a=AMEN_D.find(x=>x[0]===n),d=a&&S.amenD[a[1]],v=d?a[2].map(([g])=>d[g]).filter(Boolean):[];return esc(n)+(v.length?` (${v.join(', ')})`:'')}).join(' · ');
 const grp=(label,inner,small='',key='')=>`<div class="grp"${key?` data-need="${key}"`:''}><span class="lbl">${label}${small?`<small>${small}</small>`:''}</span>${inner}</div>`;
 const inp=(k,d,u='',pre='',ph='',ex='')=>`<label class="in">${pre?`<span class="pre">${pre}</span>`:''}<input value="${esc(val(k,''))}" placeholder="${esc(ph||d)}" data-f="${k}" ${ex}>${u?`<span class="u">${u}</span>`:''}</label>`;
 const ta=(k,d,ph='')=>`<label class="in ta"><textarea rows="2" placeholder="${esc(ph||d)}" data-f="${k}">${esc(val(k,''))}</textarea></label>`;
@@ -329,6 +340,8 @@ function syncDates(s,e){document.querySelectorAll('[data-side-t=in]').forEach(x=
 const LAYOUTS=['Studio','1B1B','2B1B','2B2B','3B2B','Other'];
 const GENDER=['All men','All women','Mixed','Not sure yet','Prefer not to say'];
 const AMEN=['Washer & dryer','Elevator','Gym','Store downstairs','Package room','Parking'];
+/* optional details under a picked amenity: [amenity, key in S.amenD, [[group, choices]…]]. src/lib/listingView.ts accepts the same choices */
+const AMEN_D=[['Washer & dryer','laundry',[['place',['In unit','In building']],['cost',['Free','Paid']]]],['Gym','gym',[['cost',['Free','Paid']]]],['Parking','parking',[['place',['Indoor','Outdoor','Street']],['cost',['Free','Paid']]]]];
 const FEES=['Wi-Fi','Water','Heat','Electricity','Gas','Nothing extra'];
 const FURN=[['Bedroom',['Bed frame','Mattress','Bedding','Wardrobe']],['Study',['Desk','Chair','Lamp','Monitor']],['Living',['Sofa','TV','Speaker','Floor lamp']],['Kitchen',['Dining table','Pots','Tableware','Cookware','Microwave','Rice cooker']],['Life',['Vacuum','Drying rack','Air purifier','Fan']]];
 const PREFS=[['Cleaning',['Weekly clean-up','Clean after use','Basically tidy']],['Cooking',['Cooking often is fine','Less smoke, please']],['Smoking',['No smoking','Outside only']],['Pets',['No pets','Pets OK','Let’s talk']],['Visitors',['No overnight guests','OK with notice']]];
@@ -353,7 +366,9 @@ const layoutName=()=>S.layout==='Other'?String(val('layoutOther','')).trim().toU
 /* empty until the host answers: no deposit line at all, rather than a made-up one */
 const depLine=()=>S.dep==='amount'?(depAmt()?`${money(depAmt())} deposit${S.refund===true?', refundable':S.refund===false?', non-refundable':''}`:''):S.dep==='none'?'no deposit':'';
 const list=a=>{const w=a.map(f=>f==='Wi-Fi'?f:f.toLowerCase());return w.length>1?w.slice(0,-1).join(', ')+' and '+w[w.length-1]:w[0]||''};
-const photosHtml=()=>`<div class="photos">${AREAS.map(([k,name])=>S.photos[k].map((src,i)=>{const [u,f]=src.split('|');return `<div class="ph has"><img src="${esc(u)}" alt="" class="${f||''}"><em>${name}</em><button type="button" class="x" data-rm="${k}:${i}" aria-label="Remove">×</button></div>`}).join('')+`<label class="ph" tabindex="0" role="button" aria-label="Add a photo: ${name}"><input type="file" accept="image/*" data-area="${k}" hidden><b>+ Add</b>${name}</label>`).join('')}</div>`;
+/* amenity photos are extra: they aren't one of the areas counted as done */
+const PHOTO_AREAS=[...AREAS,['amenities','Amenities',0]];
+const photosHtml=()=>`<div class="photos">${PHOTO_AREAS.map(([k,name])=>S.photos[k].map((src,i)=>{const [u,f]=src.split('|');return `<div class="ph has"><img src="${esc(u)}" alt="" class="${f||''}"><em>${name}</em><button type="button" class="x" data-rm="${k}:${i}" aria-label="Remove">×</button></div>`}).join('')+`<label class="ph" tabindex="0" role="button" aria-label="Add a photo: ${name}"><input type="file" accept="image/*" data-area="${k}" hidden><b>+ Add</b>${name}</label>`).join('')}</div>`;
 const card=()=>{const fees=S.multi.fees.length&&!S.multi.fees.includes('Nothing extra')?`${list(S.multi.fees)} included`:'';
   return `<div class="rcard"><img src="${esc((Object.values(S.photos).flat()[0]||'data:image/gif;base64,R0lGODlhAQABAAAAACw=').split('|')[0])}" alt=""><div class="rc"><h3>${S.unit?unitName():'Room'}${S.layout?` · ${esc(layoutName())}`:''}</h3><p>${[S.campus&&town(),S.subletType&&typeName(),S.start&&S.end&&WhenPicker.label(S.start,S.end)].filter(Boolean).join(' · ')||'&nbsp;'}</p><div class="pr">${S.rent?money(S.rent):'<span class="ns">Rent not set</span>'} <small>${[S.rent&&'/ mo',depLine(),fees].filter(Boolean).join(' · ')}</small></div></div></div>`};
 
@@ -573,7 +588,7 @@ const STEPS=[
  {q:'Getting to campus',
   need:()=>S.shuttle?[]:[['shuttle','Choose whether the shuttle covers this address.']],
   body:()=>grp('Shuttle',`<div class="opts">${opt(S.shuttle==='covered','Yes, covered','','data-set="shuttle:covered"')}${opt(S.shuttle==='not_covered','Not covered','','data-set="shuttle:not_covered"')}${opt(S.shuttle==='unknown','Not sure','','data-set="shuttle:unknown"')}</div>${nm('shuttle')}`,'','shuttle')+(S.shuttle==='covered'?grp('Route',`<div class="chips">${one('route',ROUTES.map(r=>[r,r]))}</div>`,'optional'):'')},
- {q:'In the building',body:()=>grp('Amenities',`<div class="chips">${multi('amen',AMEN)}</div>`)},
+ {q:'In the building',body:()=>grp('Amenities',`<div class="chips">${multi('amen',AMEN)}</div>${amenDetails()}`)},
  {q:'What stays?',
   need:()=>{if(!S.furn)return [['furn','Choose how furnished it is.']];const m=[];if(S.furn==='none')return m;
     if(!S.multi.items.length)m.push(['items','Pick at least one item that stays, or choose Not furnished.']);
@@ -587,7 +602,7 @@ const STEPS=[
  {q:'Photos',h:`At least one of the bedroom. Best with 2 of the bedroom and 1 of each other area, up to ${MAXPH} photos. Phone photos in daylight are fine.`,
   need:()=>!S.photos.bedroom.length?[['photos','Add at least one photo of the bedroom.']]:photoCount()>MAXPH?[['photos',`Remove photos until there are ${MAXPH} or fewer.`]]:[],
   body:()=>`${lostPhotosNote()}<div class="grp" data-need="photos">${nm('photos',1)}${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?esc(S.video):'Optional · MP4, MOV or WebM, up to 60 MB'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk" tabindex="0" role="button"><input type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" data-video hidden>Add</label>`}</div></div><p class="note">${photoCount()} of ${MAXPH} photos · ${areasDone()} of ${AREAS.length} areas done. Photos that don’t match the place can be reported to the Rentlet team.</p>`},
- {q:'Prove it’s yours',h:'Signing in with your school email (.edu) counts as verification. A badge shows what was checked; it is not a guarantee.',
+ {q:'Prove it’s yours',h:'Your school email (.edu) is verified when you sign in. Lease proof shows as “sent, not reviewed”, because Rentlet doesn’t check it.',
   need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length&&!(EDIT&&EDIT.proof)?[['proof','Add a photo of the lease or the landlord’s email, or choose School email.']]:[],
   body:()=>`${lostProofNote()}<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','School email','Verified when you signed in with your .edu email','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>`},
  {q:'Check and publish',h:'This is how it will look. After publishing you can edit it, mark it as taken or take it down from Profile.',body:()=>{
@@ -602,7 +617,7 @@ const STEPS=[
      ['Room',line([S.unit&&unitName(),S.layout&&esc(layoutName()),S.bath&&`${S.bath} bath`,val('sqft','')&&`${esc(val('sqft',''))} sq ft`],ok(4)),4],
      ['Roommates',S.hasRoommates==='no'?'Just them':S.hasRoommates==='yes'?line([`${esc(rmN||'Some')} ${esc((who||'roommates').toLowerCase())}`,S.gender&&S.gender.toLowerCase()],ok(5)):NS,5],
      ['Shuttle',S.shuttle==='covered'?line(['Covered',S.route]):S.shuttle==='not_covered'?'Not covered':S.shuttle==='unknown'?'Not sure':NS,6],
-     ['Amenities',S.multi.amen.join(' · ')||'None picked',7],
+     ['Amenities',amenLine()||'None picked',7],
      ['What stays',S.furn==='none'?'Not furnished':S.furn?line([`${S.furn==='full'?'Fully':'Partly'} furnished`,items&&`${items} item${items===1?'':'s'}`,S.terms==='gift'?'theirs to keep':S.terms==='use'?'use during the stay':''],ok(8)):NS,8],
      ['Rules',Object.values(S.prefs).filter(Boolean).join(' · ')||'None set',9],
      ['Photos',line([`${pc} photo${pc===1?'':'s'}`,`${areasDone()} of ${AREAS.length} areas`,S.video&&'video'],ok(10)),10],
@@ -698,7 +713,8 @@ document.addEventListener('click',e=>{const t=e.target;
   const rf=t.closest('[data-refund]');if(rf){S.refund=rf.dataset.refund==='1';render();return}
   const pr=t.closest('[data-pref]');if(pr){const [k,v]=pr.dataset.pref.split(':');S.prefs[k]=S.prefs[k]===v?'':v;render();return}
   const m=t.closest('[data-multi]');if(m){const [g,v]=m.dataset.multi.split(':'),a=S.multi[g],i=a.indexOf(v);
-    if(i>=0)a.splice(i,1);else{if(g==='fees'){if(v==='Nothing extra')a.length=0;else{const j=a.indexOf('Nothing extra');if(j>=0)a.splice(j,1)}}a.push(v)}render();return}
+    if(i>=0){a.splice(i,1);const d=g==='amen'&&AMEN_D.find(x=>x[0]===v);if(d)delete S.amenD[d[1]]}else{if(g==='fees'){if(v==='Nothing extra')a.length=0;else{const j=a.indexOf('Nothing extra');if(j>=0)a.splice(j,1)}}a.push(v)}render();return}
+  const ad=t.closest('[data-amend]');if(ad){const [k,g,v]=ad.dataset.amend.split(':'),d=S.amenD[k]||(S.amenD[k]={});if(d[g]===v)delete d[g];else d[g]=v;if(!Object.keys(d).length)delete S.amenD[k];render();return}
   const dd=t.closest('[data-dates]');if(dd){[S.start,S.end]=dd.dataset.dates.split(':');S.act='in';if(calApi)calApi.set(S.start,S.end);syncDates(S.start,S.end);clearNeed();return}
   const sd=t.closest('[data-side]');if(sd){S.act=sd.dataset.side;if(calApi)calApi.setAct(S.act);syncDates(S.start,S.end);return}
   const rm=t.closest('[data-rm]');if(rm){const [k,i]=rm.dataset.rm.split(':');S.photos[k].splice(+i,1);render();return}

@@ -593,6 +593,11 @@ a.ai-row:hover{background:rgba(0,0,0,.05)}
 .nb-h{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}
 .nb-h h2{font-size:22px;letter-spacing:-.4px;margin:0}
 .nb-h p{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.nb-sub{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px}
+.nb-cov{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink)}
+.nb-cov.no{font-weight:500;color:var(--muted)}
+a.nb-cov{text-decoration:underline;text-underline-offset:3px}
+.nb-cov svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .nb-modes[hidden]{display:none}
 .nb-modes{display:flex;background:#fff;border:1px solid var(--hair);border-radius:999px;padding:4px}
 .nb-modes button{width:auto!important;min-width:0;margin:0;height:34px;padding:0 14px;border:0;border-radius:999px;background:none;font-size:13px;font-weight:650;color:var(--ink2);display:flex;align-items:center;justify-content:center}
@@ -949,10 +954,12 @@ function titleDates(){return `<span class="t-when">${span(ROOM.start,ROOM.end)}<
 const NEAR={Schools:{ic:'<path d="M2.5 9.5 12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5v4.2c1.6 1.4 3.4 2 5.5 2s3.9-.6 5.5-2v-4.2"/>'},Shuttle:{ic:'<path d="M3 15V9a3 3 0 0 1 3-3h9l4 4.5V15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M3 11h16"/><circle cx="7" cy="16.5" r="1.7"/><circle cx="16" cy="16.5" r="1.7"/>'},Transit:{ic:'<rect x="6" y="3" width="12" height="13" rx="4"/><path d="M6 10h12M8.5 19.5 10 16M15.5 19.5 14 16"/><circle cx="9.5" cy="13" r=".6"/><circle cx="14.5" cy="13" r=".6"/>'},Supermarkets:{ic:'<path d="M3 4h2.5l2 10.5h10l2-7.5H6.5"/><circle cx="9" cy="18.5" r="1.4"/><circle cx="16" cy="18.5" r="1.4"/>'},Restaurants:{ic:'<path d="M7 3v8a2 2 0 0 0 2 2v8M5 3v5a2 2 0 0 0 2 2M9 3v5"/><path d="M17 21V3c-2 1.5-3 4-3 7s1 3 3 3"/>'},Pharmacies:{ic:'<rect x="4" y="6" width="16" height="14" rx="3"/><path d="M9 6V4h6v2M12 10v6M9 13h6"/>'}};
 /* transit is not a mode here: Bus, Shuttle and Subway are their own tabs, timed as the walk to the stop */
 const NMODE={Walk:w=>w,Bike:w=>Math.max(1,Math.round(w/3.2)),Drive:w=>Math.max(2,Math.round(w*.3+2))};
-const NBY={Walk:'on foot',Bike:'by bike',Drive:'by car'};
 const NSTOPS=['Shuttle','Transit'];
 const nb={cat:'Schools',mode:'Walk',on:0};
 const nIc=(c,sz=16)=>`<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NEAR[c].ic}</svg>`;
+/* whether this room belongs on the Shuttle map, from what the host said about the shuttle at this address */
+const shuttleCover=()=>{const c=ROOM.shuttle||{},on=c.s==='covered',t=on?`On the Shuttle map${c.route?` · ${c.route}`:''}`:c.s==='not_covered'?'Shuttle map not applicable':'Shuttle map: ask the host',i=`<svg viewBox="0 0 24 24" aria-hidden="true">${ICON2.shuttle}</svg>`;
+  return on?`<a class="nb-cov" href="shuttle.html">${i}${t}</a>`:`<span class="nb-cov no">${i}${t}</span>`};
 /* rows come from src/roommap.ts: the campus, the nearest shuttle stops, and the places saved with the listing */
 function nearList(){return window.RentletRoomMap?RentletRoomMap.rows(nb.cat,ROOM):[]}
 function nearNote(L){if(L.length)return '';
@@ -963,7 +970,7 @@ const NX=8/3,NY=7/3,nP=([x,y])=>[+(x*NX).toFixed(1),+(y*NY).toFixed(1)];
 function nearMap(){return `<div class="nb-lf" id="nbMap"></div><span class="nb-cap">Exact spot · street address after you both agree</span>`}
 const nearBody=()=>{const L=nearList();if(nb.on>=L.length)nb.on=0;
   const stops=NSTOPS.includes(nb.cat),mode=stops?'Walk':nb.mode;
-  return `<div class="nb-h"><div><h2>Getting around</h2><p>${stops?`Walking time from the room to each stop.${nb.cat==='Shuttle'?' <a href="shuttle.html">Live shuttle map</a>':''}`:`Times from the room, ${NBY[mode]}.`}</p></div><div class="nb-modes" role="group" aria-label="How you get there"${stops?' hidden':''}>${Object.keys(NMODE).map(m=>`<button type="button" data-nmode="${m}" aria-pressed="${m===mode}">${m}</button>`).join('')}</div></div>
+  return `<div class="nb-h"><div><h2>Getting around</h2><p class="nb-sub">${shuttleCover()}${stops?`<span>Walking time from the room to each stop.${nb.cat==='Shuttle'?' <a href="shuttle.html">Live shuttle map</a>':''}</span>`:''}</p></div><div class="nb-modes" role="group" aria-label="How you get there"${stops?' hidden':''}>${Object.keys(NMODE).map(m=>`<button type="button" data-nmode="${m}" aria-pressed="${m===mode}">${m}</button>`).join('')}</div></div>
   <div class="nb-box"><div class="nb-cats" role="tablist" aria-label="Place types">${Object.keys(NEAR).map(c=>`<button type="button" role="tab" data-ncat="${c}" aria-selected="${c===nb.cat}">${nIc(c)}${c}</button>`).join('')}</div>
     <div class="nb-map">${nearMap()}</div>
     <div class="nb-list">${L.map((x,i)=>`<button type="button" class="nb-row${i===nb.on?' on':''}" data-non="${i}"><span class="nb-i">${nIc(nb.cat,15)}</span><span class="nb-t"><b>${x.n}</b><small>${x.sub} · ${x.mi} mi</small></span><em>${NMODE[mode](x.w)} min</em></button>`).join('')}${nearNote(L)}</div></div>`};

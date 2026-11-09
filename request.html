@@ -187,6 +187,11 @@ const restore=d=>{if(!d||typeof d!=='object')return false;const m=d.multi||{},li
   Object.assign(S,{done:false,err:'',budget:d.budget==null?Infinity:d.budget,f:{...(d.f&&typeof d.f==='object'?d.f:{})},multi:{life:list(m.life),layouts:list(m.layouts)}});return true};
 let restored=false;
 try{restored=restore(JSON.parse(sessionStorage.getItem('cs-request-draft')||'null'))}catch(_){}
+/* “Create a housing request” after a search with no rooms: what was just searched wins over an older draft,
+   once (the address is cleaned up, so a reload keeps what has been typed since) */
+if(QS.get('from')==='search'){try{const p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}'),row=p.school&&WhereSearch.SCHOOLS.find(x=>x[0]===p.school);if(row){S.campusId=row[0];S.campus=row[1]}
+  if(p.start&&p.end&&p.start>=TODAY&&p.end>p.start){S.start=p.start;S.end=p.end}}catch(_){}
+  S.budget=BudgetPicker.load(1500);S.step=0;history.replaceState(null,'',location.pathname)}
 /* signed in with Google: start the name from the first name on the account */
 const googleName=()=>RL.user&&RL.user.name&&!['Student','Northwestern student'].includes(RL.user.name)?RL.user.name:'';
 if(!('name' in S.f)&&googleName())S.f.name=googleName();

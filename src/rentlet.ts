@@ -174,6 +174,25 @@ async function popupSignIn(): Promise<boolean> {
 }
 
 // A report goes to the reports collection, which only the project owner can read (Firebase console).
+// Send feedback (public/rentlet-boot.js draws the form). It works signed out, so someone who can't sign in can say so.
+// Of the address, only the path and a room's code are kept: a chat's address names the people in it.
+async function sendFeedback(note: { type: string; text: string; email: string }): Promise<boolean> {
+  const room = new URLSearchParams(location.search).get('room');
+  try {
+    await addDoc(collection(db, 'feedback'), {
+      type: ['bug', 'idea', 'other'].includes(note.type) ? note.type : 'other',
+      text: String(note.text).trim().slice(0, 2000),
+      email: String(note.email).trim().slice(0, 254),
+      page: (location.pathname + (room ? `?room=${room}` : '')).slice(0, 300),
+      uid: auth.currentUser?.uid ?? '',
+      createdAt: serverTimestamp(),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function report(listingId: string, reason: string, details: string): Promise<boolean> {
   const u = auth.currentUser;
   if (!u) return false;
@@ -287,6 +306,7 @@ window.Rentlet = {
   },
   toast,
   report,
+  sendFeedback,
   toggleSave,
 };
 

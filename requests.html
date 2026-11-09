@@ -406,9 +406,9 @@ function keepHeader(old,html,focused){const h=$('#site>.hdr');if(!h)return;h._ht
   if(old&&old._html===html){h.replaceWith(old);if(focused&&old.contains(focused))focused.focus({preventScroll:true})}}
 const footer=()=>`<footer class="foot"><div class="wrap"><div class="fcols">
   <div class="brand"><img src="img/rentlet-logo.png" alt="Rentlet"><p>Sublets and lease takeovers near Northwestern.</p></div>
-  <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></div>
+  <div><h4>Find</h4><a href="index.html">Rooms near campus</a><a href="listings.html">All rooms</a><a href="requests.html">Requests</a><a href="shuttle.html">Shuttle</a></div>
   <div><h4>Post</h4><a href="post.html">Post a listing</a><a href="request.html">Post a request</a></div>
-  <div><h4>Legal</h4><a href="how-it-works.html">Safety &amp; rules</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a></div></div></div></footer>`;
+  <div><h4>About</h4><a href="how-it-works.html">Safety &amp; rules</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="#feedback" data-rl-feedback>Send feedback</a></div></div></div></footer>`;
 
 /* the feed: two columns on anything wider than a phone; each card goes to the shortest column, so it reads left to right like a waterfall.
    FEED holds [request, isMine]; cards are drawn here, so a re-layout after a save shows the current hearts. */

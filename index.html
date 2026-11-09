@@ -646,9 +646,12 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .cx-pri:hover{background:#000}
 /* rooms near the campus: the list beside a map of price pins (src/homemap.ts); narrow screens open the map full screen */
 .cx-cnt{margin-left:2px;font-size:15px;font-weight:500;letter-spacing:0;color:var(--muted);white-space:nowrap}
-.cx-split{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px;align-items:start}
-.cx-split.nomap{display:block}
-.cx-mapcol{position:sticky;top:88px;height:calc(100vh - 112px);min-height:420px;max-height:880px;border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--soft)}
+/* grid, or cards beside the map. In the grid the map waits out of sight at its final size, so it needs no resizing
+   when it comes in; position:fixed keeps it from lengthening the page. */
+.cx-split{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}
+.cx-split.map{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+.cx-mapcol{z-index:1;position:sticky;top:88px;height:calc(100vh - 112px);min-height:420px;max-height:880px;border:1px solid var(--hair);border-radius:14px;overflow:hidden;background:var(--soft);box-sizing:border-box}
+.cx-split:not(.map) .cx-mapcol{position:fixed;top:88px;right:0;width:calc((min(1072px,100vw - 48px) - 24px)/2.2);visibility:hidden;pointer-events:none}
 .cx-map{width:100%;height:100%}
 .cx-near .cx-card.pin-hot .cph{box-shadow:0 0 0 2px var(--ink)}
 /* the way into the shuttle map (Founder, Nov 4): top-left on the map, beside the close button when full screen */
@@ -661,9 +664,52 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .cx-showmap{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:auto!important;min-width:0;flex:0 0 auto;height:48px;margin:0;padding:0 20px;border:0;border-radius:999px;background:var(--ink);color:#fff;font-size:15px;font-weight:650;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.22);cursor:pointer;pointer-events:auto;transition:transform .18s}
 .cx-showmap:active{transform:scale(.97)}
 .cx-showmap .ic{width:18px;height:18px}
-@container (min-width:901px){.cx-split:not(.nomap) .cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* All rooms: Where | When | Budget in one glass bar, the sort menu, Grid / Map (the same module as listings.html) */
+.cx-near .cx-card{transform-origin:0 0}
+.cx-near .cx-grid.moving{position:relative;z-index:2;pointer-events:none}
+.rm-bar{position:relative;z-index:10;display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 22px}
+.rm-filters{flex:0 1 600px;min-width:0;display:flex;align-items:stretch;height:64px;border-radius:999px}
+.rm-filters,.rm-sort,.rm-view{background:rgba(255,255,255,.5);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.35),0 18px 44px rgba(30,25,40,.14),0 2px 6px rgba(30,25,40,.06)}
+.rm-seg{position:relative;display:flex;align-items:center;min-width:0;margin:0}
+.rm-seg+.rm-seg::before{content:"";position:absolute;left:0;top:24%;bottom:24%;width:1px;background:rgba(0,0,0,.1)}
+.rm-where{flex:1.5 1 0}.rm-when{flex:1.2 1 0}.rm-bud{flex:.9 1 0}
+.rm-btn{display:flex!important;flex-direction:column;justify-content:center;gap:2px;width:100%!important;height:100%;min-width:0;margin:0;padding:0 24px;border:0;border-radius:999px;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer;position:relative;z-index:1}
+.rm-btn:hover{background:rgba(255,255,255,.55)}
+.rm-btn.ws-on,.rm-btn[aria-expanded=true]{background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.rm-seg:has(.rm-btn:hover)::before,.rm-seg:has(.rm-btn:hover)+.rm-seg::before,.rm-seg:has(.ws-on)::before,.rm-seg:has(.ws-on)+.rm-seg::before{opacity:0}
+.rm-l{font-size:12px;font-weight:700;letter-spacing:.2px;color:var(--ink)}
+.rm-v{font-size:15px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.rm-x{position:absolute;right:10px;z-index:2;width:32px;height:32px;margin:0;border-radius:50%;border:0;background:var(--soft);font-size:16px;line-height:1;display:grid;place-items:center;padding:0;cursor:pointer}
+.rm-x[hidden]{display:none!important}
+.rm-when:has(.rm-x:not([hidden])) .rm-btn{padding-right:48px}
+.rm-sp{flex:1 1 0}
+.rm-sort{position:relative;flex:none;width:48px;height:48px;border-radius:50%;box-sizing:border-box}
+.rm-sort:hover{background:rgba(255,255,255,.75)}
+.rm-sb{display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:50%;background:none;color:var(--ink2);cursor:pointer}
+.rm-sb .ic{width:18px;height:18px}
+.rm-pop{position:absolute;top:calc(100% + 8px);right:0;z-index:60;min-width:220px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 28px rgba(0,0,0,.12)}
+.rm-pop button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;margin:0;padding:0 12px;border:0;border-radius:10px;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;white-space:nowrap}
+.rm-pop button:hover,.rm-pop button[aria-selected=true]{background:var(--soft)}
+.rm-pop .gap{display:inline-block;width:16px;flex:none}
+.rm-pop .ic{width:16px;height:16px}
+.rm-view{position:relative;display:inline-flex;flex:none;height:48px;padding:4px;border-radius:999px;box-sizing:border-box}
+.rm-view[hidden]{display:none}
+.rm-view button{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;height:38px;margin:0;padding:0 14px;border:0;border-radius:999px;background:none;font-size:14px;font-weight:650;color:var(--muted);white-space:nowrap;cursor:pointer;transition:color .25s}
+.rm-view button[aria-pressed=true]{color:var(--ink)}
+.rm-view .ic{width:16px;height:16px}
+.rm-view .ind{position:absolute;z-index:0;top:4px;left:0;height:38px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.14);transition:transform .4s cubic-bezier(.22,1,.36,1),width .4s cubic-bezier(.22,1,.36,1)}
+@media (prefers-reduced-motion:reduce){.rm-view .ind,.rm-view button{transition:none}}
+.cx-mapbar[hidden]{display:none}
+@container (min-width:901px){.cx-split .cx-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.cx-split.map .cx-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container (max-width:900px){
-  .cx-split{display:block}.cx-mapcol{display:none}
+  .cx-split,.cx-split.map{display:block}.cx-mapcol,.cx-split:not(.map) .cx-mapcol{display:none}
+  .rm-view,.rm-sp{display:none}
+  .rm-filters{flex:1 1 100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));height:auto;border-radius:28px;padding:6px}
+  .rm-where{grid-column:1/-1}
+  .rm-seg{min-height:60px}
+  .rm-seg+.rm-seg::before{display:none}
+  .rm-btn{padding:0 18px;border-radius:22px}
+  .rm-sort{margin-left:auto}
   .cx-mapbar{position:sticky;z-index:6;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;margin-top:24px;pointer-events:none}
 }
 /* email alerts */
@@ -1065,26 +1111,103 @@ function cxResults(el){const p=plan,head=`<div class="cx-sh"><div><h2>Rooms open
         <div class="cx-seg"><i class="ind"></i><button type="button" data-cxs="fit" aria-selected="${CXS==='fit'}">Best fit</button><button type="button" data-cxs="price" aria-selected="${CXS==='price'}">Lowest price</button></div></div>
         <div class="cx-grid cx-swap">${list.map((l,i)=>{const r=fit(l,p);return cxCard(l,i,r.whole?'Covers your whole stay':`${Math.floor(r.ov/r.need*100)}% fits your dates`)}).join('')}</div>${over?`<p class="more-note">${plural(over,'more room')} ${over===1?'is':'are'} more than 5% over your budget.</p>`:''}`}}
   requestAnimationFrame(()=>cxPlaceInd(el));cxNear();cxCrit()}
-/* Rooms near the campus (option A): every live room at the campus in the search bar, newest first and whatever the
-   dates, beside a map with a price pin for each room that has a spot (src/homemap.ts). Rooms without a spot stay in
-   the list; with no pins the list stands alone. Narrow screens get one column and a Show map button that opens the
-   map full screen. With no rooms here the section is left out (the results above say "No rooms near … yet").
-   Redrawn only when the campus or its rooms change, so new dates or a new budget keep the map as it is. */
-Object.assign(ICONS,{map:'<path d="M9 4.5 3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/>'});
+/* All rooms (Founder, Nov 9: the All rooms module, on the homepage): every live room at a campus, whatever the search
+   above says, with its own Where / When / Budget, a sort menu, and Grid / Map. Map is the cards beside the price map
+   (src/homemap.ts); narrow screens get one column and a Show map button that opens the map full screen. Only the
+   campus follows the search bar. With no rooms at the searched campus the section is left out (the results above
+   say so). Switching views moves the same cards, so each one glides to its new place. */
+Object.assign(ICONS,{map:'<path d="M9 4.5 3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/>',sort:'<path d="M7 5v14M4 16l3 3 3-3M17 19V5M14 8l3-3 3 3"/>',grid:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>'});
 let cxHot=null;
+const RM_SORTS=[['new','Newest'],['low','Lowest price'],['high','Highest price'],['soon','Soonest move-in'],['near','Closest to campus']];
+const RM_BY={new:(a,b)=>b.createdAtMs-a.createdAtMs,low:(a,b)=>a.price-b.price,high:(a,b)=>b.price-a.price,soon:(a,b)=>T(a.start)-T(b.start),near:(a,b)=>(a.walk==null?1e9:a.walk)-(b.walk==null?1e9:b.walk)};
+const rmWas=(()=>{try{return JSON.parse(sessionStorage.getItem('rl-home-all')||'null')||{}}catch(_){return{}}})();
+/* the map stays the first view here; a room's Back keeps the choices made this visit */
+const RM={school:plan.school,plan:plan.school,start:rmWas.start&&rmWas.end?rmWas.start:null,end:rmWas.start&&rmWas.end?rmWas.end:null,budget:typeof rmWas.budget==='number'&&rmWas.budget>0?rmWas.budget:Infinity,sort:RM_BY[rmWas.sort]?rmWas.sort:'new',view:rmWas.view==='grid'?'grid':'map',open:false};
+let rmCur=[],rmPins=false,rmMoveT=0;
+const rmSave=()=>{try{sessionStorage.setItem('rl-home-all',JSON.stringify({view:RM.view,sort:RM.sort,start:RM.start,end:RM.end,budget:RM.budget===Infinity?null:RM.budget}))}catch(_){}};
+/* the same rule as the search bar's for whether a room suits the dates */
+const rmDatesOk=l=>{const need=nights(RM.start,RM.end),s=T(l.start)>T(RM.start)?l.start:RM.start,e=T(l.end)<T(RM.end)?l.end:RM.end,ov=Math.max(0,nights(s,e)),whole=T(l.start)<=T(RM.start)&&T(l.end)>=T(RM.end);return need>0&&(whole||(ov>=30&&ov>=need/2))};
+const rmScoped=()=>L.filter(l=>l.school===RM.school&&(RM.budget===Infinity||l.price<=RM.budget*1.05)&&(!RM.start||rmDatesOk(l)));
+const rmWhen=()=>RM.start?wl(RM.start,RM.end):'Any dates';
+const rmShown=()=>RM.view==='map'&&rmPins?'map':'grid';
+const rmSig=()=>[RM.school,RM.start,RM.end,RM.budget,RM.sort,L.filter(l=>l.school===RM.school).map(l=>`${l.id}:${l.price}:${l.lat},${l.lng}`).join(' ')].join('|');
+const rmHtml=()=>`<section class="cx-sec cx-near" aria-labelledby="cxNearH"><div class="wrap"><div class="cx-sh"><div><h2 id="cxNearH">All rooms <span class="cx-cnt" id="rmCnt"></span></h2></div></div>
+  <div class="rm-bar"><div class="rm-filters" role="group" aria-label="Filter rooms">
+    <form class="rm-seg rm-where" data-rmwhere><div class="rm-btn" data-rmseg aria-label="Campus"><span class="rm-l">Where</span><span class="rm-v" data-rmval></span></div></form>
+    <div class="rm-seg rm-when"><button type="button" class="rm-btn" data-rmwhen aria-haspopup="dialog" aria-expanded="false"><span class="rm-l">When</span><span class="rm-v" data-rmwhenv></span></button><button type="button" class="rm-x" data-rmclear aria-label="Clear dates" hidden>×</button></div>
+    <div class="rm-seg rm-bud"><button type="button" class="rm-btn" data-rmbud aria-haspopup="dialog" aria-expanded="false"><span class="rm-l">Budget</span><span class="rm-v" data-rmbudv></span></button></div></div>
+    <span class="rm-sp"></span>
+    <div class="rm-sort" id="rmSort"><button type="button" class="rm-sb" data-rmsort aria-haspopup="listbox" aria-expanded="false">${ic('sort')}</button></div>
+    <div class="rm-view" id="rmView" role="group" aria-label="View"><i class="ind"></i><button type="button" data-rmview="grid">${ic('grid')}Grid</button><button type="button" data-rmview="map">${ic('map')}Map</button></div></div>
+  <div class="cx-split" id="rmSplit"><div class="cx-grid" id="rmGrid"></div><div class="cx-mapcol" id="rmCol"><div class="cx-map" id="cxMap"><a class="cx-shuttle" href="shuttle.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15.5V9a3 3 0 0 1 3-3h9.5l4.5 4.5v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M3.5 11h17M9.5 6v5M14.5 6v5"/><circle cx="8" cy="17.5" r="1.7"/><circle cx="16" cy="17.5" r="1.7"/></svg>Shuttle map</a></div></div><div class="cx-mapbar" id="rmMapBar" hidden><button type="button" class="cx-showmap" data-cxshowmap aria-haspopup="dialog">${ic('map')}Show map</button></div></div></div></section>`;
+function rmSyncBar(){const v=$('[data-rmval]');if(!v)return;v.textContent=schoolName(RM.school);$('[data-rmwhenv]').textContent=rmWhen();$('[data-rmwhen]').setAttribute('aria-label',`Dates: ${rmWhen()}`);$('[data-rmclear]').hidden=!RM.start;
+  const b=BudgetPicker.label(RM.budget);$('[data-rmbudv]').textContent=b;$('[data-rmbud]').setAttribute('aria-label',`Budget: ${b}`);
+  const s=RM_SORTS.find(x=>x[0]===RM.sort)[1],sb=$('[data-rmsort]');sb.setAttribute('aria-label',`Sort: ${s}`);sb.title=`Sort: ${s}`}
+function rmPlaceInd(){const w=$('#rmView');if(!w)return;const b=$('[aria-pressed=true]',w),i=$('.ind',w);if(b&&b.offsetWidth){i.style.width=b.offsetWidth+'px';i.style.transform=`translateX(${b.offsetLeft}px)`}}
+function rmSyncView(){const w=$('#rmView');if(!w)return;const v=rmShown();$$('[data-rmview]',w).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.rmview===v)));w.hidden=!rmPins;$('#rmMapBar').hidden=!rmPins;rmPlaceInd()}
+function rmCloseSort(focus){if(!RM.open)return;RM.open=false;const p=$('.rm-pop'),b=$('[data-rmsort]');if(p)p.remove();if(b){b.setAttribute('aria-expanded','false');if(focus)b.focus()}}
+function rmOpenSort(viaKeyboard){RM.open=true;$('[data-rmsort]').setAttribute('aria-expanded','true');
+  $('#rmSort').insertAdjacentHTML('beforeend',`<div class="rm-pop" role="listbox" aria-label="Sort">${RM_SORTS.map(([v,t])=>`<button type="button" role="option" aria-selected="${RM.sort===v}" data-rmorder="${v}">${RM.sort===v?ic('check'):'<span class="gap"></span>'}${t}</button>`).join('')}</div>`);
+  if(viaKeyboard)$('.rm-pop [aria-selected=true]').focus()}
+/* each card starts where it was on screen and glides to its new place; what follows the section moves with it */
+const RM_EASE='cubic-bezier(.22,1,.36,1)',RM_DUR=560,rmStop=el=>el.getAnimations().forEach(a=>a.cancel());
+const rmWide=()=>site.clientWidth>900;
+function rmTail(){const box=$('#cxNearBox'),out=[];let e=box&&box.nextElementSibling;while(e){out.push(e);e=e.nextElementSibling}const f=$('.cx-foot');if(f)out.push(f);return out}
+function rmFlip(change){const grid=$('#rmGrid'),cards0=$$('.cx-card[data-code]',grid),old=new Map(cards0.map(c=>[c.dataset.code,c.getBoundingClientRect()])),tail=rmTail().map(e=>[e,e.getBoundingClientRect().top]);
+  cards0.forEach(rmStop);tail.forEach(([e])=>rmStop(e));change();if(reduced)return;
+  const vh=innerHeight;let moved=false;
+  $$('.cx-card[data-code]',grid).forEach((c,i)=>{const a=old.get(c.dataset.code),b=c.getBoundingClientRect(),delay=Math.min(i,8)*18;
+    if(!a){moved=true;c.animate([{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:380,easing:RM_EASE,delay:delay+120,fill:'backwards'});return}
+    const dx=a.left-b.left,dy=a.top-b.top,s=a.width/b.width;
+    if(Math.abs(dx)<.5&&Math.abs(dy)<.5&&Math.abs(s-1)<.002)return;
+    if((a.bottom<0&&b.bottom<0)||(a.top>vh&&b.top>vh))return;
+    moved=true;c.animate([{transform:`translate(${dx}px,${dy}px) scale(${s})`},{transform:'none'}],{duration:RM_DUR,easing:RM_EASE,delay,fill:'backwards'})});
+  tail.forEach(([e,top])=>{const now=e.getBoundingClientRect().top,d=top-now;if(Math.abs(d)>.5&&now<vh+Math.abs(d))e.animate([{transform:`translateY(${d}px)`},{transform:'none'}],{duration:RM_DUR,easing:RM_EASE})});
+  clearTimeout(rmMoveT);if(!moved){grid.classList.remove('moving');return}
+  grid.classList.add('moving');rmMoveT=setTimeout(()=>{const g=$('#rmGrid');if(g)g.classList.remove('moving')},RM_DUR+150)}
+function rmSetView(v){if(v===RM.view||!rmPins)return;const col=$('#rmCol'),split=$('#rmSplit');
+  const before=col.getBoundingClientRect(),opacity=parseFloat(getComputedStyle(col).opacity),running=col.getAnimations().length>0,anim=!reduced&&rmWide();
+  rmFlip(()=>{RM.view=v;split.classList.toggle('map',v==='map');rmSyncView();rmSave()});
+  rmStop(col);if(!anim)return;
+  const after=col.getBoundingClientRect(),dx=before.left-after.left,dy=before.top-after.top;
+  if(v==='map')col.animate([running?{opacity,transform:`translate(${dx}px,${dy}px)`}:{opacity:0,transform:'translateX(56px) scale(.98)'},{opacity:1,transform:'none'}],{duration:RM_DUR,easing:RM_EASE});
+  else col.animate([{opacity:running?opacity:1,visibility:'visible',transform:`translate(${dx}px,${dy}px)`},{opacity:0,visibility:'hidden',transform:`translate(${dx+56}px,${dy}px) scale(.98)`}],{duration:320,easing:RM_EASE})}
+const rmEmpty=()=>{const none=!L.some(l=>l.school===RM.school);return `<div class="cx-empty"><h3>${none?`No rooms near ${schoolName(RM.school)} yet`:'Nothing lines up with these filters'}</h3><p>Post what you need and hosts near campus can message you.</p><div class="cx-empty-a"><button type="button" class="cx-pri" data-rmask>Create a housing request</button>${none?'':'<button type="button" class="cx-lnk" data-rmclearall>Clear filters</button>'}</div></div>`};
+function rmUpdate(anim=true){const grid=$('#rmGrid');if(!grid)return;rmSyncBar();
+  rmCur=rmScoped().sort((a,b)=>RM_BY[RM.sort](a,b)||b.createdAtMs-a.createdAtMs);
+  $('#rmCnt').textContent=plural(rmCur.length,'room');rmPins=rmCur.some(l=>l.lat!=null&&l.lng!=null);
+  const first=!grid.children.length,html=rmCur.length?rmCur.map((l,i)=>cxCard(l,i,agoOf(l.createdAtMs),`data-code="${l.key}"`)).join(''):rmEmpty();
+  const paint=()=>{grid.classList.toggle('cx-swap',first);grid.innerHTML=html;$('#rmSplit').classList.toggle('map',rmShown()==='map');rmSyncView()};
+  if(anim&&!first)rmFlip(paint);else paint();
+  cxNearMap();rmSave()}
+function rmChange(){const box=$('#cxNearBox');if(box)box.dataset.sig=rmSig();cxHot=null;rmUpdate()}
+function rmMount(box){box.innerHTML=rmHtml();const f=$('[data-rmwhere]',box);f.addEventListener('submit',e=>e.preventDefault());
+  WhereSearch.attach({form:f,seg:$('[data-rmseg]',f),valueEl:$('[data-rmval]',f),current:schoolName(RM.school),onCampus:v=>{RM.school=v;rmChange()}});RM.open=false}
 function cxNear(){const box=$('#cxNearBox');if(!box)return;
-  const list=LOADED?L.filter(l=>l.school===plan.school).sort((a,b)=>b.createdAtMs-a.createdAtMs):[];
-  const sig=plan.school+'|'+list.map(l=>`${l.id}:${l.price}:${l.lat},${l.lng}`).join(' ');
-  if(box.dataset.sig===sig)return;box.dataset.sig=sig;cxHot=null;
-  if(!list.length){box.innerHTML='';return}
-  const pinned=list.some(l=>l.lat!=null&&l.lng!=null);
-  box.innerHTML=`<section class="cx-sec cx-near" aria-labelledby="cxNearH"><div class="wrap"><div class="cx-sh"><div><h2 id="cxNearH">Rooms near ${schoolName(plan.school)} <span class="cx-cnt">${plural(list.length,'room')}</span></h2><p>Every room listed here, whatever the dates. Prices are per month.</p></div><button type="button" class="cx-lnk" data-cxhref="listings.html" style="min-height:44px;display:inline-flex;align-items:flex-end">See all rooms</button></div>
-    <div class="cx-split${pinned?'':' nomap'}"><div class="cx-grid cx-swap">${list.map((l,i)=>cxCard(l,i,agoOf(l.createdAtMs),`data-code="${l.key}"`)).join('')}</div>${pinned?`<div class="cx-mapcol"><div class="cx-map" id="cxMap"><a class="cx-shuttle" href="shuttle.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15.5V9a3 3 0 0 1 3-3h9.5l4.5 4.5v5a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M3.5 11h17M9.5 6v5M14.5 6v5"/><circle cx="8" cy="17.5" r="1.7"/><circle cx="16" cy="17.5" r="1.7"/></svg>Shuttle map</a></div></div>`:''}</div>
-    ${pinned?`<div class="cx-mapbar"><button type="button" class="cx-showmap" data-cxshowmap aria-haspopup="dialog">${ic('map')}Show map</button></div>`:''}</div></section>`;
-  cxNearMap()}
+  if(plan.school!==RM.plan){RM.plan=plan.school;RM.school=plan.school}
+  if(!LOADED||(RM.school===plan.school&&!L.some(l=>l.school===plan.school))){box.innerHTML='';box.dataset.sig='';return}
+  const sig=rmSig();if(box.firstChild&&box.dataset.sig===sig)return;box.dataset.sig=sig;cxHot=null;
+  if(!box.firstChild)rmMount(box);
+  rmUpdate()}
 function cxNearMap(){const el=$('#cxMap');if(!el||!window.RentletHomeMap)return;
-  const rooms=L.filter(l=>l.school===plan.school&&l.lat!=null&&l.lng!=null).map(l=>({code:l.key,lat:l.lat,lng:l.lng,price:l.price,title:roomName(l),img:pic(l.img),dates:wl(l.start,l.end)}));
-  RentletHomeMap.draw(el,rooms,{label:`Map of rooms near ${schoolName(plan.school)}`,onHover:code=>$$('.cx-near .cx-card[data-code]').forEach(c=>c.classList.toggle('pin-hot',c.dataset.code===code))})}
+  const rooms=rmCur.filter(l=>l.lat!=null&&l.lng!=null).map(l=>({code:l.key,lat:l.lat,lng:l.lng,price:l.price,title:roomName(l),img:pic(l.img),dates:wl(l.start,l.end)}));
+  RentletHomeMap.draw(el,rooms,{label:`Map of rooms near ${schoolName(RM.school)}`,onHover:code=>$$('.cx-near .cx-card[data-code]').forEach(c=>c.classList.toggle('pin-hot',c.dataset.code===code))})}
+/* a request filled in from what this section shows */
+function rmAsk(){let p={};try{p=JSON.parse(sessionStorage.getItem('cs-plan')||'{}')||{}}catch(_){}p.school=RM.school;if(RM.start&&RM.end){p.start=RM.start;p.end=RM.end}
+  try{sessionStorage.setItem('cs-plan',JSON.stringify(p))}catch(_){}if(RM.budget!==Infinity)BudgetPicker.save(RM.budget);location.href='request.html?from=search'}
+document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest)return;
+  const sb=t.closest('[data-rmsort]');if(sb){if(RM.open)rmCloseSort(false);else rmOpenSort(e.detail===0);return}
+  const so=t.closest('[data-rmorder]');if(so){const kb=e.detail===0;RM.sort=so.dataset.rmorder;rmCloseSort(kb);rmChange();return}
+  if(RM.open&&!t.closest('.rm-pop'))rmCloseSort(false);
+  const v=t.closest('[data-rmview]');if(v){rmSetView(v.dataset.rmview);return}
+  const w=t.closest('[data-rmwhen]');if(w){WhenPicker.open({anchor:w,mode:'leave',start:RM.start,end:RM.end,onDone:(s,en)=>{RM.start=s;RM.end=en;rmChange()}});return}
+  if(t.closest('[data-rmclear]')){RM.start=RM.end=null;rmChange();return}
+  const bd=t.closest('[data-rmbud]');if(bd){BudgetPicker.open({anchor:bd,value:RM.budget,prices:L.filter(l=>l.school===RM.school).map(l=>l.price),onDone:b=>{RM.budget=b;rmChange()}});return}
+  if(t.closest('[data-rmclearall]')){RM.start=RM.end=null;RM.budget=Infinity;rmChange();return}
+  if(t.closest('[data-rmask]'))rmAsk()});
+document.addEventListener('keydown',e=>{if(!RM.open)return;if(e.key==='Escape'){rmCloseSort(true);return}
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){const o=$$('.rm-pop button'),i=o.indexOf(document.activeElement),d=e.key==='ArrowDown'?1:-1;e.preventDefault();o[(i+d+o.length)%o.length].focus()}});
+addEventListener('rentlet:menu',()=>rmCloseSort(false));addEventListener('resize',rmPlaceInd);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(rmPlaceInd);
 /* src/homemap.ts calls this once it has loaded, in case the list was drawn first */
 window.RL_homeMap=cxNearMap;
 /* email alerts for the search in the bar */

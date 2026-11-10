@@ -50,7 +50,7 @@ button{cursor:pointer}
 .review-foot b{color:var(--ink)}
 
 /* ---------- site ---------- */
-.site{container-type:inline-size;background:var(--canvas);position:relative;overflow-x:clip}
+.site{container:site/inline-size;background:var(--canvas);position:relative;overflow-x:clip}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 .hdr{background:#fff;border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:20}
 .hdr .wrap{display:flex;align-items:center;gap:20px;height:72px}
@@ -631,6 +631,8 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .cx-rail .cx-card .cfx{grid-template-columns:minmax(0,1fr);gap:6px}
 /* narrow cards (the map list, a full rail): slightly smaller facts keep two columns; very narrow ones stack */
 .cx-card .cph{container-type:inline-size}
+/* the photo is now a container, so the phone rule that hides the facts names the page (site) instead */
+@container site (max-width:640px){.cx-card .cfx,.cx-card .cph::after{display:none}}
 @container (max-width:290px){.cx-card .cfx{gap:7px 8px;padding:9px 10px;font-size:12px}.cx-card .cfx span{gap:5px}.cx-card .cfx .fi{width:14px;height:14px}}
 @container (max-width:235px){.cx-card .cfx{grid-template-columns:minmax(0,1fr)}}
 @media (hover:none){.cx-card .cfx,.cx-card .cph::after{display:none}.cx-card .cf2{display:block}}
@@ -811,7 +813,7 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
   .cx-sec{padding:38px 0}.results.cx{padding:32px 0 38px}
   .cx-sh h2{font-size:21px}
   .cx-grid{grid-template-columns:minmax(0,1fr)}
-  .cx-card .cfx,.cx-card .cph::after{display:none}.cx-card .cf2{display:block}
+  .cx-card .cf2{display:block}
   .cx-tbar{flex-direction:column;align-items:stretch}.cx-tbar .cx-seg{align-self:flex-start}
   .cx-tbar .cx-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px;min-width:0;max-width:calc(100% + 32px)}
   .cx-rail,.cx-ppl{margin:0 -16px;padding:4px 16px 8px;scroll-padding-inline:16px}

@@ -486,4 +486,35 @@ export async function updateListing(code: string, S: PostState, video: File | nu
   await Promise.allSettled(removedFiles(old, user.uid, photos, videoUrl).map((p) => deleteObject(ref(storage, p))));
 }
 
+// Lease proof added later, from the Verification page, to one of your live listings: up to 3 photos or PDFs go where
+// the post form puts them, the private note lists them, and the listing shows "Lease proof sent, not reviewed".
+export async function addLeaseProof(code: string, files: File[]): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new PublishError('signin');
+  const list = files.slice(0, 3);
+  if (!list.length || !list.every((f) => PROOF_TYPE.test(f.type) && f.size < MAX_PROOF_BYTES)) throw new PublishError('invalid');
+  const listingRef = doc(db, 'listings', code);
+  const snap = await getDoc(listingRef);
+  if (!snap.exists() || snap.data().ownerId !== user.uid) throw new PublishError('invalid');
+  const stamp = Date.now();
+  const paths: string[] = [];
+  try {
+    for (const [i, file] of list.entries()) {
+      const ext = file.type === 'application/pdf' ? 'pdf' : (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'jpg';
+      const path = `proofs/${user.uid}/${code}-${stamp}-${i + 1}.${ext}`;
+      await uploadBytes(ref(storage, path), file, { contentType: file.type });
+      paths.push(path);
+    }
+    const note = doc(db, 'listings', code, 'private', 'proof');
+    const had = proofFilePaths(code, user.uid, (await getDoc(note)).data());
+    const batch = writeBatch(db);
+    batch.update(listingRef, { 'form.proof': 'lease', updatedAt: serverTimestamp() });
+    batch.set(note, { kind: 'lease', files: [...had, ...paths], sentAt: serverTimestamp() });
+    await batch.commit();
+  } catch (e) {
+    await Promise.allSettled(paths.map((p) => deleteObject(ref(storage, p))));
+    throw e instanceof PublishError ? e : new PublishError('failed');
+  }
+}
+
 export { editState, toCard, toRoom };

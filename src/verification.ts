@@ -4,6 +4,7 @@ import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firesto
 import type { Functions } from 'firebase/functions';
 import { app, auth, db } from './firebase';
 import { canSignIn } from './lib/nu';
+import { addLeaseProof } from './listings';
 
 declare global {
   interface Window {
@@ -32,18 +33,28 @@ async function call<T>(name: string, data: unknown): Promise<T | Failure> {
 }
 
 const api = {
-  // Where this account stands: the tag, the address it was confirmed with, and whether a live listing has lease proof.
-  async status(): Promise<{ signedIn: boolean; verified: boolean; email: string; lease: boolean }> {
+  // Where this account stands: the tag, the address it was confirmed with, and each live listing with its lease proof.
+  async status(): Promise<{ signedIn: boolean; verified: boolean; email: string; listings: { code: string; name: string; lease: boolean }[] }> {
     await auth.authStateReady();
     const u = auth.currentUser;
-    if (!canSignIn(u)) return { signedIn: false, verified: false, email: '', lease: false };
+    if (!canSignIn(u)) return { signedIn: false, verified: false, email: '', listings: [] };
     const [tag, priv, own] = await Promise.all([
       getDoc(doc(db, 'verifications', u!.uid)),
       getDoc(doc(db, 'users', u!.uid, 'private', 'verification')).catch(() => null),
       getDocs(query(collection(db, 'listings'), where('ownerId', '==', u!.uid))).catch(() => null),
     ]);
-    const lease = !!own?.docs.some((d) => d.data().status === 'active' && d.data().form?.proof === 'lease');
-    return { signedIn: true, verified: tag.exists(), email: String(priv?.data()?.email ?? ''), lease };
+    const listings = (own?.docs ?? [])
+      .filter((d) => d.data().status === 'active')
+      .map((d) => ({ code: d.id, name: String(d.data().building || d.data().title || 'Your listing'), lease: d.data().form?.proof === 'lease' }));
+    return { signedIn: true, verified: tag.exists(), email: String(priv?.data()?.email ?? ''), listings };
+  },
+  async addLease(code: string, files: File[]): Promise<{ ok: true } | Failure> {
+    try {
+      await addLeaseProof(code, files);
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, reason: (e as { reason?: string; message?: string }).reason ?? (e as Error).message ?? 'failed' };
+    }
   },
   send: (email: string) => call<{ ok: true }>('sendSchoolCode', { email }),
   confirm: (code: string) => call<{ ok: true; email: string }>('verifySchoolCode', { code }),

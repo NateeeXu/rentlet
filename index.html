@@ -609,7 +609,6 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .cx-card .cph{position:relative;border-radius:14px;overflow:hidden;aspect-ratio:4/3;background:var(--soft)}
 .cx-card .cph img{width:100%;height:100%;object-fit:cover;display:block}
 .cx-card .cph img.flip{transform:scaleX(-1)}
-.cx-card .ctg{position:absolute;left:12px;top:12px;z-index:2;background:#fff;border-radius:99px;padding:5px 10px;font-size:12px;font-weight:600}
 .cx-card .csv{position:absolute;right:10px;top:10px;z-index:2;width:34px;height:34px;border-radius:50%;border:0;background:rgba(255,255,255,.94);display:grid;place-items:center;cursor:pointer}
 /* the heart looks 34px but takes taps across a 44px square */
 .cx-card .csv::after{content:'';position:absolute;inset:-5px}
@@ -619,16 +618,21 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
 .cx-card .ct{display:flex;justify-content:space-between;gap:10px;font-size:15px;font-weight:600}
 .cx-card .ct b{font-weight:600;white-space:nowrap}
 .cx-card .ct b small{font-weight:500;color:var(--muted);font-size:13px}
+.cx-card .cd{font-size:14px;color:var(--ink);margin-top:3px}
 .cx-card .cm,.cx-card .cf,.cx-card .cf2{font-size:14px;color:var(--muted);margin-top:2px}
 .cx-card .cf2{display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cx-card .cfx{position:absolute;left:10px;right:10px;bottom:10px;z-index:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;padding:11px 13px;border-radius:12px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4);box-shadow:0 6px 18px rgba(0,0,0,.12);font-size:13px;font-weight:600;color:var(--ink);opacity:0;transform:translateY(14px);transition:opacity .22s,transform .3s cubic-bezier(.22,1,.36,1);pointer-events:none}
-.cx-card .cfx span{display:flex;align-items:center;gap:7px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cx-card .cfx{position:absolute;left:10px;right:10px;bottom:10px;z-index:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4);box-shadow:0 6px 18px rgba(0,0,0,.12);font-size:13px;font-weight:600;color:var(--ink);opacity:0;transform:translateY(14px);transition:opacity .22s,transform .3s cubic-bezier(.22,1,.36,1);pointer-events:none}
+.cx-card .cfx span{display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cx-card .fi{width:16px;height:16px;flex:none;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .cx-card .cph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,rgba(0,0,0,.18));opacity:0;transition:opacity .25s}
 .cx-card:hover .cfx,.cx-card:focus-visible .cfx{opacity:1;transform:none}
 .cx-card:hover .cph::after,.cx-card:focus-visible .cph::after{opacity:1}
 .cx-card:focus-visible .cph{box-shadow:0 0 0 2px var(--ink)}
 .cx-rail .cx-card .cfx{grid-template-columns:minmax(0,1fr);gap:6px}
+/* narrow cards (the map list, a full rail): slightly smaller facts keep two columns; very narrow ones stack */
+.cx-card .cph{container-type:inline-size}
+@container (max-width:290px){.cx-card .cfx{gap:7px 8px;padding:9px 10px;font-size:12px}.cx-card .cfx span{gap:5px}.cx-card .cfx .fi{width:14px;height:14px}}
+@container (max-width:235px){.cx-card .cfx{grid-template-columns:minmax(0,1fr)}}
 @media (hover:none){.cx-card .cfx,.cx-card .cph::after{display:none}.cx-card .cf2{display:block}}
 .cx-rail,.cx-ppl{display:flex;gap:22px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;margin:0 -24px;padding:4px 24px 8px;scroll-padding-inline:24px}
 .cx-rail::-webkit-scrollbar,.cx-ppl::-webkit-scrollbar{display:none}
@@ -851,12 +855,12 @@ button.seg4{border:0;background:none;font:inherit;color:inherit;text-align:left}
    an element, or someone asks for less transparency, these stay solid. */
 :root{--gl-bg:linear-gradient(135deg,rgba(255,255,255,.62),rgba(255,255,255,.34));--gl-fx:blur(16px) saturate(1.8);--gl-bd:1px solid rgba(255,255,255,.72);--gl-sh:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(255,255,255,.2),0 8px 22px -6px rgba(20,16,40,.32);--gl-ink:#17151f}
 @supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
-  .h-a4 .sq .sq-chip,.cx-card .ctg,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle,.reel-arr{color:var(--gl-ink);background:var(--gl-bg);-webkit-backdrop-filter:var(--gl-fx);backdrop-filter:var(--gl-fx);border:var(--gl-bd);box-shadow:var(--gl-sh)}
+  .h-a4 .sq .sq-chip,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle,.reel-arr{color:var(--gl-ink);background:var(--gl-bg);-webkit-backdrop-filter:var(--gl-fx);backdrop-filter:var(--gl-fx);border:var(--gl-bd);box-shadow:var(--gl-sh)}
   .cx-shuttle:hover{background:linear-gradient(135deg,rgba(255,255,255,.8),rgba(255,255,255,.55))}
   /* several lines of small text, so a little more white behind them */
   .cx-card .cfx{background:linear-gradient(135deg,rgba(255,255,255,.76),rgba(255,255,255,.56));-webkit-backdrop-filter:var(--gl-fx);backdrop-filter:var(--gl-fx);border:var(--gl-bd);box-shadow:var(--gl-sh)}
 }
-@media (prefers-reduced-transparency:reduce){.h-a4 .sq .sq-chip,.cx-card .ctg,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle,.cx-card .cfx,.reel-arr{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media (prefers-reduced-transparency:reduce){.h-a4 .sq .sq-chip,.cx-card .csv,.ph-tag,.walk,.save,.cx-shuttle,.cx-card .cfx,.reel-arr{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none}}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="rentlet-base">
@@ -1086,14 +1090,14 @@ const FICONS={walk:ICONS.walk,sofa:'<path d="M4 11.5V9a2 2 0 0 1 2-2h12a2 2 0 0 
 const fic=k=>`<svg class="fi" viewBox="0 0 24 24" aria-hidden="true">${FICONS[k]}</svg>`;
 const ltype=l=>l.title.startsWith('Private room')?'Private room':l.title.startsWith('Entire')?'Entire place':'Studio';
 let CXF='All',CXS='fit',CXALR=null,CXFREQ='instant';
-const lfacts=l=>[l.furnished?'Furnished':'Not furnished',l.bath==='private'?'Private bath':'Shared bath',l.laundry?'Laundry in building':'Ask about laundry'];
+/* short words, so all four fit a 250px card on hover without being cut off (Founder, Nov 10: option C) */
+const lfacts=l=>[l.furnished?'Furnished':'Unfurnished',l.bath==='private'?'Private bath':'Shared bath',l.laundry?'Has laundry':'Laundry: ask'];
 const walkTx=l=>l.walk!=null?`${l.walk} min walk`:'';
 function cxCard(l,i,sub,more=''){const f=lfacts(l);
   return `<article class="cx-card" role="link" tabindex="0" data-cxhref="room.html?room=${l.key}" ${more} style="--i:${i}" aria-label="${roomName(l)}${l.building?`, ${l.title}`:''}, ${l.area}, ${money(l.price)} a month. ${[walkTx(l)&&walkTx(l)+' to campus',...f].filter(Boolean).join(', ')}">
-    <div class="cph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}"><span class="ctg">${wl(l.start,l.end)}</span>
-      ${heartBtn(l,'csv')}
-      <span class="cfx" aria-hidden="true">${l.walk!=null?`<span>${fic('walk')}${l.walk} min to campus</span>`:''}<span>${fic('sofa')}${f[0]}</span><span>${fic('bath')}${f[1]}</span><span>${fic('wash')}${f[2]}</span></span></div>
-    <div class="cbd"><div class="ct"><span>${roomName(l).replace(/-/g,'\u2011')}</span><b>${money(l.price)}<small> / mo</small></b></div><div class="cm">${l.building?`${l.title.replace(/-/g,'\u2011')} · `:''}${l.area}</div><div class="cf">${sub}</div><div class="cf2">${[walkTx(l),f[0],f[1]].filter(Boolean).join(' · ')}</div></div></article>`}
+    <div class="cph"><img src="${pic(l.img)}" alt="" class="${l.flip?'flip':''}" style="object-position:${l.pos||'50% 50%'}">      ${heartBtn(l,'csv')}
+      <span class="cfx" aria-hidden="true">${l.walk!=null?`<span>${fic('walk')}${walkTx(l)}</span>`:''}<span>${fic('sofa')}${f[0]}</span><span>${fic('bath')}${f[1]}</span><span>${fic('wash')}${f[2]}</span></span></div>
+    <div class="cbd"><div class="ct"><span>${roomName(l).replace(/-/g,'\u2011')}</span><b>${money(l.price)}<small> / mo</small></b></div><div class="cd">${wl(l.start,l.end)}</div><div class="cm">${l.building?`${l.title.replace(/-/g,'\u2011')} · `:''}${l.area}</div><div class="cf">${sub}</div><div class="cf2">${[walkTx(l),f[0],f[1]].filter(Boolean).join(' · ')}</div></div></article>`}
 const cxEmpty=(t,x,a='')=>`<div class="cx-empty"><h3>${t}</h3><p>${x}</p>${a}</div>`;
 /* nothing to show for this search: post what you need, with the search already filled in on the form */
 const cxAsk=(also='')=>`<div class="cx-empty-a"><button type="button" class="cx-pri" data-cxask>Create a housing request</button>${also}</div>`;

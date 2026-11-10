@@ -10,10 +10,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // any Google account with a verified email (Founder, Nov 9). The student tag is separate: match /verifications.
     function isNU() {
       return signedIn()
-        && request.auth.token.email_verified == true
-        && request.auth.token.email.lower().matches('[^@]+@([a-z0-9-]+[.])+edu');
+        && request.auth.token.email_verified == true;
     }
 
     function me() {
@@ -61,7 +61,8 @@ service cloud.firestore {
       // contact details and other private settings: only the owner
       match /private/{doc} {
         allow read, delete: if signedIn() && me() == uid;
-        allow create, update: if signedIn() && me() == uid && (doc != 'contact' ||
+        // the verified school email is written only by functions/src/verify.ts
+      allow create, update: if signedIn() && me() == uid && doc != 'verification' && (doc != 'contact' ||
           (request.resource.data.keys().hasOnly(['instagram', 'email'])
             && request.resource.data.instagram is string && request.resource.data.instagram.size() <= 30
             && request.resource.data.email is string && request.resource.data.email.size() <= 254));
@@ -264,6 +265,16 @@ service cloud.firestore {
               && request.resource.data.hiddenFor[me()] == true));
         allow delete: if false;
       }
+    }
+
+    // ---------- the student tag ----------
+    // Written only by functions/src/verify.ts (a code sent to a .edu address), so nobody can give it to themselves.
+    // Anyone can read one person's yes or no; the email address itself is private.
+    match /verifications/{uid} {
+      allow get: if true;
+      allow list: if false;
+      allow delete: if signedIn() && me() == uid;
+      allow create, update: if false;
     }
 
     // ---------- feedback ----------

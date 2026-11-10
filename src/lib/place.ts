@@ -212,7 +212,7 @@ export function resetPin(place: PickedPlace): PickedPlace {
 // ---------- the Street address field without HERE: the directory's street addresses ----------
 
 // Directory buildings offered in the Street address field: what a signed-out host gets (HERE needs a
-// school account), and what fills in while HERE answers.
+// signed-in account), and what fills in while HERE answers.
 export interface DirectoryAddress {
   apartmentId: string;
   label: string; // goes into the street address field

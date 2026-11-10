@@ -1,20 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { CAMPUS_POINT, inChicagoArea, InputError, isNorthwesternToken, kmBetween, parseLookup, parseNearby, parseSuggest } from './rules';
+import { CAMPUS_POINT, inChicagoArea, InputError, isVerifiedAccount, kmBetween, parseLookup, parseNearby, parseSuggest } from './rules';
 
 describe('who may call', () => {
-  it('accepts verified Northwestern accounts only', () => {
-    expect(isNorthwesternToken({ email: 'emily@u.northwestern.edu', email_verified: true })).toBe(true);
-    expect(isNorthwesternToken({ email: 'Prof@Northwestern.edu', email_verified: true })).toBe(true);
-    expect(isNorthwesternToken({ email: 'emily@u.northwestern.edu', email_verified: false })).toBe(false);
-    expect(isNorthwesternToken({ email: 'emily@u.northwestern.edu' })).toBe(false);
-    expect(isNorthwesternToken({ email: 'x@gmail.com', email_verified: true })).toBe(false);
-    expect(isNorthwesternToken({ email: 'x@uchicago.edu', email_verified: true })).toBe(true);
-    expect(isNorthwesternToken({ email: 'x@cs.stanford.edu', email_verified: true })).toBe(true);
-    expect(isNorthwesternToken({ email: 'x@uchicago.edu', email_verified: false })).toBe(false);
-    expect(isNorthwesternToken({ email: 'x@edu.example.com', email_verified: true })).toBe(false);
-    expect(isNorthwesternToken({ email: 'x@.edu', email_verified: true })).toBe(false);
-    expect(isNorthwesternToken({ email: 'x@northwestern.edu.evil.com', email_verified: true })).toBe(false);
-    expect(isNorthwesternToken(undefined)).toBe(false);
+  it('accepts any Google account with a verified email', () => {
+    expect(isVerifiedAccount({ email: 'emily@u.northwestern.edu', email_verified: true })).toBe(true);
+    expect(isVerifiedAccount({ email: 'x@gmail.com', email_verified: true })).toBe(true);
+    expect(isVerifiedAccount({ email: 'x@gmail.com', email_verified: false })).toBe(false);
+    expect(isVerifiedAccount({ email: 'emily@u.northwestern.edu' })).toBe(false);
+    expect(isVerifiedAccount({ email: '', email_verified: true })).toBe(false);
+    expect(isVerifiedAccount(undefined)).toBe(false);
   });
 });
 

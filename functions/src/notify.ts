@@ -182,13 +182,13 @@ export async function processMessage(cid: string, mid: string, d: Deps): Promise
   }
 }
 
-const MAIL_USER = defineSecret('MAIL_USER');
-const MAIL_PASSWORD = defineSecret('MAIL_PASSWORD');
+export const MAIL_USER = defineSecret('MAIL_USER');
+export const MAIL_PASSWORD = defineSecret('MAIL_PASSWORD');
 
 if (!getApps().length) initializeApp();
 
 let mailer: Transporter | null = null;
-const transport = (): Transporter =>
+export const transport = (): Transporter =>
   (mailer ??= nodemailer.createTransport({
     host: 'smtp.exmail.qq.com', // the sending mailbox is on Tencent Exmail
     port: 465,

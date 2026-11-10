@@ -20,7 +20,7 @@ import {
 import { deleteObject, listAll, ref } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
 import { hasEnded, localDay, type ListingDoc } from './lib/listingView';
-import { firstName, isNorthwesternEmail } from './lib/nu';
+import { canSignIn, firstName } from './lib/nu';
 import {
   affiliation,
   cleanFirstName,
@@ -74,7 +74,7 @@ let leaving = false;
 const errCode = (e: unknown) => (e as { code?: string })?.code ?? '';
 const str = (v: unknown) => (typeof v === 'string' ? v : '');
 const millis = (t: unknown) => (t && typeof (t as Timestamp).toMillis === 'function' ? (t as Timestamp).toMillis() : 0);
-const isNU = (u: User | null): u is User => !!u && isNorthwesternEmail(u.email) && u.emailVerified;
+const isNU = (u: User | null): u is User => canSignIn(u);
 
 function fromDoc(id: string, data: DocumentData): ListingDoc {
   return { ...(data as ListingDoc), code: id, createdAtMs: millis(data.createdAt) };
@@ -213,6 +213,7 @@ async function wipe(owner: string) {
   }
   const priv = await getDocs(collection(db, 'users', owner, 'private'));
   await Promise.all(priv.docs.map((d) => deleteDoc(d.ref)));
+  await deleteDoc(doc(db, 'verifications', owner)).catch(() => undefined);
   // and anything left from uploads that never became a listing, lease proofs included
   await Promise.allSettled([sweep(`listings/${owner}`), sweep(`videos/${owner}`), sweep(`proofs/${owner}`)]);
   await deleteDoc(doc(db, 'users', owner));

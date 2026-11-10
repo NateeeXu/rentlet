@@ -392,7 +392,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=4acfa549"></script>
+<script src="/rentlet-boot.js?v=6ac13f70"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -445,7 +445,7 @@ let MM=null,MMA=null,MMT=0,RECALLED={},LPICK=null,PHOTO_FOR=null,ACT_STATE='load
 const th=()=>TH[CUR];
 /* replies each side sent, counted by src/lib/chatModel.ts over the whole thread (deleted-for-me ones too) */
 const count=(t,f)=>t.n?t.n[f]:0;
-const unlocked=t=>count(t,'me')>=3&&count(t,'them')>=3&&t.p.ok;
+const unlocked=t=>count(t,'me')>=3&&count(t,'them')>=3;
 const swapped=t=>t.share.mine&&t.share.theirs;
 const doneN=t=>KEYS.filter(k=>t.settle[k][0]==='done').length;
 /* blocked and hidden conversations leave the list; pinned ones come first */
@@ -463,7 +463,7 @@ const chat=()=>window.RentletChat;
 const header=()=>`<header class="hdr"><div class="wrap"><a class="logo" href="index.html"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="hdr-r">${RL.msgs?RL.msgs(true):''}${RL.menu?RL.menu():''}</div></div></header>`;
 function shell(){
   if(AUTH!=='in'){
-    stage.innerHTML=`<div class="site p-A view-inbox" id="site">${header()}<div class="body"><aside class="inbox" aria-label="Conversations"><div class="inbox-h"><h1>Messages</h1></div><div class="empty"><p>Sign in with your school Google account (an email ending in .edu) to see your messages.</p><button type="button" class="btn btn-primary" data-rl-signin>Sign in</button></div></aside><section class="thread" aria-label="Conversation"><div class="none"></div></section><aside class="side" aria-label="This room"></aside></div><div class="toast" id="toast" role="status"></div></div>`;
+    stage.innerHTML=`<div class="site p-A view-inbox" id="site">${header()}<div class="body"><aside class="inbox" aria-label="Conversations"><div class="inbox-h"><h1>Messages</h1></div><div class="empty"><p>Sign in with Google to see your messages.</p><button type="button" class="btn btn-primary" data-rl-signin>Sign in</button></div></aside><section class="thread" aria-label="Conversation"><div class="none"></div></section><aside class="side" aria-label="This room"></aside></div><div class="toast" id="toast" role="status"></div></div>`;
     site=$('#site');return}
   stage.innerHTML=`<div class="site" id="site">${header()}
   <div class="body"><aside class="inbox" id="inbox" aria-label="Conversations"><div class="inbox-h"><div class="inbox-t"><h1>Messages</h1><button type="button" class="chip" id="blk" data-act="blocked" aria-haspopup="dialog" hidden></button></div><div class="tabs" role="tablist" id="tabs"></div></div><label class="search">${ic('search','sm')}<span class="sr">Search conversations</span><input id="q" type="search" placeholder="Search people or rooms" autocomplete="off"></label><div id="undo"></div><div class="convs" id="convs"></div></aside>
@@ -581,8 +581,7 @@ function roomCard(t){const R=t.r;return `<a class="card rcard" href="room.html?r
 function settleRow(t,k,flash){const [s,d]=t.settle[k];
   return `<button class="st ${s}${flash===k?' flash':''}" data-act="st" data-k="${k}" aria-haspopup="dialog"><span class="tick">${s==='done'?ic('check'):''}</span><span><b>${LABEL[k]}</b>${d?`<span class="d">${esc(d)}</span>`:''}</span>${ic('right','sm')}</button>`}
 function settleCard(t,flash){return `<div class="card"><p class="tl">Settled<span>${doneN(t)} of 5</span></p><div class="settle">${KEYS.map(k=>settleRow(t,k,flash)).join('')}</div></div>`}
-function lockLine(t){const a=Math.min(3,count(t,'me')),b=Math.min(3,count(t,'them')),n=t.p.name,need=a<3||b<3;
-  const why=need&&!t.p.ok?`Unlocks after 3 replies each and when ${n} is verified`:need?'Unlocks after 3 replies each':`Unlocks when ${n} is verified`;
+function lockLine(t){const a=Math.min(3,count(t,'me')),b=Math.min(3,count(t,'them')),n=t.p.name,why='Unlocks after 3 replies each';
   return `<p class="lock">${ic('lock','sm')}<span>${esc(why)} · you ${a}/3 · ${esc(n)} ${b}/3</span></p>`}
 function contactRow(c){return `<div class="cx"><span><small>${kindLabel(c.kind)}</small>${c.kind==='email'?`<a href="mailto:${esc(c.val)}">${esc(c.val)}</a>`:`<b>${esc(c.val)}</b>`}</span><button class="btn btn-secondary" data-act="copy" data-v="${esc(c.val)}" aria-label="Copy ${kindLabel(c.kind)}">${ic('copy','sm')}Copy</button></div>`}
 function shareState(t){const n=esc(t.p.name);
@@ -620,7 +619,7 @@ function profHtml(t){const n=esc(t.p.name),Q=(PROF[t.p.uid]||{}).req||null,their
   const cards=(Q&&host(t)?reqCard(t,Q):'')+theirs.map(listingCard).join('')+(!host(t)&&t.taken&&!theirs.length?goneCard(t):'');
   const chip=(Q&&Q.role)||'',org=(Q&&Q.org)||t.p.year||'';
   return `<div class="pf"><div class="pf-top">${avatar(t.p,64)}<div><h2>${n}</h2><p>${chip?`<span class="rchip">${esc(chip)}</span>`:''}${esc(org)}</p></div></div>
-   <ul class="pf-ver"><li class="${t.p.ok?'ok':''}">${ic(t.p.ok?'check':'lock','sm')}<span><b>School email (.edu)</b><small>${t.p.ok?'Verified at sign-in':'Not verified'}</small></span></li></ul>
+   <ul class="pf-ver"><li class="${t.p.ok?'ok':''}">${ic(t.p.ok?'check':'lock','sm')}<span><b>School email (.edu)</b><small>${t.p.ok?'Verified':'Not verified'}</small></span></li></ul>
    ${t.p.since?`<p class="pf-m">${esc(t.p.since)}</p>`:''}${cards?`<div class="pf-cards">${cards}</div>`:''}
    ${t.p.bio?`<p class="pf-about">${esc(t.p.bio)}</p>`:''}${Q&&Q.life.length?`<div class="pf-tags">${Q.life.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:''}${t.replyTime?`<p class="pf-m">${esc(t.replyTime)}</p>`:''}
    ${t.isDraft?'':`<div class="acts">${convActs(t)}</div>`}

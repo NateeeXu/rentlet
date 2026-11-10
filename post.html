@@ -195,7 +195,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=4acfa549"></script>
+<script src="/rentlet-boot.js?v=6ac13f70"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -283,7 +283,7 @@ async function saveEdit(btn){
     S.code=EDIT.code;S.done=true;render();window.scrollTo(0,0);
   }catch(e){
     const r=e&&e.reason;
-    toast(r==='photos'?'Add at least one photo of the place before saving.':r==='signin'?'Sign in with the school Google account you posted with.':r==='invalid'?'Something on the form needs another look. Check the steps and try again.':'Couldn’t save your changes. Check your connection and try again.');
+    toast(r==='photos'?'Add at least one photo of the place before saving.':r==='signin'?'Sign in with the Google account you posted with.':r==='invalid'?'Something on the form needs another look. Check the steps and try again.':'Couldn’t save your changes. Check your connection and try again.');
     if(r==='photos'){S.step=STEPS.findIndex(x=>x.q==='Photos');render();window.scrollTo(0,0)}
   }finally{
     BUSY=false;const b=document.querySelector('[data-next]');if(b&&!S.done){b.disabled=false;b.textContent=label}
@@ -303,7 +303,7 @@ async function publish(btn){
   }catch(e){
     const r=e&&e.reason,gap=r==='invalid'&&firstGap();
     if(gap){showNeed(gap[0],gap[1]);return}
-    toast(r==='limit'?'You already have 3 listings live. Mark one as taken first.':r==='photos'?'Add at least one photo of the place before publishing.':r==='signin'?'Sign in with your school Google account (.edu) to publish.':r==='invalid'?'Something on the form needs another look. Check the steps and try again.':'Couldn’t publish. Check your connection and try again.');
+    toast(r==='limit'?'You already have 3 listings live. Mark one as taken first.':r==='photos'?'Add at least one photo of the place before publishing.':r==='signin'?'Sign in with Google to publish.':r==='invalid'?'Something on the form needs another look. Check the steps and try again.':'Couldn’t publish. Check your connection and try again.');
     if(r==='photos'){S.step=STEPS.findIndex(x=>x.q==='Photos');render();window.scrollTo(0,0)}
   }finally{
     BUSY=false;const b=document.querySelector('[data-next]');if(b&&!S.done){b.disabled=false;b.textContent=label}
@@ -375,7 +375,7 @@ const card=()=>{const fees=S.multi.fees.length&&!S.multi.fees.includes('Nothing 
   return `<div class="rcard"><img src="${esc((Object.values(S.photos).flat()[0]||'data:image/gif;base64,R0lGODlhAQABAAAAACw=').split('|')[0])}" alt=""><div class="rc"><h3>${S.unit?unitName():'Room'}${S.layout?` · ${esc(layoutName())}`:''}</h3><p>${[S.campus&&town(),S.subletType&&typeName(),S.start&&S.end&&WhenPicker.label(S.start,S.end)].filter(Boolean).join(' · ')||'&nbsp;'}</p><div class="pr">${S.rent?money(S.rent):'<span class="ns">Rent not set</span>'} <small>${[S.rent&&'/ mo',depLine(),fees].filter(Boolean).join(' · ')}</small></div></div></div>`};
 
 /* ---------- Where is it?: the Building field lists the apartment directory (src/lib/apartments.ts); the Street
-   address field lists full addresses from HERE (src/place.ts, through Rentlet's Cloud Functions; a school account
+   address field lists full addresses from HERE (src/place.ts, through Rentlet's Cloud Functions; a signed-in account
    is needed) with the directory's street addresses alongside, and only those when signed out. A pick keeps
    S.place = {lat, lng, area, zip, walk, label, campusId}, plus id (a HERE address) or apartmentId (a directory
    building), and origin once the host has moved the pin on the map (Adjust position); typing over the address
@@ -604,9 +604,9 @@ const STEPS=[
  {q:'Photos',h:`At least one of the bedroom. Best with 2 of the bedroom and 1 of each other area, up to ${MAXPH} photos. Phone photos in daylight are fine.`,
   need:()=>!S.photos.bedroom.length?[['photos','Add at least one photo of the bedroom.']]:photoCount()>MAXPH?[['photos',`Remove photos until there are ${MAXPH} or fewer.`]]:[],
   body:()=>`${lostPhotosNote()}<div class="grp" data-need="photos">${nm('photos',1)}${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?esc(S.video):'Optional · MP4, MOV or WebM, up to 60 MB'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk" tabindex="0" role="button"><input type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" data-video hidden>Add</label>`}</div></div><p class="note">${photoCount()} of ${MAXPH} photos · ${areasDone()} of ${AREAS.length} areas done. Photos that don’t match the place can be reported to the Rentlet team.</p>`},
- {q:'Prove it’s yours',h:'Your school email (.edu) is verified when you sign in. Lease proof shows as “sent, not reviewed”, because Rentlet doesn’t check it.',
+ {q:'Prove it’s yours',h:'Lease proof shows as “sent, not reviewed”, because Rentlet doesn’t check it.',
   need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length&&!(EDIT&&EDIT.proof)?[['proof','Add a photo of the lease or the landlord’s email, or choose School email.']]:[],
-  body:()=>`${lostProofNote()}<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','School email','Verified when you signed in with your .edu email','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>`},
+  body:()=>`${lostProofNote()}<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','School email',RL.verified?'Verified':'Not verified yet','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>${RL.verified?'':'<p class="note"><a href="verification.html" target="_blank" rel="noopener">Verify your school email</a> to get the student tag.</p>'}`},
  {q:'Check and publish',h:'This is how it will look. After publishing you can edit it, mark it as taken or take it down from Profile.',body:()=>{
    const ok=i=>!missing(i).length,bld=String(val('building','')).trim(),adr=String(val('addr','')).trim(),rmN=String(val('rmN','')).trim(),who=String(val('rmWho','')).trim(),extra=dollars(val('extra','')),items=S.multi.items.length,pc=photoCount();
    const nameNote=EDIT&&EDIT.newName&&bld?`<p class="lost" role="status">Saving shows “${esc(bld)}” as this listing’s title. To keep the name private, clear it under Where.</p>`:'';
@@ -623,7 +623,7 @@ const STEPS=[
      ['What stays',S.furn==='none'?'Not furnished':S.furn?line([`${S.furn==='full'?'Fully':'Partly'} furnished`,items&&`${items} item${items===1?'':'s'}`,S.terms==='gift'?'theirs to keep':S.terms==='use'?'use during the stay':''],ok(7)):NS,7],
      ['Rules',Object.values(S.prefs).filter(Boolean).join(' · ')||'None set',8],
      ['Photos',line([`${pc} photo${pc===1?'':'s'}`,`${areasDone()} of ${AREAS.length} areas`,S.video&&'video'],ok(9)),9],
-     ['Verification',S.proof==='student'?'School email ✓':S.proof==='lease'?line([`School email ✓ · lease proof (${nOf(PROOF.length+(EDIT&&EDIT.proof||0),'file')})`],ok(10)):NS,10]
+     ['Verification',S.proof==='student'?(RL.verified?'School email ✓':'School email not verified'):S.proof==='lease'?line([`${RL.verified?'School email ✓':'School email not verified'} · lease proof (${nOf(PROOF.length+(EDIT&&EDIT.proof||0),'file')})`],ok(10)):NS,10]
    ].map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
    ${grp('A note for the listing',ta('note','','e.g. I’m away for winter quarter. Quiet room with a proper desk.'),'optional · shows as a quote')}
    <p class="note">${EDIT?'Your changes show as soon as you save.':'Goes live as soon as you publish, with a listing number, and leaves search after the move-out day. Up to 3 listings at a time.'}</p>`}}];
@@ -640,7 +640,7 @@ const editLoadingView=()=>`${header()}<div class="a-top"><i style="width:100%"><
   <dl class="review grp">${Array.from({length:6},()=>`<div class="rrow"><dt>${skB('70px',12)}</dt><dd>${skB('78%',13)}</dd><span>${skB('26px',12)}</span></div>`).join('')}</dl></div></div></div>`;
 const editStateView=()=>{if(EDIT.state==='loading')return editLoadingView();
   const back=`<a class="btn sec" href="profile.html#listings">Back to Profile</a>`,[h,p,acts]={
-    signin:['Sign in to edit this listing','Use the school Google account you posted it with.',`<button type="button" class="btn" data-edit-signin>Sign in with Google</button>`],
+    signin:['Sign in to edit this listing','Use the Google account you posted it with.',`<button type="button" class="btn" data-edit-signin>Sign in with Google</button>`],
     denied:['You can’t edit this listing','Only the host who posted it can.',back],
     missing:['We couldn’t find this listing','It may have been deleted, or the link may be wrong.',back],
     error:['Couldn’t load your listing','Check your connection and try again.',`${back}<button type="button" class="btn" data-edit-retry>Try again</button>`]}[EDIT.state];

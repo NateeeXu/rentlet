@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import { firstName, isNorthwesternEmail } from './lib/nu';
+import { canSignIn, firstName } from './lib/nu';
 import { badgeUnread } from './lib/chatModel';
 import * as listings from './listings';
 import type { ListingDoc } from './lib/listingView';
@@ -27,6 +27,7 @@ declare global {
   interface Window {
     RL: {
       authed: boolean;
+      verified: boolean;
       user: RentletUser | null;
       initial: string;
       me(): string;
@@ -50,7 +51,7 @@ declare global {
   }
 }
 
-const NOT_NU = 'Rentlet needs a school Google account. Sign in with an email that ends in .edu.';
+const NOT_NU = 'Rentlet needs a Google account with a verified email.';
 
 function cachedUid(): string | null {
   try {
@@ -110,7 +111,6 @@ async function saveProfile(u: User) {
     ref,
     {
       photoURL: u.photoURL ?? '',
-      nu: true,
       updatedAt: serverTimestamp(),
       ...(existing.exists() && existing.data().name ? {} : { name: firstName(u.displayName), joinedAt: serverTimestamp() }),
     },
@@ -157,7 +157,7 @@ async function popupSignIn(): Promise<boolean> {
   provider.setCustomParameters({ prompt: 'select_account' });
   try {
     const { user } = await signInWithPopup(auth, provider);
-    if (!isNorthwesternEmail(user.email) || !user.emailVerified) {
+    if (!canSignIn(user)) {
       await firebaseSignOut(auth);
       toast(NOT_NU);
       return false;
@@ -237,6 +237,24 @@ function paintSaves() {
     el.setAttribute('aria-pressed', String(!!map[el.dataset.rlSave ?? '']));
   });
   dispatchEvent(new CustomEvent('rentlet:saves', { detail: { room: [...savedIds.room], request: [...savedIds.request] } }));
+}
+
+// My own student tag, kept live so the page changes the moment a code is confirmed.
+let stopVerified: Unsubscribe | null = null;
+function watchVerified(uid: string | null) {
+  stopVerified?.();
+  stopVerified = null;
+  const set = (on: boolean) => {
+    window.RL.verified = on;
+    try {
+      sessionStorage.setItem('rl-verified', on ? '1' : '0');
+    } catch {
+      /* private mode */
+    }
+    dispatchEvent(new Event('rentlet:verified'));
+  };
+  if (!uid) return set(false);
+  stopVerified = onSnapshot(doc(db, 'verifications', uid), (s) => set(s.exists()), () => set(false));
 }
 
 function watchSaves(uid: string | null) {
@@ -351,13 +369,14 @@ function watchUnread(uid: string | null) {
 }
 
 onAuthStateChanged(auth, async (u) => {
-  if (u && (!isNorthwesternEmail(u.email) || !u.emailVerified)) {
+  if (u && !canSignIn(u)) {
     await firebaseSignOut(auth);
     return; // the sign-out fires this listener again with null
   }
   apply(u ? toUser(u) : null);
   watchUnread(u ? u.uid : null);
   watchSaves(u ? u.uid : null);
+  watchVerified(u ? u.uid : null);
 });
 
 window.RentletListings = listings;

@@ -1,8 +1,7 @@
 # Rentlet Cloud Functions
 
 Three callable functions (Firebase Functions v2, Node 22, region `us-central1`) that talk to HERE so the
-HERE API key never reaches the browser. Each one answers only a signed-in Google account with a verified
-`@u.northwestern.edu` or `@northwestern.edu` email.
+HERE API key never reaches the browser. Each one answers only a signed-in Google account with a verified email.
 
 | Callable | Input | Returns |
 | --- | --- | --- |
@@ -62,6 +61,12 @@ npx firebase-tools functions:secrets:set MAIL_PASSWORD --project rentlet-nu
 `MAIL_USER` is the full address of a Tencent Exmail mailbox (mail goes out through `smtp.exmail.qq.com`, port 465). `MAIL_PASSWORD` is that
 mailbox's client password: turn on SMTP in the mailbox settings first, and if secure login is on, generate a client-specific password rather
 than using the login password. Recipients see this address as the sender, and any reply to an email lands in that mailbox. Then deploy `emailOnMessage` with the other functions.
+
+## The student tag
+
+`sendSchoolCode` emails a 6-digit code to a `.edu` address (one send a minute, 6 a day per account, 5 a day per address) and `verifySchoolCode`
+checks it (10 minutes, 5 tries). Only these functions write `verifications/{uid}`, the public yes/no the tag reads. `schoolEmails/{hash}` keeps one
+address on one account. Both use the same `MAIL_USER` and `MAIL_PASSWORD` as the message emails.
 
 ## Develop
 

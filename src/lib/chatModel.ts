@@ -322,12 +322,12 @@ export function msgFromData(id: string, data: Record<string, unknown>): Msg {
   return { ...base, kind: 'text', text: str(data.text, MAX_TEXT), replyTo: readReply(data.replyTo) };
 }
 
-export function profileFromData(data: Record<string, unknown> | null | undefined): Profile | null {
+export function profileFromData(data: Record<string, unknown> | null | undefined, school = false): Profile | null {
   if (!data) return null;
   return {
     name: str(data.name, 60),
     photoURL: str(data.photoURL, 2000),
-    nu: data.nu !== false,
+    nu: school, // verifications/{uid}: a .edu address confirmed with a code
     joinedAtMs: ms(data.joinedAt),
     bio: str(data.bio, 600).trim(),
     year: str(data.year, 40).trim(),
@@ -779,7 +779,7 @@ export function threadView(conv: Conv, o: ThreadOpts) {
       name,
       photo,
       col: colorFor(other),
-      ok: P ? P.nu : true,
+      ok: P ? P.nu : false,
       role: P?.year ? String(P.year) : 'Verified school email',
       bio: P?.bio ?? '',
       year: P?.year ?? '',

@@ -154,7 +154,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=4acfa549"></script>
+<script src="/rentlet-boot.js?v=6ac13f70"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -233,7 +233,7 @@ const av=r=>r.photo?`<img src="${esc(r.photo)}" alt="" referrerpolicy="no-referr
 
 /* the public card: first name, Google photo, role, school, dates, budget, kind of room and the quote. Never your email. */
 const record=()=>({id:'mine',who:(val('name','').trim()||'Your name'),photo:RL.authed&&RL.user?RL.user.photo||'':'',role:roleName(),kind:KIND[S.kind],start:S.start,end:S.end,
-  budget:S.budget===Infinity?null:S.budget,note:val('line','').trim(),school:S.campus,campusId:S.campusId,verified:RL.authed});
+  budget:S.budget===Infinity?null:S.budget,note:val('line','').trim(),school:S.campus,campusId:S.campusId,verified:RL.verified===true});
 const qcard=(r,tag)=>`<article class="qc"><div class="qt"><span class="av" aria-hidden="true" style="overflow:hidden">${av(r)}</span><div><h3>${esc(r.who)} · ${esc(r.role)}</h3><p class="qs"><span>${esc(r.school)}</span>${r.verified?`<span class="vf">${TICK}Verified</span>`:''}</p></div>${tag?`<span class="qtag">${tag}</span>`:''}</div>
   <p class="qneed">Needs ${need(r.kind)} · <span class="nw">${r.start&&r.end?WhenPicker.label(r.start,r.end):'dates to pick'}</span></p>
   <p class="qb">${r.budget==null?'<span class="pr">Any price</span>':`Up to <span class="pr">${money(r.budget)}</span> / mo`}</p>
@@ -288,7 +288,7 @@ const B={
       ['Budget',`${budText()}${S.util?' · utilities included':''}`,2],
       ['Room',`${KIND[S.kind]}${S.multi.layouts.length?` · ${S.multi.layouts.join(', ')}`:''} · ${S.furn==='any'?'furnished or not':name(FURN,S.furn).toLowerCase()+(S.furn==='part'?' furnished':'')}${S.bath?' · private bathroom':''} · roommates: ${name(MATES,S.mates).toLowerCase()}`,3],
       ['About you',`${esc(val('name','').trim()||'No name yet')} · ${roleName()}${orgVal()?` · ${esc(orgVal())}`:''}${S.multi.life.length?` · ${S.multi.life.join(', ').toLowerCase()}`:''}`,4]];
-    const acct=RL.authed&&RL.user?`Posting with your school Google account. Hosts see your first name and Google photo, never your email.`:`You’ll sign in with your school Google account (an email ending in .edu) to post. That’s how hosts know you have a verified school email.`;
+    const acct=RL.authed&&RL.user?`Posting with your Google account. Hosts see your first name and Google photo, never your email.`:`You’ll sign in with Google to post. Hosts see your first name and Google photo, never your email.`;
     return `<div class="grp">${qcard(record())}</div><dl class="review grp">${rows.map(([t,v,n])=>`<div class="rrow"><dt>${t}</dt><dd>${v}</dd><button type="button" class="edit" data-go="${n}">Edit</button></div>`).join('')}</dl>
       <p class="note">${acct}</p>
       <p class="note">Live as soon as you post, until your move-in date. One request at a time${MINE&&MINE.request?(EDITING?': this updates the one you have up.':': this replaces the one you already have up.'):'.'}</p>`}
@@ -345,7 +345,7 @@ async function post(){
   }catch(e){
     BUSY=false;const why=e&&e.reason;
     if(why==='dates'||why==='name'){goErr(why);return}
-    toast(why==='signin'?'Sign in with your school Google account (.edu) to post.':'Couldn’t post. Check your connection and try again.');
+    toast(why==='signin'?'Sign in with Google to post.':'Couldn’t post. Check your connection and try again.');
     render();
   }
 }

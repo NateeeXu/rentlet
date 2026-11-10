@@ -94,6 +94,8 @@ small a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;mar
 .seen .sc .av{width:44px;height:44px;font-size:16px;background:#fff;border:1px solid var(--hair)}
 .seen b{display:block;font-size:15px}
 .seen .sc div>span{display:flex;align-items:center;gap:4px 10px;font-size:14px;color:var(--muted);flex-wrap:wrap}
+.getv{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px;font-weight:650;color:var(--ink);text-decoration:none}
+.getv:hover{border-color:var(--ink)}
 .vb{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:var(--ok);white-space:nowrap}
 .vb .ic{width:15px;height:15px}
 .seen .note{margin-top:10px}
@@ -258,7 +260,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=4acfa549"></script>
+<script src="/rentlet-boot.js?v=6ac13f70"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -308,8 +310,8 @@ function secYou(){
   const nameBlock=S.editName
     ?`<div class="nmedit"><label class="in"><input data-f="name" value="${esc(S.tmp.name!=null?S.tmp.name:nm())}" maxlength="24" aria-label="First name" autocomplete="given-name"></label><button type="button" class="btn" data-act="saveName" ${S.busy.name?'disabled':''}>Save</button><button type="button" class="btn sec" data-act="cancelName">Cancel</button></div>`
     :`<div class="nmrow"><h1 class="h1">${esc(nm())}</h1><button type="button" class="lk" data-act="editName">Edit name</button></div>`;
-  return `<div class="who"><span class="av ink" aria-hidden="true">${avatar()}</span><div class="nm">${nameBlock}<p class="since"><span class="vb">${ic('shield')}Verified school email</span></p></div></div>
-  <div class="seen"><span class="lbl">What others see</span><div class="sc"><span class="av">${avatar()}</span><div><b>${esc(nm())}${role()?` · ${esc(role())}`:''}</b><span><span class="vb">${ic('shield')}Verified</span></span></div></div>
+  return `<div class="who"><span class="av ink" aria-hidden="true">${avatar()}</span><div class="nm">${nameBlock}<p class="since">${RL.verified?`<span class="vb">${ic('shield')}Verified school email</span>`:'<a class="getv" href="verification.html">Get the student tag</a>'}</p></div></div>
+  <div class="seen"><span class="lbl">What others see</span><div class="sc"><span class="av">${avatar()}</span><div><b>${esc(nm())}${role()?` · ${esc(role())}`:''}</b>${RL.verified?`<span><span class="vb">${ic('shield')}Verified</span></span>`:''}</div></div>
   <p class="note">First name only, with your Google photo. Your email and Instagram stay private.</p></div>`}
 
 function listingCard(l){const [c,t]=STATUS[l.status]||['',esc(l.status)],live=l.status==='active',link=live?`room.html?room=${l.code}`:'',dis=S.busy[l.code]?'disabled':'',id=`data-id="${l.code}" ${dis}`;
@@ -406,7 +408,7 @@ function sheetHtml(){const s=S.sheet;if(!s)return '';
   if(s.kind==='reauth')return `<div class="ov"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="raT"><h3 id="raT">One more step</h3><p>Your listings, request, saved rooms and requests, and contact details are deleted. Sign in with Google once more to delete the account itself.</p>
     <button type="button" class="lg-g" data-act="reauth">${GOOGLE}Continue with Google</button><div class="lg-back"><button type="button" class="lk" data-act="cancelDelete">Not now</button></div></div></div>`;
   return ''}
-const gateHtml=()=>`<div class="ov gate"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gT"><div class="lg-top"><span class="lg-ic">${ic('user')}</span><div><h3 id="gT">Sign in to see your page</h3><p>Sign in with your school Google account (an email ending in .edu).</p></div></div>
+const gateHtml=()=>`<div class="ov gate"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gT"><div class="lg-top"><span class="lg-ic">${ic('user')}</span><div><h3 id="gT">Sign in to see your page</h3><p>Sign in with your Google account.</p></div></div>
   <button type="button" class="lg-g" data-act="signin">${GOOGLE}Continue with Google</button>
   <p class="lg-fine">By continuing, you agree to the Terms and the Privacy Policy. </p>
   <div class="lg-back"><a class="lk" href="index.html">Back to home</a></div></div></div>`;
@@ -467,6 +469,7 @@ window.RLP={update(p){
     else if(ready(p.contact)&&!ready(S.contact))S.f={instagram:p.contact.instagram,cemail:p.contact.email}}
   Object.assign(S,p);render()}};
 /* src/rentlet.ts calls this instead of reloading when sign-in changes; src/profile.ts does the rest */
+addEventListener('rentlet:verified',()=>render());
 window.RL_onAuth=u=>{if(window.RentletProfile)return;S.authed=!!u;S.me=u;render()};
 const msg=e=>e&&e.name==='ProfileError'?e.message:'That didn’t go through. Check your connection and try again.';
 function api(){const P=window.RentletProfile;if(!P)toast('Still loading. Try again in a moment.');return P}

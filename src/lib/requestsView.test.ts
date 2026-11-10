@@ -106,7 +106,7 @@ describe('rows', () => {
       kind: 'Room or whole place',
       budget: null,
       school: 'Northwestern · Evanston',
-      verified: true,
+      verified: false,
       posted: '2026-10-20',
       active: '2026-10-28',
     });

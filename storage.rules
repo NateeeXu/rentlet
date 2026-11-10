@@ -7,8 +7,7 @@ service firebase.storage {
 
     function isNU() {
       return request.auth != null
-        && request.auth.token.email_verified == true
-        && request.auth.token.email.lower().matches('[^@]+@([a-z0-9-]+[.])+edu');
+        && request.auth.token.email_verified == true;
     }
 
     function mine(uid) {

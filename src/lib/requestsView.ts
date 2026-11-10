@@ -208,8 +208,7 @@ export function toRow(id: string, d: RequestDoc, createdAtMs: number, updatedAtM
     org: d.org ?? '',
     life: d.life ?? [],
     note: d.note ?? '',
-    // only signed-in school (.edu) accounts can post (firestore.rules)
-    verified: true,
+    verified: false, // src/requests.ts fills this in from verifications/{uid}
     posted: isoDay(createdAtMs),
     active: isoDay(Math.max(createdAtMs, updatedAtMs)),
     createdAtMs,

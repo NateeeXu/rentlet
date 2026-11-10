@@ -815,7 +815,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=4acfa549"></script>
+<script src="/rentlet-boot.js?v=6ac13f70"></script>
 </head>
 <body>
 <div class="rv" hidden><span id="roomTabs"></span><span id="stTabs"></span></div>
@@ -835,7 +835,7 @@ a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-
   <div class="acts"><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="repGo" disabled>Send report</button></div></div></div>
 <div class="ov" id="login" role="dialog" aria-modal="true" aria-labelledby="loginT"><div class="sheet lgsheet"><div class="lg-top"><span class="lg-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/></svg></span><div><h3 id="loginT">Sign in</h3><p id="loginR"></p></div></div>
   <button type="button" class="btn lg-g" data-login="google"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z"/><path fill="#EA4335" d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z"/></svg>Continue with Google</button>
-  <p class="lg-fine">Use your school Google account (an email ending in .edu). By continuing, you agree to the <a href="terms.html">Terms</a> and the <a href="privacy.html">Privacy Policy</a>.</p>
+  <p class="lg-fine">Use your Google account. By continuing, you agree to the <a href="terms.html">Terms</a> and the <a href="privacy.html">Privacy Policy</a>.</p>
   <button type="button" class="lg-x" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>
 <div class="toast" id="toast" role="status"></div>
 <script>/* overlays live inside the stage so the phone preview shows them inside the frame */
@@ -932,7 +932,7 @@ const bookCard=()=>{const L=(k,v)=>`<div class="rl"><span>${k}</span><i></i><b>$
   inc=ROOM.included?L(ROOM.included,'INCL.'):ROOM.rentOnly?L('Utilities','NOT INCL.'):'',
   dep=L(ROOM.refund?'Deposit*':'Deposit',ROOM.deposit===null?'ASK THE HOST':ROOM.deposit?money(ROOM.deposit):'NONE'),
   foot=[ROOM.refund==='yes'?'*refundable':ROOM.refund==='no'?'*non-refundable':'',ROOM.util===null?'':'~ estimated',`paid to ${ROOM.who}, not Rentlet`].filter(Boolean).join(' · ');
-  return `<div class="host"><div class="avatar">${ROOM.who[0]}</div><div style="min-width:0;flex:1"><b>${ROOM.who}</b><span>Verified school email</span></div></div>
+  return `<div class="host"><div class="avatar">${ROOM.who[0]}</div><div style="min-width:0;flex:1"><b>${ROOM.who}</b><span data-host-ver>${hostVer()}</span></div></div>
   <hr class="bk-hr"><div class="bk-pr"><b>${money(ROOM.price)}</b><small>/ mo</small>${ROOM.neg?'<span class="badge n bk-neg">Negotiable</span>':''}</div><p class="bk-save" data-bsave>${saveLine()}</p>
   <div class="bk-dates"><div><small>Move in</small><span>${d0}</span></div><div><small>Move out</small><span>${d1}</span></div></div>
   ${ended()?endedBox():`<button class="btn btn-primary bk-msg" data-msg>${ic('chat','sm')}Message ${ROOM.who}</button>
@@ -979,7 +979,7 @@ function nearNote(L){if(L.length)return '';
   const st=window.RentletRoomMap?RentletRoomMap.placesState(ROOM):'loading';
   if(st==='loading')return `<div class="nb-wait" role="status" aria-label="Finding places nearby">${[0,1,2].map(()=>'<div class="nb-sk"><i class="sk nb-sh nb-sq"></i><span><i class="sk nb-sh"></i><i class="sk nb-sh nb-short"></i></span><i class="sk nb-sh nb-min"></i></div>').join('')}</div>`;
   if(st==='failed')return `<div class="nb-note"><b>Couldn’t load places nearby</b>Check your connection and try again.<button type="button" class="nb-retry" data-nretry>Try again</button></div>`;
-  return `<p class="nb-note"><b>Nothing to show here yet</b>${st==='signed-out'?'Sign in with your school Google account to see places nearby.':'No places of this kind came up within a short walk.'}</p>`}
+  return `<p class="nb-note"><b>Nothing to show here yet</b>${st==='signed-out'?'Sign in with Google to see places nearby.':'No places of this kind came up within a short walk.'}</p>`}
 /* the drawing uses the same 300 × 180 plan as the area spots, scaled to 800 × 420 */
 const NX=8/3,NY=7/3,nP=([x,y])=>[+(x*NX).toFixed(1),+(y*NY).toFixed(1)];
 function nearMap(){return `<div class="nb-lf" id="nbMap"></div><span class="nb-cap">Exact spot · street address after you both agree</span>`}
@@ -1016,10 +1016,12 @@ const furnTile=()=>`<div class="fflip"><div class="ff-in"><div class="ff front">
 const pplTile=()=>`<p class="tl">You’ll live with</p><button type="button" class="mates" data-mates aria-expanded="false" aria-controls="mdet"><span class="ppl">${ROOM.mates.map((m,i)=>`<i style="background:${['#3d3d45','#6a5a8c'][i%2]}">${m}</i>`).join('')}<i style="background:#ecebf0;color:var(--ink);font-size:11px">You</i></span><span class="msum"><b>${ROOM.mates.length} roommate${ROOM.mates.length>1?'s':''}</b><span>${[ROOM.mate.gender,ROOM.mate.identity].filter(Boolean).join(' · ')||'Ask the host about them'}</span></span>${ic2('down')}</button>
   <div class="mdet" id="mdet"><div><dl>${[['Schedule',ROOM.mate.schedule],['Cooking',ROOM.mate.cooking],['Cleaning',ROOM.mate.clean],['Guests',ROOM.mate.guests]].map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><p>${ROOM.matesText}</p>${ROOM.mate.note?`<p class="mnote">${ROOM.mate.note}</p>`:''}</div></div>`;
 /* host + what we've checked, in one block: each check is a small mark beside the name (tap or hover for the words) */
-const VM={doc:'<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/>',key:'<circle cx="8" cy="15.5" r="3.8"/><path d="M10.8 12.7L19 4.5M16 7.5l2.5 2.5"/>'};
+const VM={mail:'<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/>',doc:'<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/>',key:'<circle cx="8" cy="15.5" r="3.8"/><path d="M10.8 12.7L19 4.5M16 7.5l2.5 2.5"/>'};
 /* Nobody reviews lease proof and Rentlet has no landlord answer, so neither may read as checked */
+const hostVer=()=>{const s=(ROOM.ver||{}).student;return s==='ok'?'Verified school email':s==='none'?'School email not verified':''};
 const trustRow=()=>{const sent=(ROOM.ver||{}).lease==='sent',svg=p=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
-  return `<div class="trust"><span class="tchip ok">${ic('check')}School email verified</span><span class="tchip${sent?'':' none'}">${svg(VM.doc)}${sent?'Lease proof sent, not reviewed':'No lease proof yet'}</span><span class="tchip none">${svg(VM.key)}Landlord approval: ask the host</span><a class="tmore" href="how-it-works.html#verification">What this means</a></div>`};
+  const st=(ROOM.ver||{}).student;
+  return `<div class="trust">${st==='ok'?`<span class="tchip ok">${ic('check')}School email verified</span>`:st==='none'?`<span class="tchip none">${svg(VM.mail)}School email not verified</span>`:'<span class="sk" style="width:176px"></span>'}<span class="tchip${sent?'':' none'}">${svg(VM.doc)}${sent?'Lease proof sent, not reviewed':'No lease proof yet'}</span><span class="tchip none">${svg(VM.key)}Landlord approval: ask the host</span><a class="tmore" href="how-it-works.html#verification">What this means</a></div>`};
 const factIcon=f=>f[0]==='wash'?ic('wash'):`<img src="img/icons/${f[0]}.svg" alt="">`;
 function moreCards(all){const list=Object.entries(ROOMS).filter(([k])=>all&&STATE!=='expired'&&STATE!=='removed'?true:k!==KEY).map(([k,R])=>({k,R,f:fitOf(R)})).filter(x=>x.f.k!=='no'&&x.R.price<=BUDGET*1.05).sort((a,b)=>(b.f.k==='ok')-(a.f.k==='ok')||b.f.ov-a.f.ov).slice(0,3);
   if(!list.length)return '<p class="mut">No other rooms fit these dates yet.</p>';
@@ -1121,8 +1123,12 @@ const today=(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${
 const ISO_DAY=/^\d{4}-\d\d-\d\d$/;
 const loaded=()=>!!ROOM.code&&ISO_DAY.test(String(ROOM.start||''))&&ISO_DAY.test(String(ROOM.end||''));
 /* an ended listing still shows the whole room; its booking actions give way to the ended line */
-function useRoom(R){const same=JSON.stringify(R)===JSON.stringify(ROOM);Object.keys(ROOM).forEach(k=>delete ROOM[k]);Object.assign(ROOM,R);P=ROOM.photos||[];
-  if(STATE!=='ok')setState('ok');else if(!same)render()}
+function useRoom(R){if(R.ver&&R.ver.student==='pending'&&hostTag.has(R.ownerId))R.ver.student=hostTag.get(R.ownerId)?'ok':'none';const same=JSON.stringify(R)===JSON.stringify(ROOM);Object.keys(ROOM).forEach(k=>delete ROOM[k]);Object.assign(ROOM,R);P=ROOM.photos||[];
+  if(STATE!=='ok')setState('ok');else if(!same)render();checkHost()}
+/* whether the host has confirmed a .edu address: the live list doesn't say, so it's asked for once per host */
+const hostTag=new Map();
+function checkHost(){const v=ROOM.ver,id=ROOM.ownerId;if(!v||!id)return;if(v.student!=='pending'){hostTag.set(id,v.student==='ok');return}if(!window.RentletListings)return;
+  RentletListings.ownerVerified(id).then(ok=>{hostTag.set(id,ok);if(ROOM.ownerId!==id||!ROOM.ver)return;ROOM.ver.student=ok?'ok':'none';const t=$('.trust');if(t)t.outerHTML=trustRow();$$('[data-host-ver]').forEach(e=>e.textContent=hostVer())})}
 /* a direct lookup's answer: the room, or taken down / not found / couldn't load */
 function showLookup(r){if(r&&r.state==='ok')return useRoom(RentletListings.toRoom(r.listing));const k=r&&ST_ICON[r.state]?r.state:'error';if(STATE!==k)setState(k)}
 /* liveDown: the live list failed (its listener has stopped), so Try again starts a new one */

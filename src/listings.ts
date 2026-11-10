@@ -333,6 +333,18 @@ export function subscribeActive(cb: (list: ListingDoc[]) => void, onError?: () =
 
 export type Lookup = { state: 'ok'; listing: ListingDoc } | { state: 'removed' | 'missing' | 'error' };
 
+// Whether a host has confirmed a .edu address (verifications/{uid}, written only by functions/src/verify.ts).
+const hostTags = new Map<string, Promise<boolean>>();
+export function ownerVerified(uid: string): Promise<boolean> {
+  if (!uid) return Promise.resolve(false);
+  let tag = hostTags.get(uid);
+  if (!tag) {
+    tag = getDoc(doc(db, 'verifications', uid)).then((s) => s.exists(), () => false);
+    hostTags.set(uid, tag);
+  }
+  return tag;
+}
+
 export async function getListing(code: string): Promise<Lookup> {
   try {
     const snap = await getDoc(doc(db, 'listings', code));
@@ -340,7 +352,7 @@ export async function getListing(code: string): Promise<Lookup> {
     const listing = fromDoc(snap.id, snap.data());
     if (listing.status !== 'active') return { state: 'removed' };
     // an ended listing still opens (old links keep working; toRoom marks it ended), a broken one doesn't
-    return usableListing(listing) ? { state: 'ok', listing } : { state: 'missing' };
+    return usableListing(listing) ? { state: 'ok', listing: { ...listing, ownerVerified: await ownerVerified(listing.ownerId) } } : { state: 'missing' };
   } catch (e) {
     // the rules hide listings that were taken down from everyone but their host
     return (e as { code?: string }).code === 'permission-denied' ? { state: 'removed' } : { state: 'error' };

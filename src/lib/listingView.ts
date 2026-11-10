@@ -47,6 +47,7 @@ export interface PostForm {
 
 export interface ListingDoc {
   ownerId: string;
+  ownerVerified?: boolean; // verifications/{ownerId}, added when the listing is read on its own
   ownerName: string;
   ownerPhoto: string;
   status: 'active' | 'taken' | 'hidden';
@@ -445,9 +446,10 @@ export function toRoom(d: ListingDoc, today: string = localDay()) {
       guests: html(pref('Visitors') || 'Ask the host'),
       note: html(text('rmNote')),
     },
-    // only what something real backs: the school (.edu) sign-in, and a lease proof the host sent. Nobody reviews
+    // only what something real backs: a .edu address confirmed with a code, and a lease proof the host sent. Nobody reviews
     // that proof, and there is no landlord answer yet, so the room page must not show either as checked.
-    ver: { student: 'ok', lease: f.proof === 'lease' ? 'sent' : 'none', landlord: 'none' },
+    ownerId: str(r.ownerId),
+    ver: { student: r.ownerVerified === true ? 'ok' : r.ownerVerified === false ? 'none' : 'pending', lease: f.proof === 'lease' ? 'sent' : 'none', landlord: 'none' },
     // the map: the exact spot and the places saved with the listing (names are escaped when drawn)
     location: spotOf(r.location),
     near: nearOf(r.near),

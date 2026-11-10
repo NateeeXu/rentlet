@@ -224,8 +224,10 @@ describe('room page answers', () => {
     expect(toRoom({ ...bare, form: { ...required, refund: true } })).toMatchObject({ deposit: 0, refund: '' });
   });
   it('shows only verification something backs', () => {
-    expect(toRoom(bare).ver).toEqual({ student: 'ok', lease: 'none', landlord: 'none' });
-    expect(toRoom({ ...bare, form: { ...required, proof: 'lease' } }).ver).toEqual({ student: 'ok', lease: 'sent', landlord: 'none' });
+    expect(toRoom(bare).ver).toEqual({ student: 'pending', lease: 'none', landlord: 'none' });
+    expect(toRoom({ ...bare, ownerVerified: true }).ver.student).toBe('ok');
+    expect(toRoom({ ...bare, ownerVerified: false }).ver.student).toBe('none');
+    expect(toRoom({ ...bare, form: { ...required, proof: 'lease' } }).ver).toEqual({ student: 'pending', lease: 'sent', landlord: 'none' });
     expect(toRoom(listing).ver.landlord).toBe('none');
   });
   it('shows the view whether or not there is an elevator', () => {

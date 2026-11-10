@@ -6,7 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { getListing } from './listings';
 import { todayISO } from './lib/format';
-import { isNorthwesternEmail } from './lib/nu';
+import { canSignIn } from './lib/nu';
 import {
   isListingCode,
   isRequestId,
@@ -38,7 +38,7 @@ declare global {
 // rooms / reqs: null while loading, 'error' when they can't be shown, else { items, gone }
 const page = (patch: Record<string, unknown>) => window.RLS?.update(patch);
 const errCode = (e: unknown) => (e as { code?: string })?.code ?? '';
-const isNU = (u: User | null): u is User => !!u && isNorthwesternEmail(u.email) && u.emailVerified;
+const isNU = (u: User | null): u is User => canSignIn(u);
 
 let uid: string | null = null;
 let gen = 0; // each account gets a number, so a slow answer for an earlier one never lands

@@ -24,7 +24,7 @@ import {
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
-import { firstName, isNorthwesternEmail } from './lib/nu';
+import { canSignIn, firstName } from './lib/nu';
 import { getListing } from './listings';
 import type { ListingDoc } from './lib/listingView';
 import {
@@ -234,9 +234,9 @@ function loadProfile(uid: string): Promise<Profile | null> {
   if (profiles.has(uid)) return Promise.resolve(profiles.get(uid) ?? null);
   let read = profileReads.get(uid);
   if (!read) {
-    read = getDoc(doc(db, 'users', uid))
-      .then((snap) => {
-        const p = profileFromData(snap.exists() ? snap.data() : null);
+    read = Promise.all([getDoc(doc(db, 'users', uid)), getDoc(doc(db, 'verifications', uid)).then((v) => v.exists(), () => false)])
+      .then(([snap, school]) => {
+        const p = profileFromData(snap.exists() ? snap.data() : null, school);
         profiles.set(uid, p);
         push();
         return p;
@@ -249,7 +249,7 @@ function loadProfile(uid: string): Promise<Profile | null> {
 }
 
 onAuthStateChanged(auth, (u) => {
-  const ok = !!u && isNorthwesternEmail(u.email) && u.emailVerified;
+  const ok = canSignIn(u);
   const next: Me | null = ok ? { uid: u!.uid, name: firstName(u!.displayName), photo: u!.photoURL ?? '', email: u!.email ?? '' } : null;
   const changed = (next?.uid ?? null) !== (me?.uid ?? null) || authState === 'unknown';
   me = next;
@@ -671,7 +671,7 @@ async function resolve(params: { c?: string | null; listing?: string | null; wit
   if (roles.hostId === uid) {
     const p = await loadProfile(roles.guestId);
     if (!p) return { notice: 'We couldn’t find that person.' };
-    names[roles.guestId] = p.name || 'Student';
+    names[roles.guestId] = p.name || 'Member';
     photos[roles.guestId] = p.photoURL;
   } else {
     names[L.ownerId] = L.ownerName;

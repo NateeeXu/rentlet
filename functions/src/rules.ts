@@ -26,14 +26,12 @@ export const CHICAGO_AREA = { south: 41.4, north: 42.5, west: -88.4, east: -87.2
 export const inChicagoArea = (p: Point): boolean =>
   p.lat >= CHICAGO_AREA.south && p.lat <= CHICAGO_AREA.north && p.lng >= CHICAGO_AREA.west && p.lng <= CHICAGO_AREA.east;
 
-const SCHOOL_EMAIL = /^[^@\s]+@([a-z0-9-]+\.)+edu$/i;
-
-// A signed-in Google account with a verified school email ending in .edu (Founder, Nov 4: any school,
-// not only Northwestern). The name is kept for its callers.
-export function isNorthwesternToken(token: unknown): boolean {
+// A signed-in Google account with a verified email (Founder, Nov 9: sign-in is open to any Google account; the
+// student tag is separate, see verify.ts).
+export function isVerifiedAccount(token: unknown): boolean {
   if (!token || typeof token !== 'object') return false;
   const t = token as { email?: unknown; email_verified?: unknown };
-  return t.email_verified === true && typeof t.email === 'string' && SCHOOL_EMAIL.test(t.email.trim());
+  return t.email_verified === true && typeof t.email === 'string' && t.email.trim().length > 0;
 }
 
 export class InputError extends Error {}

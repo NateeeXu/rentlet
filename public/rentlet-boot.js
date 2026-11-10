@@ -81,8 +81,12 @@
   var HEART = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.5s-7-4.3-7-9.6A3.9 3.9 0 0 1 12 7.6a3.9 3.9 0 0 1 7 2.3c0 5.3-7 9.6-7 9.6z"/></svg>';
   var MSG_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5h15a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3.5V17h-1A1.5 1.5 0 0 1 3 15.5v-9A1.5 1.5 0 0 1 4.5 5z"/></svg>';
 
+  var verified = false;
+  try { verified = authed && sessionStorage.getItem('rl-verified') === '1'; } catch (_) { verified = false; }
+
   window.RL = {
     authed: authed,
+    verified: verified,
     user: user,
     initial: initial,
     unread: unread,
@@ -120,7 +124,7 @@
         ? link('post.html', 'Post a listing', 'rl-b') + link('request.html', 'Post a request', 'rl-b') + '<hr>'
           + '<a href="messages.html" data-rl-msgs' + (here === 'messages' ? ' aria-current="page"' : '') + '><span>Messages</span><span class="rl-msgs-n"' + (n ? '' : ' hidden') + '>' + (n > 9 ? '9+' : n) + '</span></a>'
           + link('saved.html', 'Saved') + '<hr>' + pages + '<hr>'
-          + link('profile.html', 'Profile') + '<button type="button" data-rl-signout>Sign out</button>'
+          + link('verification.html', 'Verification') + link('profile.html', 'Profile') + '<button type="button" data-rl-signout>Sign out</button>'
         : '<button type="button" class="rl-b" data-rl-signin>Sign in</button><hr>'
           + link('post.html', 'Post a listing') + link('request.html', 'Post a request') + '<hr>' + pages;
       var av = R.authed ? '<span class="rl-mav">' + R.me() + '</span>' : '<span class="rl-mav out">' + PERSON + '</span>';

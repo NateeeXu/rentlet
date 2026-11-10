@@ -1,6 +1,6 @@
 // Rentlet Cloud Functions. The HERE API key lives only here, as the Firebase secret HERE_API_KEY;
-// the site calls these callables and never sees the key. Every call needs a signed-in, verified
-// Northwestern Google account (the same rule as firestore.rules).
+// the site calls these callables and never sees the key. Every call needs a signed-in Google account
+// with a verified email (the same rule as firestore.rules).
 import { HttpsError, onCall, type CallableOptions, type CallableRequest } from 'firebase-functions/https';
 import * as logger from 'firebase-functions/logger';
 import { defineSecret } from 'firebase-functions/params';
@@ -25,7 +25,7 @@ import {
 import {
   CAMPUS_POINT,
   InputError,
-  isNorthwesternToken,
+  isVerifiedAccount,
   kmBetween,
   MAX_WALK_KM,
   parseLookup,
@@ -50,9 +50,9 @@ class HereError extends Error {
   }
 }
 
-function requireNorthwestern(req: CallableRequest): void {
-  if (!req.auth) throw new HttpsError('unauthenticated', 'Sign in with your Northwestern account.');
-  if (!isNorthwesternToken(req.auth.token)) throw new HttpsError('permission-denied', 'Rentlet is for Northwestern accounts.');
+function requireAccount(req: CallableRequest): void {
+  if (!req.auth) throw new HttpsError('unauthenticated', 'Sign in first.');
+  if (!isVerifiedAccount(req.auth.token)) throw new HttpsError('permission-denied', 'Sign in with a Google account with a verified email.');
 }
 
 function parsed<T>(parse: () => T): T {
@@ -95,7 +95,7 @@ async function walk(from: Point, to: Point): Promise<number | null> {
 // A query HERE refuses (400) has no suggestions; any other HERE failure is "unavailable", which the
 // site retries after a short wait.
 export const placeSuggest = onCall(OPTIONS, async (req): Promise<Suggestion[]> => {
-  requireNorthwestern(req);
+  requireAccount(req);
   const { q, campusId } = parsed(() => parseSuggest(req.data));
   if (q.length < 3) return [];
   const campus = CAMPUS_POINT[campusId];
@@ -110,7 +110,7 @@ export const placeSuggest = onCall(OPTIONS, async (req): Promise<Suggestion[]> =
 // placeLookup({id} or {q} or {lat, lng}, campusId) -> the point, area, ZIP and minutes on foot to the
 // campus; null when not found. With coordinates only the walk is looked up (label empty, area null).
 export const placeLookup = onCall(OPTIONS, async (req): Promise<(Place & { walk: number | null }) | null> => {
-  requireNorthwestern(req);
+  requireAccount(req);
   const input = parsed(() => parseLookup(req.data));
   const campus = CAMPUS_POINT[input.campusId];
   if ('point' in input) {
@@ -137,7 +137,7 @@ const nearbyCache = new Map<string, { at: number; list: NearbyPlace[] }>();
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const nearby = onCall(OPTIONS, async (req): Promise<NearbyPlace[]> => {
-  requireNorthwestern(req);
+  requireAccount(req);
   const { lat, lng } = parsed(() => parseNearby(req.data));
   const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
   const hit = nearbyCache.get(key);
@@ -175,3 +175,5 @@ export { sharePreview } from './share.js';
 export { routeLine } from './route.js';
 // an email when someone messages you and you haven't opened the chat
 export { emailOnMessage } from './notify.js';
+// the student tag: a code sent to a .edu address (src/verification.ts calls these)
+export { sendSchoolCode, verifySchoolCode } from './verify.js';

@@ -8,6 +8,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -21,7 +22,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { todayISO } from './lib/format';
-import { isNorthwesternEmail } from './lib/nu';
+import { canSignIn } from './lib/nu';
 import type { ListingDoc } from './lib/listingView';
 import {
   buildRequest,
@@ -62,16 +63,27 @@ function rowOf(d: QueryDocumentSnapshot<DocumentData>): RequestRow {
 async function signedInUser(): Promise<User | null> {
   await auth.authStateReady();
   const u = auth.currentUser;
-  return u && u.emailVerified && isNorthwesternEmail(u.email) ? u : null;
+  return canSignIn(u) ? u : null;
 }
 
 const myOpenQuery = (uid: string) => query(requests, where('ownerId', '==', uid), where('status', '==', 'open'));
+
+// Who has confirmed a .edu address (verifications/{uid}), asked once per person.
+const tags = new Map<string, boolean>();
 
 // Every open request whose move-in day has not passed, newest first, kept live.
 export function subscribeOpen(cb: (rows: RequestRow[]) => void, onError?: () => void): () => void {
   return onSnapshot(
     query(requests, where('status', '==', 'open')),
-    (snap) => cb(liveRows(snap.docs.map(rowOf), todayISO())),
+    (snap) => {
+      const rows = liveRows(snap.docs.map(rowOf), todayISO());
+      const paint = () => cb(rows.map((r) => ({ ...r, verified: tags.get(r.uid) === true })));
+      paint();
+      const ask = [...new Set(rows.map((r) => r.uid))].filter((id) => id && !tags.has(id));
+      if (ask.length) {
+        Promise.all(ask.map((id) => getDoc(doc(db, 'verifications', id)).then((v) => tags.set(id, v.exists()), () => tags.set(id, false)))).then(paint);
+      }
+    },
     () => onError?.(),
   );
 }
@@ -190,7 +202,7 @@ if (typeof window.RL_onRequests === 'function') {
 if (typeof window.RL_onMine === 'function') {
   let last: string | null | undefined;
   onAuthStateChanged(auth, (u) => {
-    const uid = u && u.emailVerified && isNorthwesternEmail(u.email) ? u.uid : null;
+    const uid = u && canSignIn(u) ? u.uid : null;
     if (uid === last) return;
     last = uid;
     void refreshMine();

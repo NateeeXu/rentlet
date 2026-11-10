@@ -218,7 +218,7 @@ const skReqs=()=>`<div class="rq-grid" aria-hidden="true">${'<div class="sk-req"
 
 /* ---------- the tabs ---------- */
 const T={
-  rooms:{what:'room',state:'listed',empty:'Rooms you save show up here.',go:['index.html','Find a place'],card:roomCard,grid:'cx-grid',sk:skRooms,forget:'forgetGone'},
+  rooms:{what:'room',state:'listed',empty:'Rooms you save show up here.',go:['/?rooms=1','See all rooms'],card:roomCard,grid:'cx-grid',sk:skRooms,forget:'forgetGone'},
   requests:{what:'request',state:'open',empty:'Requests you save show up here.',go:['requests.html','Browse requests'],card:reqCard,grid:'rq-grid',sk:skReqs,forget:'forgetGoneReq'}};
 const goneNote=(n,t)=>n?`<p class="note">${n===1?`1 saved ${t.what} is`:`${n} saved ${t.what}s are`} no longer ${t.state}. <button type="button" class="lnk" data-act="${t.forget}">Remove ${n===1?'it':'them'}</button></p>`:'';
 function panelBody(k){const V=S[KEY[k]],t=T[k];

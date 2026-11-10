@@ -375,12 +375,6 @@ const api = {
     return usePhoto(u, await getDownloadURL(r));
   },
 
-  // Back to the photo from the Google account.
-  async useGooglePhoto(): Promise<string> {
-    const u = need();
-    return usePhoto(u, u.photoURL ?? '');
-  },
-
   async saveEmailPref(on: boolean): Promise<void> {
     const u = need();
     await setDoc(doc(db, 'users', u.uid, 'private', 'notifications'), { emailMessages: on });

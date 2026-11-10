@@ -106,7 +106,7 @@ small a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;mar
 .getv:hover{border-color:var(--ink)}
 .vb{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:var(--ok);white-space:nowrap}
 .vb .ic{width:15px;height:15px}
-.seen .note{margin-top:10px}
+
 .pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid var(--hair);border-radius:999px;font-size:13px;font-weight:600;color:var(--ink);background:#fff;white-space:nowrap}
 .pill i{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
 .pill.ok i{background:var(--ok)}.pill.bad i{background:var(--red)}
@@ -304,7 +304,6 @@ const ready=v=>v&&v!=='error';
 const nm=()=>(ready(S.profile)&&S.profile.name)||(S.me&&S.me.name)||'You';
 const photo=()=>(ready(S.profile)&&S.profile.photo)||(S.me&&S.me.photo)||'';
 const initial=()=>nm().trim().charAt(0).toUpperCase()||'?';
-const customPhoto=()=>/\/o\/avatars%2F/.test(photo());
 /* a new photo (or back to the Google one): the avatar dims while it saves */
 function setPhoto(run,done){if(S.busy.photo||!window.RentletProfile)return;S.busy.photo=true;render();
   run().then(()=>toast(done),e=>toast(msg(e))).finally(()=>{S.busy.photo=false;render()})}
@@ -324,9 +323,8 @@ function secYou(){
   const nameBlock=S.editName
     ?`<div class="nmedit"><label class="in"><input data-f="name" value="${esc(S.tmp.name!=null?S.tmp.name:nm())}" maxlength="24" aria-label="First name" autocomplete="given-name"></label><button type="button" class="btn" data-act="saveName" ${S.busy.name?'disabled':''}>Save</button><button type="button" class="btn sec" data-act="cancelName">Cancel</button></div>`
     :`<div class="nmrow"><h1 class="h1">${esc(nm())}</h1><button type="button" class="lk" data-act="editName">Edit name</button></div>`;
-  return `<div class="who"><div class="avw${S.busy.photo?' busy':''}"><span class="av ink" aria-hidden="true">${avatar()}</span><button type="button" class="avc" data-act="pickPhoto" aria-label="Change photo" ${S.busy.photo?'disabled':''}>${ic('camera')}</button><input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" data-photo hidden></div><div class="nm">${nameBlock}<p class="since">${RL.verified?`<span class="vb">${ic('shield')}Verified school email</span>`:'<a class="getv" href="verification.html">Get the student tag</a>'}${S.busy.photo?'<span class="phst" role="status">Uploading photo…</span>':customPhoto()?'<button type="button" class="lk" data-act="googlePhoto">Use Google photo</button>':''}</p></div></div>
-  <div class="seen"><span class="lbl">What others see</span><div class="sc"><span class="av">${avatar()}</span><div><b>${esc(nm())}${role()?` · ${esc(role())}`:''}</b>${RL.verified?`<span><span class="vb">${ic('shield')}Verified</span></span>`:''}</div></div>
-  <p class="note">First name only, with your photo. Your email and WhatsApp stay private.</p></div>`}
+  return `<div class="who"><div class="avw${S.busy.photo?' busy':''}"><span class="av ink" aria-hidden="true">${avatar()}</span><button type="button" class="avc" data-act="pickPhoto" aria-label="Change photo" ${S.busy.photo?'disabled':''}>${ic('camera')}</button><input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" data-photo hidden></div><div class="nm">${nameBlock}<p class="since">${RL.verified?`<span class="vb">${ic('shield')}Verified school email</span>`:'<a class="getv" href="verification.html">Get the student tag</a>'}${S.busy.photo?'<span class="phst" role="status">Uploading photo…</span>':''}</p></div></div>
+  <div class="seen"><span class="lbl">What others see</span><div class="sc"><span class="av">${avatar()}</span><div><b>${esc(nm())}${role()?` · ${esc(role())}`:''}</b>${RL.verified?`<span><span class="vb">${ic('shield')}Verified</span></span>`:''}</div></div></div>`}
 
 function listingCard(l){const [c,t]=l.takenDown?['bad','Taken down']:STATUS[l.status]||['',esc(l.status)],live=l.status==='active',link=live?`room.html?room=${l.code}`:'',dis=S.busy[l.code]?'disabled':'',id=`data-id="${l.code}" ${dis}`;
   const img=l.img?`<img src="${esc(l.img)}" alt="" loading="lazy">`:'';
@@ -537,7 +535,6 @@ document.addEventListener('click',e=>{const t=e.target;
     case 'confirmDelReq':S.sheet=null;run('r:'+id,()=>window.RentletProfile.deleteRequest(id),'Request deleted.');return;
     case 'useNu':S.f.cemail=nuEmail();render();queueContact(true);return;
     case 'pickPhoto':{const i=$('[data-photo]');if(i&&!S.busy.photo)i.click();return}
-    case 'googlePhoto':setPhoto(()=>window.RentletProfile.useGooglePhoto(),'Using your Google photo.');return;
     case 'undo':{const f=undoFn;undoFn=null;$('#toast').classList.remove('on');if(f)f();return}
     case 'signout':S.sheet={kind:'signout'};render();return;
     case 'confirmSignout':S.sheet=null;render();RL.signOut();return;

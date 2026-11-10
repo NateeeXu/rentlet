@@ -13,7 +13,12 @@ const ADMIN_EMAILS = defineSecret('ADMIN_EMAILS');
 const OPTIONS: CallableOptions = { region: 'us-central1', memory: '256MiB', timeoutSeconds: 30, maxInstances: 5, secrets: [ADMIN_EMAILS] };
 const SITE = 'https://rentlet-nu.web.app';
 
-export const adminList = (raw: string): string[] => raw.split(/[\s,;]+/).map((s) => s.trim().toLowerCase()).filter((s) => s.includes('@'));
+// Separators typed on any keyboard (Chinese commas included); stray quotes or brackets around an address are dropped.
+export const adminList = (raw: string): string[] =>
+  raw
+    .split(/[\s,;，；、]+/)
+    .map((s) => s.replace(/^[<"'(\[“‘]+|[>"')\]”’.。]+$/g, '').toLowerCase())
+    .filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s));
 export const isOnTeam = (token: { email?: unknown; email_verified?: unknown } | undefined, list: string[]): boolean =>
   !!token && token.email_verified === true && typeof token.email === 'string' && list.includes(token.email.trim().toLowerCase());
 
@@ -48,9 +53,11 @@ async function tellHost(ownerId: string, subject: string, heading: string, body:
   }
 }
 
-export const claimAdmin = onCall(OPTIONS, async (req): Promise<{ admin: boolean }> => {
+export const claimAdmin = onCall(OPTIONS, async (req): Promise<{ admin: boolean; email: string }> => {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Sign in first.');
-  const on = isOnTeam(req.auth.token, adminList(ADMIN_EMAILS.value()));
+  const list = adminList(ADMIN_EMAILS.value());
+  const on = isOnTeam(req.auth.token, list);
+  logger.info('Team check', { listSize: list.length, onTeam: on }); // the size only, never the addresses
   if (on !== (req.auth.token.admin === true)) {
     const u = await getAuth().getUser(req.auth.uid);
     const claims = { ...(u.customClaims ?? {}) } as Record<string, unknown>;
@@ -58,7 +65,7 @@ export const claimAdmin = onCall(OPTIONS, async (req): Promise<{ admin: boolean 
     else delete claims.admin;
     await getAuth().setCustomUserClaims(req.auth.uid, claims);
   }
-  return { admin: on };
+  return { admin: on, email: typeof req.auth.token.email === 'string' ? req.auth.token.email : '' };
 });
 
 const MAIL_OPTIONS: CallableOptions = { ...OPTIONS, secrets: [ADMIN_EMAILS, MAIL_USER, MAIL_PASSWORD] };

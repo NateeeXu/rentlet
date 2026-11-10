@@ -51,14 +51,18 @@ export interface ListingItem {
 
 const api = {
   // 'yes' once the sign-in email is on the team list (the token is refreshed so the rules see the claim)
-  async access(): Promise<'signed-out' | 'no' | 'yes'> {
+  // 'yes' once the sign-in email is on the team list (the token is refreshed so the rules see the claim); `email` is
+  // the address that was checked, so a wrong account is easy to spot
+  async access(): Promise<{ state: 'signed-out' | 'no' | 'yes' | 'error'; email: string }> {
     await auth.authStateReady();
     const u = auth.currentUser;
-    if (!canSignIn(u)) return 'signed-out';
+    if (!canSignIn(u)) return { state: 'signed-out', email: '' };
+    const email = u!.email ?? '';
     const r = await call('claimAdmin', {});
-    if (!r.ok || r.data.admin !== true) return 'no';
+    if (!r.ok) return { state: 'error', email };
+    if (r.data.admin !== true) return { state: 'no', email };
     await u!.getIdToken(true);
-    return 'yes';
+    return { state: 'yes', email };
   },
 
   async queues() {

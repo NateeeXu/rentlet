@@ -65,7 +65,7 @@ h1{font-family:var(--serif);font-size:38px;font-weight:500;letter-spacing:-.6px;
 .form textarea{width:100%;min-height:96px;resize:vertical;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:16px;background:#fff}
 .err{margin:0;font-size:14px;font-weight:600;color:var(--bad)}
 .back{display:none}
-.gate{max-width:460px;margin:50px auto;text-align:center}.gate p{color:var(--muted);font-size:16px;margin:0 0 20px}
+.gate{max-width:460px;margin:50px auto;text-align:center}.gate p{color:var(--muted);font-size:16px;margin:0 0 20px}.gate p.who{font-size:15px;line-height:1.5;margin-top:-8px}.gate p.who b{color:var(--ink);font-weight:600;overflow-wrap:anywhere}
 .sk{display:block;background:linear-gradient(90deg,#e9e9ec 25%,#f2f2f4 50%,#e9e9ec 75%);background-size:200% 100%;animation:sksh 1.5s linear infinite;border-radius:10px}
 @keyframes sksh{from{background-position:100% 0}to{background-position:-100% 0}}
 .foot{border-top:1px solid var(--hair);padding:28px 0 calc(24px + env(safe-area-inset-bottom));margin-top:auto;font-size:13px;color:var(--muted)}
@@ -133,7 +133,8 @@ function detail(x){if(!x)return `<div class="det"><p class="empty">Nothing to re
   return `<div class="det">${back}<div><span class="ty fb">${esc(f.type==='bug'?'Bug':f.type==='idea'?'Idea':'Feedback')}</span><h2 style="font-size:18px">From ${f.signedIn?'a signed-in user':'a visitor'} · ${when(f.atMs)}</h2><span class="mut">On ${esc(f.page||'/')}${f.email?' · '+esc(f.email):''}</span></div><p class="q">${esc(f.text)}</p>
     ${x.done?'<div class="out">Done.</div>':`${err}<div class="acts"><button type="button" class="pri" data-do="fbdone" ${busy}>Mark done</button></div>`}</div>`}
 function body(){if(S.phase==='signin')return `<div class="gate"><h1>Review</h1><p>Sign in with your team account.</p><button type="button" class="pri" data-rl-signin>Sign in with Google</button></div>`;
-  if(S.phase==='no')return `<div class="gate"><h1>Review</h1><p>This page is for the Rentlet team.</p><a class="sec" href="index.html">Back to Rentlet</a></div>`;
+  if(S.phase==='no')return `<div class="gate"><h1>Review</h1><p>This page is for the Rentlet team.</p>${S.email?`<p class="who">You’re signed in as <b>${esc(S.email)}</b>. If you’re on the team, this email isn’t on the team list yet.</p>`:''}<a class="sec" href="index.html">Back to Rentlet</a></div>`;
+  if(S.phase==='denied')return `<div class="gate"><h1>Review</h1><p>Couldn’t check your access. Check your connection and try again.</p><button type="button" class="pri" data-retry>Try again</button></div>`;
   if(S.phase==='error')return `<div class="gate"><h1>Review</h1><p>Couldn’t load the queues. Check your connection and try again.</p><button type="button" class="pri" data-reload>Try again</button></div>`;
   if(S.phase==='loading')return `<h1>Review</h1><div class="box" aria-busy="true"><div class="nav">${[0,1,2,3].map(()=>'<span class="sk" style="height:40px"></span>').join('')}</div><div class="list">${[0,1,2].map(()=>'<div class="it"><span class="sk" style="width:44px;height:44px"></span><div><span class="sk" style="height:14px;width:70%"></span></div></div>').join('')}</div><div class="det"><span class="sk" style="height:28px;width:50%"></span></div></div>`;
   const q=Q(),list=q[S.tab]||[],sel=list.find(x=>key(x)===S.sel)||null;
@@ -147,8 +148,8 @@ function pick(k){S.sel=k;S.form=null;S.err='';S.open=true;const x=(Q()[S.tab]||[
 function firstOf(tab){const l=Q()[tab]||[];return l[0]?key(l[0]):null}
 async function load(keepTab){if(!window.RentletReview)return;try{S.D=await RentletReview.queues();S.phase='ready'}catch(e){S.phase='error'}
   if(!keepTab||!(Q()[S.tab]||[]).some(x=>key(x)===S.sel))S.sel=firstOf(S.tab);render();if(S.sel&&innerWidth>700)pick(S.sel)}
-async function start(){if(!window.RentletReview)return;const a=await RentletReview.access().catch(()=>'no');if(a==='signed-out'){S.phase='signin';return render()}
-  if(a==='no'){S.phase='no';return render()}await load()}
+async function start(){if(!window.RentletReview)return;const a=await RentletReview.access().catch(()=>({state:'error',email:''}));S.email=a.email;if(a.state==='signed-out'){S.phase='signin';return render()}
+  if(a.state==='no'){S.phase='no';return render()}if(a.state==='error'){S.phase='denied';return render()}await load()}
 const say=m=>{if(window.Rentlet&&Rentlet.toast)Rentlet.toast(m)};
 async function act(run,done){S.busy=true;S.err='';render();const r=await run();S.busy=false;
   if(r.ok){S.form=null;say(done);const was=S.sel;await load(true);if(S.sel===was){S.sel=firstOf(S.tab);S.open=false;render();if(S.sel&&innerWidth>700)pick(S.sel)}}
@@ -158,6 +159,7 @@ document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest)return;
   const p=t.closest('[data-pick]');if(p){pick(p.dataset.pick);return}
   if(t.closest('[data-back]')){S.open=false;S.form=null;render();return}
   if(t.closest('[data-reload]')){S.phase='loading';render();load();return}
+  if(t.closest('[data-retry]')){S.phase='loading';render();start();return}
   const rs=t.closest('[data-reason]');if(rs&&S.form){S.form.reason=rs.dataset.reason;S.err='';render();return}
   if(t.closest('[data-cancel]')){S.form=null;S.err='';render();return}
   const x=(Q()[S.tab]||[]).find(y=>key(y)===S.sel);if(!x||S.busy)return;const R=window.RentletReview;

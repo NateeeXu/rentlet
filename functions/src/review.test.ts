@@ -4,6 +4,8 @@ import { LEASE_REASONS, LISTING_REASONS, adminList, isOnTeam, reasonOf } from '.
 describe('the team list', () => {
   const list = adminList(' A@u.northwestern.edu, b@gmail.com;c@x.edu\nnot-an-email ');
   it('reads emails separated by commas, semicolons or lines, lower case', () => expect(list).toEqual(['a@u.northwestern.edu', 'b@gmail.com', 'c@x.edu']));
+  it('reads Chinese commas and stray quotes too', () =>
+    expect(adminList('a@u.northwestern.edu，B@gmail.com、 "c@x.edu"；<d@y.com>')).toEqual(['a@u.northwestern.edu', 'b@gmail.com', 'c@x.edu', 'd@y.com']));
   it('lets in only a verified email on the list', () => {
     expect(isOnTeam({ email: 'B@gmail.com', email_verified: true }, list)).toBe(true);
     expect(isOnTeam({ email: 'b@gmail.com', email_verified: false }, list)).toBe(false);

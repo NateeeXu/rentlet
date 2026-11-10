@@ -868,7 +868,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=6ac13f70"></script>
+<script src="/rentlet-boot.js?v=893234e0"></script>
 </head>
 <body>
 
@@ -1266,7 +1266,7 @@ const OLD_POST=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-pos
 const CXFAQ=[['Is Rentlet a broker?','No. Rentlet is a place for students to post and find sublets and lease takeovers near Northwestern, and to talk to each other. We don’t act as an agent for either side.'],
  ['Do you collect rent or deposits?','No. You pay the other person or the building directly. Before you pay, check the lease, the landlord’s or building’s approval, and who receives the money.'],
  ['Who can use Rentlet?','Anyone can browse. To post, message or save, sign in with a Google account. People who confirm a .edu email get the School email verified label.'],
- ['How are listings checked?','Everyone who posts signs in with Google, and anyone can report a listing. Reported listings are reviewed and taken down if they break the rules.'],
+ ['How are listings checked?','Listings go live right away, and the Rentlet team looks at new and edited ones soon after. Anyone can report a listing too. A listing that breaks the rules is taken down, and the host is told why.'],
  ['When is my contact information shared?','Only when you both agree. Until then you talk inside Rentlet.'],
  ['Which areas do you cover?','Places near Northwestern’s Evanston and Chicago campuses, and in downtown Chicago.']];
 const cxFaq=()=>`<section class="cx-sec"><div class="wrap"><div class="cx-sh"><div><h2>FAQ</h2></div><button type="button" class="cx-lnk" onclick="location.href='how-it-works.html#faq'">More questions</button></div><div class="cx-faq">${CXFAQ.map((f,i)=>`<details ${i?'':'open'}><summary>${f[0]}</summary><p>${f[1]}</p></details>`).join('')}</div></div></section>`;

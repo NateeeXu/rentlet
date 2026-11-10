@@ -195,7 +195,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=6ac13f70"></script>
+<script src="/rentlet-boot.js?v=893234e0"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -604,7 +604,7 @@ const STEPS=[
  {q:'Photos',h:`At least one of the bedroom. Best with 2 of the bedroom and 1 of each other area, up to ${MAXPH} photos. Phone photos in daylight are fine.`,
   need:()=>!S.photos.bedroom.length?[['photos','Add at least one photo of the bedroom.']]:photoCount()>MAXPH?[['photos',`Remove photos until there are ${MAXPH} or fewer.`]]:[],
   body:()=>`${lostPhotosNote()}<div class="grp" data-need="photos">${nm('photos',1)}${photosHtml()}</div><div class="grp"><div class="tog"><div><b>Video walk-through</b><span>${S.video?esc(S.video):'Optional · MP4, MOV or WebM, up to 60 MB'}</span></div>${S.video?`<button type="button" class="lk" data-video-rm>Remove</button>`:`<label class="lk" tabindex="0" role="button"><input type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" data-video hidden>Add</label>`}</div></div><p class="note">${photoCount()} of ${MAXPH} photos · ${areasDone()} of ${AREAS.length} areas done. Photos that don’t match the place can be reported to the Rentlet team.</p>`},
- {q:'Prove it’s yours',h:'Lease proof shows as “sent, not reviewed”, because Rentlet doesn’t check it.',
+ {q:'Prove it’s yours',h:'The Rentlet team looks at lease proof. Until then it shows as “sent, not reviewed”.',
   need:()=>!S.proof?[['proof','Choose how you’ll show the place is yours.']]:S.proof==='lease'&&!PROOF.length&&!(EDIT&&EDIT.proof)?[['proof','Add a photo of the lease or the landlord’s email, or choose School email.']]:[],
   body:()=>`${lostProofNote()}<div data-need="proof"><div class="opts" style="margin-top:28px">${opt(S.proof==='student','School email',RL.verified?'Verified':'Not verified yet','data-set="proof:student"')}${opt(S.proof==='lease','Lease proof or landlord approval','A photo of the lease page with your name, or the landlord’s email. Cover anything else.','data-set="proof:lease"')}</div>${S.proof==='lease'?proofHtml():''}${nm('proof')}</div>${RL.verified?'':'<p class="note"><a href="verification.html" target="_blank" rel="noopener">Verify your school email</a> to get the student tag.</p>'}`},
  {q:'Check and publish',h:'This is how it will look. After publishing you can edit it, mark it as taken or take it down from Profile.',body:()=>{

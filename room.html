@@ -815,7 +815,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=6ac13f70"></script>
+<script src="/rentlet-boot.js?v=893234e0"></script>
 </head>
 <body>
 <div class="rv" hidden><span id="roomTabs"></span><span id="stTabs"></span></div>
@@ -1019,9 +1019,9 @@ const pplTile=()=>`<p class="tl">You’ll live with</p><button type="button" cla
 const VM={mail:'<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/>',doc:'<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6M9 12h6M9 15.5h3.5"/>',key:'<circle cx="8" cy="15.5" r="3.8"/><path d="M10.8 12.7L19 4.5M16 7.5l2.5 2.5"/>'};
 /* Nobody reviews lease proof and Rentlet has no landlord answer, so neither may read as checked */
 const hostVer=()=>{const s=(ROOM.ver||{}).student;return s==='ok'?'Verified school email':s==='none'?'School email not verified':''};
-const trustRow=()=>{const sent=(ROOM.ver||{}).lease==='sent',svg=p=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
+const trustRow=()=>{const lz=(ROOM.ver||{}).lease,sent=lz==='sent',svg=p=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
   const st=(ROOM.ver||{}).student;
-  return `<div class="trust">${st==='ok'?`<span class="tchip ok">${ic('check')}School email verified</span>`:st==='none'?`<span class="tchip none">${svg(VM.mail)}School email not verified</span>`:'<span class="sk" style="width:176px"></span>'}<span class="tchip${sent?'':' none'}">${svg(VM.doc)}${sent?'Lease proof sent, not reviewed':'No lease proof yet'}</span><span class="tchip none">${svg(VM.key)}Landlord approval: ask the host</span><a class="tmore" href="how-it-works.html#verification">What this means</a></div>`};
+  return `<div class="trust">${st==='ok'?`<span class="tchip ok">${ic('check')}School email verified</span>`:st==='none'?`<span class="tchip none">${svg(VM.mail)}School email not verified</span>`:'<span class="sk" style="width:176px"></span>'}${lz==='verified'?`<span class="tchip ok">${ic('check')}Lease proof verified</span>`:`<span class="tchip${sent?'':' none'}">${svg(VM.doc)}${sent?'Lease proof sent, not reviewed':'No lease proof yet'}</span>`}<span class="tchip none">${svg(VM.key)}Landlord approval: ask the host</span><a class="tmore" href="how-it-works.html#verification">What this means</a></div>`};
 const factIcon=f=>f[0]==='wash'?ic('wash'):`<img src="img/icons/${f[0]}.svg" alt="">`;
 function moreCards(all){const list=Object.entries(ROOMS).filter(([k])=>all&&STATE!=='expired'&&STATE!=='removed'?true:k!==KEY).map(([k,R])=>({k,R,f:fitOf(R)})).filter(x=>x.f.k!=='no'&&x.R.price<=BUDGET*1.05).sort((a,b)=>(b.f.k==='ok')-(a.f.k==='ok')||b.f.ov-a.f.ov).slice(0,3);
   if(!list.length)return '<p class="mut">No other rooms fit these dates yet.</p>';
@@ -1124,7 +1124,12 @@ const ISO_DAY=/^\d{4}-\d\d-\d\d$/;
 const loaded=()=>!!ROOM.code&&ISO_DAY.test(String(ROOM.start||''))&&ISO_DAY.test(String(ROOM.end||''));
 /* an ended listing still shows the whole room; its booking actions give way to the ended line */
 function useRoom(R){if(R.ver&&R.ver.student==='pending'&&hostTag.has(R.ownerId))R.ver.student=hostTag.get(R.ownerId)?'ok':'none';const same=JSON.stringify(R)===JSON.stringify(ROOM);Object.keys(ROOM).forEach(k=>delete ROOM[k]);Object.assign(ROOM,R);P=ROOM.photos||[];
-  if(STATE!=='ok')setState('ok');else if(!same)render();checkHost()}
+  if(STATE!=='ok')setState('ok');else if(!same)render();checkHost();checkLease()}
+/* lease proof the team checked shows as verified; proof they sent back no longer counts */
+const leaseTag=new Map();
+function checkLease(){const v=ROOM.ver,code=ROOM.code;if(!v||!code||v.lease!=='sent')return;
+  const apply=r=>{if(ROOM.code!==code||!ROOM.ver||ROOM.ver.lease!=='sent')return;const n=r&&r.lease==='verified'?'verified':r&&r.lease==='returned'?'none':'sent';if(n==='sent')return;ROOM.ver.lease=n;const t=$('.trust');if(t)t.outerHTML=trustRow()};
+  if(leaseTag.has(code))return apply(leaseTag.get(code));if(!window.RentletListings||!RentletListings.listingReview)return;RentletListings.listingReview(code).then(r=>{leaseTag.set(code,r);apply(r)})}
 /* whether the host has confirmed a .edu address: the live list doesn't say, so it's asked for once per host */
 const hostTag=new Map();
 function checkHost(){const v=ROOM.ver,id=ROOM.ownerId;if(!v||!id)return;if(v.student!=='pending'){hostTag.set(id,v.student==='ok');return}if(!window.RentletListings)return;

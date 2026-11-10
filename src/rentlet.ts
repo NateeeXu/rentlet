@@ -28,6 +28,7 @@ declare global {
     RL: {
       authed: boolean;
       verified: boolean;
+      admin: boolean;
       user: RentletUser | null;
       initial: string;
       me(): string;
@@ -256,6 +257,17 @@ function paintSaves() {
   dispatchEvent(new CustomEvent('rentlet:saves', { detail: { room: [...savedIds.room], request: [...savedIds.request] } }));
 }
 
+// On the Rentlet team (the admin claim functions/src/review.ts gives): the menu shows Review.
+function setAdmin(on: boolean) {
+  if (window.RL.admin === on) return;
+  window.RL.admin = on;
+  try {
+    sessionStorage.setItem('rl-admin', on ? '1' : '0');
+  } catch {
+    /* private mode */
+  }
+}
+
 // My own student tag, kept live so the page changes the moment a code is confirmed.
 let stopVerified: Unsubscribe | null = null;
 function watchVerified(uid: string | null) {
@@ -412,6 +424,8 @@ onAuthStateChanged(auth, async (u) => {
   watchUnread(u ? u.uid : null);
   watchSaves(u ? u.uid : null);
   watchVerified(u ? u.uid : null);
+  setAdmin(false);
+  if (u) u.getIdTokenResult().then((t) => setAdmin(t.claims.admin === true), () => undefined);
 });
 
 window.RentletListings = listings;

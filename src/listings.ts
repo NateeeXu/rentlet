@@ -346,6 +346,26 @@ export function subscribeActive(cb: (list: ListingDoc[]) => void, onError?: () =
 
 export type Lookup = { state: 'ok'; listing: ListingDoc } | { state: 'removed' | 'missing' | 'error' };
 
+// The team's decision on a listing (reviews/{code}, written only by functions/src/review.ts), once per page.
+export interface ListingReview { listing: string; listingReason: string; lease: string; leaseReason: string; leaseAtMs: number }
+const reviewReads = new Map<string, Promise<ListingReview | null>>();
+export function listingReview(code: string): Promise<ListingReview | null> {
+  let r = reviewReads.get(code);
+  if (!r) {
+    r = getDoc(doc(db, 'reviews', code)).then(
+      (s) => {
+        const d = s.data();
+        if (!d) return null;
+        const at = d.leaseAt as { toMillis?: () => number } | undefined;
+        return { listing: String(d.listing ?? ''), listingReason: String(d.listingReason ?? ''), lease: String(d.lease ?? ''), leaseReason: String(d.leaseReason ?? ''), leaseAtMs: at?.toMillis ? at.toMillis() : 0 };
+      },
+      () => null,
+    );
+    reviewReads.set(code, r);
+  }
+  return r;
+}
+
 // Whether a host has confirmed a .edu address (verifications/{uid}, written only by functions/src/verify.ts).
 const hostTags = new Map<string, Promise<boolean>>();
 export function ownerVerified(uid: string): Promise<boolean> {
@@ -487,7 +507,7 @@ export async function updateListing(code: string, S: PostState, video: File | nu
 }
 
 // Lease proof added later, from the Verification page, to one of your live listings: up to 3 photos or PDFs go where
-// the post form puts them, the private note lists them, and the listing shows "Lease proof sent, not reviewed".
+// the post form puts them, the private note lists them, and the listing shows "Lease proof sent, not reviewed" until the team decides (reviews/{code}).
 export async function addLeaseProof(code: string, files: File[]): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new PublishError('signin');

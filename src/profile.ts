@@ -95,6 +95,7 @@ const ownCard = (l: ListingDoc, today: string) => ({
   price: Number(l.price) || 0,
   img: Array.isArray(l.photos) ? str(l.photos[0]) : '',
   createdAtMs: l.createdAtMs ?? 0,
+  takenDown: '',
 });
 
 function stop() {
@@ -134,7 +135,15 @@ function start(u: User) {
       (s) => {
         mine = s.docs.map((d) => fromDoc(d.id, d.data()));
         const today = localDay();
-        page({ listings: sortOwnListings(mine.map((l) => ownCard(l, today))) });
+        const cards = sortOwnListings(mine.map((l) => ownCard(l, today)));
+        page({ listings: cards });
+        // the team's reason for any listing they took down (reviews/{code})
+        const hidden = cards.filter((c) => c.stored === 'hidden');
+        if (hidden.length)
+          Promise.all(hidden.map((c) => getDoc(doc(db, 'reviews', c.code)).then((r) => [c.code, r.data()] as const, () => [c.code, undefined] as const))).then((rows) => {
+            const why = new Map(rows.filter(([, r]) => r?.listing === 'hidden').map(([code, r]) => [code, str(r!.listingReason) || 'Taken down by the Rentlet team.']));
+            if (why.size && mine.length) page({ listings: cards.map((c) => (why.has(c.code) ? { ...c, takenDown: why.get(c.code)! } : c)) });
+          });
       },
       () => page({ listings: 'error' }),
     ),

@@ -177,3 +177,5 @@ export { routeLine } from './route.js';
 export { emailOnMessage } from './notify.js';
 // the student tag: a code sent to a .edu address (src/verification.ts calls these)
 export { sendSchoolCode, verifySchoolCode } from './verify.js';
+// the team's review page (review.html)
+export { claimAdmin, resolveFeedback, resolveReport, reviewLease, reviewListing } from './review.js';

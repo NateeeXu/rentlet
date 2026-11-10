@@ -4,7 +4,7 @@ import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firesto
 import type { Functions } from 'firebase/functions';
 import { app, auth, db } from './firebase';
 import { canSignIn } from './lib/nu';
-import { addLeaseProof } from './listings';
+import { addLeaseProof, listingReview } from './listings';
 
 declare global {
   interface Window {
@@ -34,7 +34,7 @@ async function call<T>(name: string, data: unknown): Promise<T | Failure> {
 
 const api = {
   // Where this account stands: the tag, the address it was confirmed with, and each live listing with its lease proof.
-  async status(): Promise<{ signedIn: boolean; verified: boolean; email: string; listings: { code: string; name: string; lease: boolean }[] }> {
+  async status(): Promise<{ signedIn: boolean; verified: boolean; email: string; listings: { code: string; name: string; lease: boolean; state: string; reason: string }[] }> {
     await auth.authStateReady();
     const u = auth.currentUser;
     if (!canSignIn(u)) return { signedIn: false, verified: false, email: '', listings: [] };
@@ -43,9 +43,18 @@ const api = {
       getDoc(doc(db, 'users', u!.uid, 'private', 'verification')).catch(() => null),
       getDocs(query(collection(db, 'listings'), where('ownerId', '==', u!.uid))).catch(() => null),
     ]);
-    const listings = (own?.docs ?? [])
-      .filter((d) => d.data().status === 'active')
-      .map((d) => ({ code: d.id, name: String(d.data().building || d.data().title || 'Your listing'), lease: d.data().form?.proof === 'lease' }));
+    const live = (own?.docs ?? []).filter((d) => d.data().status === 'active');
+    // where each lease proof stands: sent, verified by the team, or sent back with the team's reason (newer files count again)
+    const listings = await Promise.all(
+      live.map(async (d) => {
+        const lease = d.data().form?.proof === 'lease';
+        const [review, note] = lease ? await Promise.all([listingReview(d.id), getDoc(doc(db, 'listings', d.id, 'private', 'proof')).catch(() => null)]) : [null, null];
+        const sentAt = (note?.data()?.sentAt as { toMillis?: () => number } | undefined)?.toMillis?.() ?? 0;
+        const decided = review?.lease && review.leaseAtMs >= sentAt ? review : null;
+        const state = !lease ? 'none' : decided?.lease === 'verified' ? 'verified' : decided?.lease === 'returned' ? 'returned' : 'sent';
+        return { code: d.id, name: String(d.data().building || d.data().title || 'Your listing'), lease, state, reason: state === 'returned' ? decided!.leaseReason : '' };
+      }),
+    );
     return { signedIn: true, verified: tag.exists(), email: String(priv?.data()?.email ?? ''), listings };
   },
   async addLease(code: string, files: File[]): Promise<{ ok: true } | Failure> {

@@ -38,7 +38,8 @@ service firebase.storage {
     // in the Firebase console. Photos (JPEG, PNG, WebP, HEIC) or PDFs, under 10 MB; no SVG or other
     // image types that can carry script.
     match /proofs/{uid}/{fileName} {
-      allow read, delete: if mine(uid);
+      allow read: if mine(uid) || (request.auth != null && request.auth.token.admin == true);
+      allow delete: if mine(uid);
       allow create: if isNU() && mine(uid)
         && request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.matches('(image/(jpeg|png|webp|heic|heif)|application/pdf)');

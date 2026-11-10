@@ -59,6 +59,7 @@ h1{font-family:var(--serif);font-size:40px;font-weight:500;letter-spacing:-.6px;
 .leases{grid-column:1/-1;display:grid;margin-top:8px;border:1px solid var(--hair);border-radius:16px;background:#fff}
 .lrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 16px;align-items:center;padding:12px 16px;min-height:48px}
 .lrow+.lrow{border-top:1px solid var(--hair)}
+.lrow .why{grid-column:1/-1;margin:0;font-size:13px;line-height:1.45;color:#8a3b12;background:#fdf4ec;border-radius:10px;padding:8px 10px}
 .lrow b{font-size:15px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sec{display:inline-flex;align-items:center;justify-content:center;width:auto;height:40px;margin:0;padding:0 16px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:14px;font-weight:650;white-space:nowrap}
 .sec:hover{border-color:var(--ink)}.sec[disabled]{opacity:.55;cursor:default}
@@ -75,7 +76,7 @@ h1{font-family:var(--serif);font-size:40px;font-weight:500;letter-spacing:-.6px;
 .fcols .brand img{height:28px}
 .fcols .brand p{font-size:13px;color:var(--muted);line-height:1.6;margin:10px 0 0}
 @container (max-width:860px){.grid{grid-template-columns:minmax(0,1fr);gap:22px;margin-top:18px}.mirror{padding:20px;border-radius:24px}.mirror h2{margin-bottom:14px}.who{margin-bottom:14px}.av{width:46px;height:46px;font-size:19px}.who b{font-size:23px}.tags{display:flex;flex-wrap:wrap}.item{padding:18px 0}.fcols{grid-template-columns:repeat(2,minmax(0,1fr))}.fcols .brand{grid-column:1/-1}}
-@container (max-width:640px){.lrow{grid-template-columns:minmax(0,1fr) auto}.lrow .sec{grid-column:1/-1;width:100%}.wrap{padding:0 16px}.hdr .wrap{height:60px;gap:8px}.logo img{height:24px}.main{padding:24px 0 44px}h1{font-size:32px}.field{flex-direction:column}.field .pri{width:100%}.fcols a{display:flex;align-items:center;min-height:44px;padding:0}}
+@container (max-width:640px){.lrow{grid-template-columns:minmax(0,1fr) auto}.lrow .sec{grid-column:1/-1;width:100%;order:2}.wrap{padding:0 16px}.hdr .wrap{height:60px;gap:8px}.logo img{height:24px}.main{padding:24px 0 44px}h1{font-size:32px}.field{flex-direction:column}.field .pri{width:100%}.fcols a{display:flex;align-items:center;min-height:44px;padding:0}}
 @media (prefers-reduced-motion:reduce){.sk{animation:none}.tag{transition:none}}
 </style>
 <link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -84,7 +85,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=6ac13f70"></script>
+<script src="/rentlet-boot.js?v=893234e0"></script>
 </head>
 <body>
 <div class="site" id="site"></div>
@@ -94,7 +95,7 @@ const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').r
 const CK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.5l4 4 9-9"/></svg>';
 /* phase: loading, signin, start (type the address), code (type the code), done */
 const S={phase:RL.authed?'loading':'signin',email:'',input:'',code:'',listings:[],leaseFor:null,leaseErr:'',err:'',busy:false,wait:0};
-const leaseSent=()=>S.listings.some(l=>l.lease);
+const leaseSent=()=>S.listings.some(l=>l.lease&&l.state!=='returned');const leaseOk=()=>S.listings.some(l=>l.state==='verified');
 const WHY={'not-edu':'Use an email address that ends in .edu.',taken:'This email is already verified on another account.',limit:'Too many codes today. Try again tomorrow.','send-failed':'Couldn’t send the code. Check the address and try again.',wrong:'That code doesn’t match. Check it and try again.',expired:'That code expired. Send a new one.','too-many':'Too many tries. Send a new code.',none:'Send a code first.'};
 const why=r=>r.reason==='wait'?`Wait ${r.seconds||60} seconds before asking for another code.`:WHY[r.reason]||'Something went wrong. Try again.';
 const header=()=>`<header class="hdr"><div class="wrap"><a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="hdr-right">${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div></header>`;
@@ -106,7 +107,7 @@ const footer=()=>`<footer class="foot"><div class="wrap"><div class="fcols">
 const done=()=>S.phase==='done';
 const mirror=()=>{const name=RL.user&&RL.user.name?RL.user.name.trim().split(/\s+/)[0]:'You';
   if(S.phase==='loading')return `<aside class="mirror" aria-busy="true"><span class="sk" style="width:120px;height:14px;margin-bottom:22px"></span><div class="who"><span class="sk" style="width:60px;height:60px;border-radius:50%"></span><span class="sk" style="width:110px;height:26px"></span></div><div class="tags"><span class="sk" style="width:190px;height:34px;border-radius:99px"></span><span class="sk" style="width:150px;height:34px;border-radius:99px"></span></div></aside>`;
-  return `<aside class="mirror"><h2>What renters see</h2><div class="who"><span class="av" aria-hidden="true">${RL.me()}</span><b>${esc(name)}</b></div><div class="tags"><span class="tag${done()?' ok':''}" data-tag>${done()?`${CK}School email verified`:'School email not verified'}</span><span class="tag">${leaseSent()?'Lease proof sent, not reviewed':'No lease proof yet'}</span><span class="tag">Landlord approval: ask the host</span></div></aside>`};
+  return `<aside class="mirror"><h2>What renters see</h2><div class="who"><span class="av" aria-hidden="true">${RL.me()}</span><b>${esc(name)}</b></div><div class="tags"><span class="tag${done()?' ok':''}" data-tag>${done()?`${CK}School email verified`:'School email not verified'}</span><span class="tag${leaseOk()?' ok':''}">${leaseOk()?`${CK}Lease proof verified`:leaseSent()?'Lease proof sent, not reviewed':'No lease proof yet'}</span><span class="tag">Landlord approval: ask the host</span></div></aside>`};
 const emailItem=()=>{
   if(S.phase==='loading')return `<div class="item" style="grid-template-columns:minmax(0,1fr)"><span class="sk" style="width:130px;height:20px"></span><span class="sk" style="width:100%;max-width:440px;height:48px;margin-top:10px;border-radius:14px"></span></div>`;
   if(done())return `<div class="item"><div><h2>School email</h2><p>${esc(S.email)}</p></div><span class="st ok">${CK}Verified</span></div>`;
@@ -117,12 +118,13 @@ const emailItem=()=>{
 const leaseItem=()=>{const err=S.leaseErr?`<p class="err" role="alert" style="grid-column:1/-1;margin-top:10px">${esc(S.leaseErr)}</p>`:'';
   if(!S.listings.length)return `<div class="item"><div><h2>Lease proof</h2><p>Add it when you post a listing. <a class="plain" href="post.html">Post a listing</a></p></div><span class="st">Not sent</span></div>`;
   return `<div class="item" style="grid-template-columns:minmax(0,1fr)"><div><h2>Lease proof</h2><p>A photo of the lease page with your name, or the landlord’s email.</p></div><div class="leases">${S.listings.map(l=>{const busy=S.leaseFor===l.code;
-    return `<div class="lrow"><b>${esc(l.name)}</b><span class="st" ${busy?'role="status"':''}>${busy?'Uploading…':l.lease?'Sent, not reviewed':'Not sent'}</span><button type="button" class="sec" data-lease="${esc(l.code)}" ${S.leaseFor?'disabled':''}>${l.lease?'Add more':'Add lease proof'}</button></div>`}).join('')}</div><input type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf" data-leasefile hidden aria-hidden="true">${err}</div>`};
+    const st=busy?'Uploading…':l.state==='verified'?`${CK}Verified`:l.state==='returned'?'Sent back':l.lease?'Sent, not reviewed':'Not sent';
+    return `<div class="lrow"><b>${esc(l.name)}</b><span class="st${l.state==='verified'&&!busy?' ok':''}" ${busy?'role="status"':''}>${st}</span><button type="button" class="sec" data-lease="${esc(l.code)}" ${S.leaseFor?'disabled':''}>${l.state==='returned'?'Add new proof':l.lease?'Add more':'Add lease proof'}</button>${l.state==='returned'&&l.reason?`<p class="why">${esc(l.reason)}</p>`:''}</div>`}).join('')}</div><input type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf" data-leasefile hidden aria-hidden="true">${err}</div>`};
 const LEASE_WHY={invalid:'Use up to 3 photos or PDFs, each under 10 MB.',signin:'Sign in again, then try once more.'};
 let pickFor=null;
 async function addLease(files){const code=pickFor;pickFor=null;if(!code||!files.length)return;S.leaseFor=code;S.leaseErr='';render();
   const r=await window.RentletVerify.addLease(code,files);S.leaseFor=null;
-  if(r.ok){const l=S.listings.find(x=>x.code===code);if(l)l.lease=true}else S.leaseErr=LEASE_WHY[r.reason]||'Couldn’t upload. Try again.';
+  if(r.ok){const l=S.listings.find(x=>x.code===code);if(l){l.lease=true;l.state='sent';l.reason=''}}else S.leaseErr=LEASE_WHY[r.reason]||'Couldn’t upload. Try again.';
   render();const b=document.querySelector(`[data-lease="${code}"]`);if(b)b.focus()}
 const boxes=()=>Array.from({length:6},(_,i)=>`<i class="${i===Math.min(S.code.length,5)?'cur':''}">${esc(S.code[i]||'')}</i>`).join('');
 const page=()=>S.phase==='signin'?`<div class="gate"><h1>Verification</h1><p>Sign in to verify your school email.</p><button type="button" class="pri" data-rl-signin>Sign in with Google</button></div>`

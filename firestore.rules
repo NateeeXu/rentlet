@@ -16,6 +16,17 @@ service cloud.firestore {
         && request.auth.token.email_verified == true;
     }
 
+    // the Rentlet team: the admin claim functions/src/review.ts gives to emails on the ADMIN_EMAILS list
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    // the team took this listing down; its host can't put it back up
+    function hiddenByTeam(id) {
+      return exists(/databases/$(database)/documents/reviews/$(id))
+        && get(/databases/$(database)/documents/reviews/$(id)).data.get('listing', '') == 'hidden';
+    }
+
     function me() {
       return request.auth.uid;
     }
@@ -121,7 +132,8 @@ service cloud.firestore {
       // a missing id reads as empty, so the page can say "not found"
       allow read: if resource == null
         || resource.data.status == 'active'
-        || (signedIn() && resource.data.ownerId == me());
+        || (signedIn() && resource.data.ownerId == me())
+        || isAdmin();
       allow create: if isNU()
         && id == request.resource.data.code
         && request.resource.data.ownerId == me()
@@ -133,6 +145,7 @@ service cloud.firestore {
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.code == resource.data.code
         && request.resource.data.createdAt == resource.data.createdAt
+        && !(request.resource.data.status == 'active' && resource.data.status != 'active' && hiddenByTeam(id))
         && validListing(request.resource.data);
       allow delete: if signedIn() && resource.data.ownerId == me();
 
@@ -141,6 +154,7 @@ service cloud.firestore {
       match /private/{docId} {
         allow read, write: if signedIn()
           && get(/databases/$(database)/documents/listings/$(id)).data.ownerId == me();
+        allow read: if isAdmin() && docId == 'proof';
       }
     }
 
@@ -269,6 +283,14 @@ service cloud.firestore {
       }
     }
 
+    // ---------- the team's decisions on a listing (functions/src/review.ts writes them) ----------
+    // listing: approved / hidden, lease: verified / returned, each with the reason the host is shown.
+    match /reviews/{code} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow write: if false;
+    }
+
     // ---------- the student tag ----------
     // Written only by functions/src/verify.ts (a code sent to a .edu address), so nobody can give it to themselves.
     // Anyone can read one person's yes or no; the email address itself is private.
@@ -291,7 +313,8 @@ service cloud.firestore {
         && request.resource.data.page is string && request.resource.data.page.size() <= 300
         && (request.resource.data.uid == '' || (signedIn() && request.resource.data.uid == me()))
         && isNow(request.resource.data.createdAt);
-      allow read, update, delete: if false;
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
 
     // ---------- reports ----------
@@ -300,7 +323,8 @@ service cloud.firestore {
         && request.resource.data.reporterId == me()
         && request.resource.data.reason is string
         && request.resource.data.reason.size() <= 1000;
-      allow read, update, delete: if false;
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
   }
 }

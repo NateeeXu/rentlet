@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Review · Rentlet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+/* Review (the Rentlet team only): new listings, lease proof, reports and feedback in one inbox. The list of who is on
+   the team lives in the ADMIN_EMAILS secret; decisions go through functions/src/review.ts. */
+:root{--canvas:#f7f7f7;--soft:#f2f2f4;--ink:#222;--ink2:#484848;--muted:#717171;--line:#dddddd;--hair:#e8e8e8;--ok:#14632b;--bad:#b3261e;--serif:"Newsreader",Georgia,serif}
+html,body{margin:0}
+body{background:var(--canvas);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+img{display:block}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+*{box-sizing:border-box}
+.site{container-type:inline-size;background:var(--canvas);min-height:100vh;overflow-x:clip;display:flex;flex-direction:column}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px;width:100%}
+.hdr{background:#fff;border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:20}
+.hdr .wrap{display:flex;align-items:center;gap:16px;height:72px}
+.logo{display:flex;align-items:center;min-height:44px}.logo img{height:30px;display:block}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.main{flex:1 0 auto;padding:30px 0 56px}
+h1{font-family:var(--serif);font-size:38px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin:0 0 22px}
+.box{display:grid;grid-template-columns:200px 340px minmax(0,1fr);background:#fff;border:1px solid var(--hair);border-radius:22px;overflow:hidden;min-height:620px}
+.nav{border-right:1px solid var(--hair);padding:12px;display:grid;align-content:start;gap:2px}
+.nav button{display:flex;align-items:center;gap:8px;width:100%;height:44px;margin:0;padding:0 12px;border:0;border-radius:12px;background:none;font-size:15px;font-weight:600;color:var(--ink2);text-align:left}
+.nav button[aria-selected=true]{background:var(--soft);color:var(--ink)}
+.nav em{margin-left:auto;font-style:normal;font-size:13px;font-weight:650;color:var(--muted)}
+.list{border-right:1px solid var(--hair);overflow:auto;max-height:760px}
+.it{display:flex;gap:12px;align-items:center;width:100%;margin:0;padding:14px 16px;border:0;border-bottom:1px solid var(--hair);background:none;text-align:left}
+.it:hover{background:#fbfbfc}.it[aria-current=true]{background:#faf9fc;box-shadow:inset 3px 0 0 var(--ink)}
+.it .th{width:44px;height:44px;border-radius:12px;background:var(--soft);flex:none;object-fit:cover}
+.it div{min-width:0;flex:1}.it b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it small,.mut{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{padding:40px 20px;text-align:center;color:var(--muted);font-size:15px}
+.det{padding:26px 28px;display:grid;gap:18px;align-content:start;min-width:0}
+.det h2{margin:6px 0 0;font-size:22px;font-weight:650;overflow-wrap:anywhere}
+.ty{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:650;background:#efeaf6;color:#4E2A84;width:fit-content}
+.ty.rp{background:#fdecea;color:#a3271d}.ty.fb{background:#eef1f5;color:#3c4a5c}
+.photos{display:flex;gap:10px;overflow:auto}.photos img{width:150px;height:112px;object-fit:cover;border-radius:12px;flex:none;background:var(--soft)}
+.files{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.file{display:block;border:1px solid var(--hair);border-radius:12px;overflow:hidden;background:var(--soft);text-decoration:none}
+.file img{width:100%;aspect-ratio:3/4;object-fit:contain;background:#fff}
+.file span{display:flex;align-items:center;justify-content:center;aspect-ratio:3/4;font-weight:650;font-size:15px;text-decoration:underline}
+.q{margin:0;font-size:15px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.out{font-size:14px;line-height:1.5;padding:12px 14px;border-radius:12px;background:var(--soft)}
+.acts{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pri,.sec,.danger{display:inline-flex;align-items:center;justify-content:center;width:auto;height:46px;margin:0;padding:0 22px;border-radius:999px;font-size:15px;font-weight:650;white-space:nowrap}
+.pri{border:0;background:var(--ink);color:#fff}.pri:hover{background:#000}
+.sec{border:1px solid var(--line);background:#fff;color:var(--ink)}.sec:hover{border-color:var(--ink)}
+.danger{border:0;background:var(--bad);color:#fff}
+.pri[disabled],.sec[disabled],.danger[disabled]{opacity:.5;cursor:default}
+.lk{font-size:14px;font-weight:650;text-decoration:underline;text-underline-offset:3px}
+.form{display:grid;gap:12px;padding:16px;border:1px solid var(--hair);border-radius:16px;background:#fcfcfd}
+.form b{font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{height:40px;margin:0;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:14px;font-weight:600;white-space:nowrap}
+.chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.form textarea{width:100%;min-height:96px;resize:vertical;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:16px;background:#fff}
+.err{margin:0;font-size:14px;font-weight:600;color:var(--bad)}
+.back{display:none}
+.gate{max-width:460px;margin:50px auto;text-align:center}.gate p{color:var(--muted);font-size:16px;margin:0 0 20px}
+.sk{display:block;background:linear-gradient(90deg,#e9e9ec 25%,#f2f2f4 50%,#e9e9ec 75%);background-size:200% 100%;animation:sksh 1.5s linear infinite;border-radius:10px}
+@keyframes sksh{from{background-position:100% 0}to{background-position:-100% 0}}
+.foot{border-top:1px solid var(--hair);padding:28px 0 calc(24px + env(safe-area-inset-bottom));margin-top:auto;font-size:13px;color:var(--muted)}
+@container (max-width:1000px){.box{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}.nav{grid-column:1/-1;display:flex;gap:6px;overflow:auto;border-right:0;border-bottom:1px solid var(--hair);padding:10px}.nav button{width:auto;flex:none;height:38px;border:1px solid var(--line);border-radius:999px;font-size:14px}.nav button[aria-selected=true]{background:var(--ink);color:#fff;border-color:var(--ink)}.nav button[aria-selected=true] em{color:#cfcfd3}}
+@container (max-width:700px){.files{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.wrap{padding:0 16px}.hdr .wrap{height:60px;gap:8px}.logo img{height:24px}.main{padding:22px 0 40px}h1{font-size:30px;margin-bottom:14px}
+  .box{grid-template-columns:minmax(0,1fr);min-height:0}.list{border-right:0;max-height:none}.det{padding:18px 16px}.box.open .list{display:none}.box:not(.open) .det{display:none}.back{display:inline-flex}
+  .acts .pri,.acts .sec,.acts .danger{flex:1}}
+@media (prefers-reduced-motion:reduce){.sk{animation:none}}
+</style>
+<link rel="icon" href="/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style id="rentlet-base">
+html,body{background:#f7f7f7}
+:root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
+a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
+</style>
+<script src="/rentlet-boot.js?v=893234e0"></script>
+</head>
+<body>
+<div class="site" id="site"></div>
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+const money=n=>'$'+Math.round(n).toLocaleString('en-US');
+const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const when=ms=>{if(!ms)return '';const d=new Date(ms),now=new Date();const day=86400000,diff=Math.floor((new Date(now.toDateString())-new Date(d.toDateString()))/day);return diff===0?'today':diff===1?'yesterday':`${MN[d.getMonth()]} ${d.getDate()}`};
+const md=s=>s?`${MN[+s.slice(5,7)-1]} ${+s.slice(8)}`:'';
+/* the same reasons functions/src/review.ts accepts */
+const LISTING_REASONS=['Photos don’t show the place','Details look wrong','Looks like a scam','Not a sublet or lease takeover','Duplicate listing','Other'];
+const LEASE_REASONS=['Name not visible','Address doesn’t match','Not a lease or landlord email','Hard to read','Other'];
+const TABS=[['listings','New listings'],['lease','Lease proof'],['reports','Reports'],['feedback','Feedback'],['done','Done']];
+const S={phase:RL.authed?'loading':'signin',tab:'listings',sel:null,open:false,D:null,files:{},form:null,busy:false,err:''};
+/* what waits for a decision: a listing new or changed since it was approved, lease proof sent since the last look */
+const Q=()=>{const D=S.D;if(!D)return {listings:[],lease:[],reports:[],feedback:[],done:[]};
+  /* live listings not yet reviewed or edited since, plus taken-down ones the host has edited since */
+  const listings=D.listings.filter(l=>(l.status==='active'||(l.status==='hidden'&&l.review.listing==='hidden'))&&(!l.review.listing||l.atMs>(l.review.listingAtMs||0))).sort((a,b)=>b.atMs-a.atMs).map(l=>({k:'L',id:l.code,l,at:l.atMs}));
+  const lease=D.listings.filter(l=>l.proofFiles.length&&l.status!=='deleted'&&(!l.review.lease||l.proofAtMs>(l.review.leaseAtMs||0))).sort((a,b)=>b.proofAtMs-a.proofAtMs).map(l=>({k:'P',id:l.code,l,at:l.proofAtMs}));
+  const reports=D.reports.filter(r=>!r.status).map(r=>({k:'R',id:r.id,r,at:r.atMs}));
+  const feedback=D.feedback.filter(f=>!f.status).map(f=>({k:'F',id:f.id,f,at:f.atMs}));
+  const done=[...D.listings.filter(l=>l.review.listing&&!listings.some(x=>x.id===l.code)).map(l=>({k:'L',id:l.code,l,at:l.review.listingAtMs,done:1})),
+    ...D.listings.filter(l=>l.review.lease&&!lease.some(x=>x.id===l.code)).map(l=>({k:'P',id:l.code,l,at:l.review.leaseAtMs,done:1})),
+    ...D.reports.filter(r=>r.status).map(r=>({k:'R',id:r.id,r,at:r.atMs,done:1})),...D.feedback.filter(f=>f.status).map(f=>({k:'F',id:f.id,f,at:f.atMs,done:1}))].sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,60);
+  return {listings,lease,reports,feedback,done}};
+const key=x=>x.k+':'+x.id;
+const header=()=>`<header class="hdr"><div class="wrap"><a class="logo" href="index.html" aria-label="Rentlet home"><img src="img/rentlet-logo.png" alt="Rentlet"></a><div class="hdr-right">${RL.msgs?RL.msgs():''}${RL.menu?RL.menu():''}</div></div></header>`;
+const itemRow=(x,cur)=>{const meta=x.k==='L'?`${esc(x.l.host)} · ${x.done?esc(x.l.review.listing==='hidden'?'Taken down':'Approved'):'Posted or edited '+when(x.at)}`:x.k==='P'?`${esc(x.l.host)} · ${x.done?(x.l.review.lease==='verified'?'Verified':'Sent back'):'Sent '+when(x.at)}`:x.k==='R'?`${x.r.kind==='conversation'?'Message report':'Listing report'} · ${when(x.at)}`:`${esc(x.f.type||'other')} · ${when(x.at)}`;
+  const name=x.k==='L'||x.k==='P'?esc(x.l.name):x.k==='R'?esc(x.r.reason||'Report'):esc((x.f.text||'').slice(0,60));
+  const th=x.k==='L'||x.k==='P'?(x.l.photo?`<img class="th" src="${esc(x.l.photo)}" alt="">`:'<span class="th"></span>'):'<span class="th"></span>';
+  return `<button type="button" class="it" data-pick="${esc(key(x))}" aria-current="${cur}">${th}<div><b>${name}</b><small>${meta}</small></div></button>`};
+const reasonForm=(kind,list,label)=>`<div class="form"><b>${label}</b><div class="chips" role="group" aria-label="Reason">${list.map(r=>`<button type="button" class="chip" data-reason="${esc(r)}" aria-pressed="${S.form.reason===r}">${esc(r)}</button>`).join('')}</div><textarea data-note maxlength="300" placeholder="Tell the host exactly what to fix" aria-label="What the host should fix">${esc(S.form.note)}</textarea>${S.err?`<p class="err" role="alert">${esc(S.err)}</p>`:''}<div class="acts"><button type="button" class="danger" data-confirm ${S.busy?'disabled':''}>${kind==='return'?'Send back':'Take down'}</button><button type="button" class="sec" data-cancel>Cancel</button></div></div>`;
+function detail(x){if(!x)return `<div class="det"><p class="empty">Nothing to review here.</p></div>`;
+  const back='<button type="button" class="sec back" data-back>Back</button>',busy=S.busy?'disabled':'',err=S.err&&!S.form?`<p class="err" role="alert">${esc(S.err)}</p>`:'';
+  if(x.k==='L'){const l=x.l,r=l.review,again=!x.done&&r.listing==='hidden'; /* the host edited a listing the team took down */
+    return `<div class="det">${back}<div><span class="ty">${again?'Edited after take-down':'New listing'}</span><h2>${esc(l.name)}</h2><span class="mut">${esc(l.title)} · ${esc(l.area)} · ${money(l.price)} / mo · ${md(l.start)} – ${md(l.end)} · Host ${esc(l.host)}</span></div>
+      <div class="photos">${l.photos.slice(0,6).map(p=>`<img src="${esc(p)}" alt="" loading="lazy">`).join('')}</div>${l.status==='active'?`<a class="lk" href="room.html?room=${esc(l.code)}" target="_blank" rel="noopener">Open the listing</a>`:''}
+      ${again?`<div class="out">Taken down earlier. ${esc(r.listingReason)}</div>`:''}
+      ${x.done?`<div class="out">${r.listing==='hidden'?'Taken down. '+esc(r.listingReason):'Approved.'}</div>`:S.form&&S.form.kind==='hide'?reasonForm('hide',LISTING_REASONS,'Why is it coming down?'):`${err}<div class="acts"><button type="button" class="pri" data-do="approve" ${busy}>${again?'Put back live':'Approve'}</button><button type="button" class="sec" data-do="hide" ${busy}>${again?'Keep it down':'Take down'}</button></div>`}</div>`}
+  if(x.k==='P'){const l=x.l,r=l.review,F=S.files[l.code];
+    return `<div class="det">${back}<div><span class="ty">Lease proof</span><h2>${esc(l.name)}</h2><span class="mut">Host ${esc(l.host)} · Sent ${when(l.proofAtMs)} · <a class="lk" href="room.html?room=${esc(l.code)}" target="_blank" rel="noopener">Open the listing</a></span></div>
+      <div class="files">${F?F.map((f,i)=>f?(f.pdf?`<a class="file" href="${esc(f.url)}" target="_blank" rel="noopener"><span>Open PDF ${i+1}</span></a>`:`<a class="file" href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.url)}" alt="Lease proof file ${i+1}"></a>`):'<span class="file"><span>Couldn’t open this file</span></span>').join(''):l.proofFiles.map(()=>'<span class="sk" style="aspect-ratio:3/4"></span>').join('')}</div>
+      ${x.done?`<div class="out">${r.lease==='verified'?'Verified. The listing shows Lease proof verified.':'Sent back. '+esc(r.leaseReason)}</div>`:S.form&&S.form.kind==='return'?reasonForm('return',LEASE_REASONS,'What’s wrong with it?'):`${err}<div class="acts"><button type="button" class="pri" data-do="verify" ${busy}>Verify</button><button type="button" class="sec" data-do="return" ${busy}>Send back</button></div>`}</div>`}
+  if(x.k==='R'){const r=x.r,code=/^[1-9][0-9]{7}$/.test(r.listingId)?r.listingId:'';
+    return `<div class="det">${back}<div><span class="ty rp">${r.kind==='conversation'?'Message report':'Listing report'}</span><h2>${esc(r.reason||'Report')}</h2><span class="mut">Sent ${when(r.atMs)}${code?` · <a class="lk" href="room.html?room=${code}" target="_blank" rel="noopener">Open the listing</a>`:''}</span></div>${r.details?`<p class="q">${esc(r.details)}</p>`:''}
+      ${x.done?`<div class="out">${r.status==='hidden'?'The listing was taken down.':'Dismissed.'}</div>`:S.form&&S.form.kind==='reporthide'?reasonForm('hide',LISTING_REASONS,'Why is it coming down?'):`${err}<div class="acts">${code?`<button type="button" class="pri" data-do="reporthide" ${busy}>Take down the listing</button>`:''}<button type="button" class="sec" data-do="dismiss" ${busy}>Dismiss</button></div>`}</div>`}
+  const f=x.f;
+  return `<div class="det">${back}<div><span class="ty fb">${esc(f.type==='bug'?'Bug':f.type==='idea'?'Idea':'Feedback')}</span><h2 style="font-size:18px">From ${f.signedIn?'a signed-in user':'a visitor'} · ${when(f.atMs)}</h2><span class="mut">On ${esc(f.page||'/')}${f.email?' · '+esc(f.email):''}</span></div><p class="q">${esc(f.text)}</p>
+    ${x.done?'<div class="out">Done.</div>':`${err}<div class="acts"><button type="button" class="pri" data-do="fbdone" ${busy}>Mark done</button></div>`}</div>`}
+function body(){if(S.phase==='signin')return `<div class="gate"><h1>Review</h1><p>Sign in with your team account.</p><button type="button" class="pri" data-rl-signin>Sign in with Google</button></div>`;
+  if(S.phase==='no')return `<div class="gate"><h1>Review</h1><p>This page is for the Rentlet team.</p><a class="sec" href="index.html">Back to Rentlet</a></div>`;
+  if(S.phase==='error')return `<div class="gate"><h1>Review</h1><p>Couldn’t load the queues. Check your connection and try again.</p><button type="button" class="pri" data-reload>Try again</button></div>`;
+  if(S.phase==='loading')return `<h1>Review</h1><div class="box" aria-busy="true"><div class="nav">${[0,1,2,3].map(()=>'<span class="sk" style="height:40px"></span>').join('')}</div><div class="list">${[0,1,2].map(()=>'<div class="it"><span class="sk" style="width:44px;height:44px"></span><div><span class="sk" style="height:14px;width:70%"></span></div></div>').join('')}</div><div class="det"><span class="sk" style="height:28px;width:50%"></span></div></div>`;
+  const q=Q(),list=q[S.tab]||[],sel=list.find(x=>key(x)===S.sel)||null;
+  return `<h1>Review</h1><div class="box${S.open&&sel?' open':''}"><div class="nav" role="tablist" aria-label="Queues">${TABS.map(([k,t])=>`<button type="button" role="tab" data-tab="${k}" aria-selected="${S.tab===k}">${t}${k!=='done'?`<em>${q[k].length}</em>`:''}</button>`).join('')}</div>
+    <div class="list">${list.length?list.map(x=>itemRow(x,key(x)===S.sel)).join(''):'<p class="empty">Nothing to review here.</p>'}</div>${detail(sel)}</div>`}
+function render(){const keep=document.activeElement&&document.activeElement.matches&&document.activeElement.matches('[data-note]');
+  $('#site').innerHTML=header()+`<main class="main"><div class="wrap">${body()}</div></main><footer class="foot"><div class="wrap">Rentlet team</div></footer>`;
+  if(keep){const t=$('[data-note]');if(t){t.focus();t.setSelectionRange(t.value.length,t.value.length)}}}
+function pick(k){S.sel=k;S.form=null;S.err='';S.open=true;const x=(Q()[S.tab]||[]).find(y=>key(y)===k);render();
+  if(x&&x.k==='P'&&!S.files[x.l.code]&&window.RentletReview)RentletReview.files(x.l.proofFiles).then(f=>{S.files[x.l.code]=f;render()})}
+function firstOf(tab){const l=Q()[tab]||[];return l[0]?key(l[0]):null}
+async function load(keepTab){if(!window.RentletReview)return;try{S.D=await RentletReview.queues();S.phase='ready'}catch(e){S.phase='error'}
+  if(!keepTab||!(Q()[S.tab]||[]).some(x=>key(x)===S.sel))S.sel=firstOf(S.tab);render();if(S.sel&&innerWidth>700)pick(S.sel)}
+async function start(){if(!window.RentletReview)return;const a=await RentletReview.access().catch(()=>'no');if(a==='signed-out'){S.phase='signin';return render()}
+  if(a==='no'){S.phase='no';return render()}await load()}
+const say=m=>{if(window.Rentlet&&Rentlet.toast)Rentlet.toast(m)};
+async function act(run,done){S.busy=true;S.err='';render();const r=await run();S.busy=false;
+  if(r.ok){S.form=null;say(done);const was=S.sel;await load(true);if(S.sel===was){S.sel=firstOf(S.tab);S.open=false;render();if(S.sel&&innerWidth>700)pick(S.sel)}}
+  else{S.err=r.reason==='reason'?'Pick a reason and write at least a short sentence for the host.':'Couldn’t save that. Try again.';render()}}
+document.addEventListener('click',e=>{const t=e.target;if(!t||!t.closest)return;
+  const tb=t.closest('[data-tab]');if(tb){S.tab=tb.dataset.tab;S.form=null;S.err='';S.open=false;S.sel=firstOf(S.tab);render();if(S.sel&&innerWidth>700)pick(S.sel);return}
+  const p=t.closest('[data-pick]');if(p){pick(p.dataset.pick);return}
+  if(t.closest('[data-back]')){S.open=false;S.form=null;render();return}
+  if(t.closest('[data-reload]')){S.phase='loading';render();load();return}
+  const rs=t.closest('[data-reason]');if(rs&&S.form){S.form.reason=rs.dataset.reason;S.err='';render();return}
+  if(t.closest('[data-cancel]')){S.form=null;S.err='';render();return}
+  const x=(Q()[S.tab]||[]).find(y=>key(y)===S.sel);if(!x||S.busy)return;const R=window.RentletReview;
+  const d=t.closest('[data-do]');if(d){const a=d.dataset.do;
+    if(a==='approve')return act(()=>R.listing(x.id,'approve'),x.l.review.listing==='hidden'?'Back live.':'Approved.');
+    if(a==='verify')return act(()=>R.lease(x.id,'verify'),'Lease proof verified.');
+    if(a==='dismiss')return act(()=>R.report(x.id,'dismiss'),'Dismissed.');
+    if(a==='fbdone')return act(()=>R.feedback(x.id),'Marked done.');
+    S.form={kind:a==='return'?'return':a==='reporthide'?'reporthide':'hide',reason:'',note:''};S.err='';render();const n=$('[data-note]');return}
+  if(t.closest('[data-confirm]')&&S.form){const f=S.form;if(!f.reason||f.note.trim().length<10){S.err='Pick a reason and write at least a short sentence for the host.';return render()}
+    if(f.kind==='return')return act(()=>R.lease(x.id,'return',f.reason,f.note),'Sent back to the host.');
+    if(f.kind==='reporthide')return act(()=>R.report(x.id,'hide',f.reason,f.note),'Listing taken down.');
+    return act(()=>R.listing(x.id,'hide',f.reason,f.note),'Listing taken down.')}});
+document.addEventListener('input',e=>{if(e.target.matches('[data-note]')&&S.form){S.form.note=e.target.value}});
+window.RL_onAuth=u=>{S.phase=u?'loading':'signin';render();if(u)start()};
+window.RL_reviewReady=()=>{if(S.phase==='loading')start()};
+render();if(S.phase==='loading'&&window.RentletReview)start();
+</script>
+<script type="module" src="/src/rentlet.ts"></script>
+<script type="module" src="/src/review.ts"></script>
+</body>
+</html>

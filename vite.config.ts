@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 // Multi-page site: every page is its own HTML file, moved over from the approved designs.
-const pages = ['index', 'room', 'post', 'request', 'requests', 'messages', 'profile', 'how-it-works', 'terms', 'privacy', 'shuttle', 'saved', 'verification'];
+const pages = ['index', 'room', 'post', 'request', 'requests', 'messages', 'profile', 'how-it-works', 'terms', 'privacy', 'shuttle', 'saved', 'verification', 'review'];
 
 export default defineConfig({
   build: {

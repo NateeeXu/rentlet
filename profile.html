@@ -109,7 +109,9 @@ small a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;mar
 .seen .note{margin-top:10px}
 .pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border:1px solid var(--hair);border-radius:999px;font-size:13px;font-weight:600;color:var(--ink);background:#fff;white-space:nowrap}
 .pill i{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
-.pill.ok i{background:var(--ok)}.pill.warn i{background:var(--warn)}.pill.none i{background:none;border:1.5px solid var(--muted);width:8px;height:8px}
+.pill.ok i{background:var(--ok)}.pill.bad i{background:var(--red)}
+.lc .why{margin:6px 0 0;padding:10px 12px;border-radius:12px;background:#fdf4ec;color:#5c2a0c;font-size:14px;line-height:1.45;display:grid;gap:3px}.lc .why b{font-size:13px;font-weight:600;color:#8a3b12}.lc .why span{font-size:13px;color:#8a5a3c}
+.pill.warn i{background:var(--warn)}.pill.none i{background:none;border:1.5px solid var(--muted);width:8px;height:8px}
 .rows{border:1px solid var(--hair);border-radius:14px}
 .row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:12px 16px;min-height:68px}
 .row+.row{border-top:1px solid var(--hair)}
@@ -268,7 +270,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=6ac13f70"></script>
+<script src="/rentlet-boot.js?v=893234e0"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -326,18 +328,19 @@ function secYou(){
   <div class="seen"><span class="lbl">What others see</span><div class="sc"><span class="av">${avatar()}</span><div><b>${esc(nm())}${role()?` · ${esc(role())}`:''}</b>${RL.verified?`<span><span class="vb">${ic('shield')}Verified</span></span>`:''}</div></div>
   <p class="note">First name only, with your photo. Your email and WhatsApp stay private.</p></div>`}
 
-function listingCard(l){const [c,t]=STATUS[l.status]||['',esc(l.status)],live=l.status==='active',link=live?`room.html?room=${l.code}`:'',dis=S.busy[l.code]?'disabled':'',id=`data-id="${l.code}" ${dis}`;
+function listingCard(l){const [c,t]=l.takenDown?['bad','Taken down']:STATUS[l.status]||['',esc(l.status)],live=l.status==='active',link=live?`room.html?room=${l.code}`:'',dis=S.busy[l.code]?'disabled':'',id=`data-id="${l.code}" ${dis}`;
   const img=l.img?`<img src="${esc(l.img)}" alt="" loading="lazy">`:'';
   let acts='';
   const edit=`<a class="btn sec" href="post.html?edit=${l.code}">Edit</a>`;
   if(live)acts=`<a class="btn sec" href="${link}">See listing</a>${edit}<button type="button" class="btn sec" data-act="hide" ${id}>Hide</button><button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
+  else if(l.takenDown)acts=edit; /* the team took it down: fix it and say so through Send feedback */
   else if(l.status==='hidden')acts=`<button type="button" class="btn sec" data-act="show" ${id}>Show again</button>${edit}<button type="button" class="lk" data-act="taken" ${id}>Mark as taken</button>`;
   else if(l.status==='ended')acts=`<a class="btn sec" href="post.html">Post again with new dates</a>`; /* the dates have passed; it can't be shown again */
   else acts=`<button type="button" class="btn sec" data-act="show" ${id}>Repost</button>`;
   acts+=`<button type="button" class="lk" data-act="ldel" ${id}>Delete</button>`;
-  const meta=live?(l.createdAtMs?`<small>Posted ${fms(l.createdAtMs)}</small>`:''):l.status==='hidden'?'<small>Hidden from search</small>':l.status==='ended'?'<small>Dates have passed · off search</small>':'<small>Off search</small>';
+  const meta=l.takenDown?'<small>Off search</small>':live?(l.createdAtMs?`<small>Posted ${fms(l.createdAtMs)}</small>`:''):l.status==='hidden'?'<small>Hidden from search</small>':l.status==='ended'?'<small>Dates have passed · off search</small>':'<small>Off search</small>';
   return `<article class="lc" data-listing="${l.code}">${link?`<a class="lph" href="${link}" aria-label="Open ${esc(l.title)}">${img}</a>`:`<div class="lph">${img}</div>`}
-    <div class="lb"><div class="lt">${pill(c,t)}${meta}</div><h3>${esc(l.title)}</h3><div class="lm">${[esc(l.area),wl(l.start,l.end)].filter(Boolean).join(' · ')}</div><div class="lp">${money(l.price)} <small>/ mo</small></div></div>
+    <div class="lb"><div class="lt">${pill(c,t)}${meta}</div><h3>${esc(l.title)}</h3><div class="lm">${[esc(l.area),wl(l.start,l.end)].filter(Boolean).join(' · ')}</div><div class="lp">${money(l.price)} <small>/ mo</small></div>${l.takenDown?`<p class="why"><b>From the Rentlet team</b>${esc(l.takenDown)}<span>Edit the listing to fix this and the team will look at it again.</span></p>`:''}</div>
     <div class="acts">${acts}</div></article>`}
 function secListings(){const L=S.listings;
   if(L===null)return loading('Loading your listings…');

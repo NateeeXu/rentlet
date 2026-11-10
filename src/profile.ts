@@ -20,6 +20,7 @@ import {
 import { deleteObject, listAll, ref } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
 import { hasEnded, localDay, type ListingDoc } from './lib/listingView';
+import { isLive } from './lib/requestsView';
 import { canSignIn, firstName } from './lib/nu';
 import {
   affiliation,
@@ -288,7 +289,8 @@ const api = {
     need();
     const d = requests.get(id);
     if (!d) throw new ProfileError('That request is no longer here.');
-    if (status === 'open' && [...requests].some(([k, r]) => k !== id && r.status === 'open'))
+    // a request whose move-in day has passed shows nowhere, so it must not block opening another
+    if (status === 'open' && [...requests].some(([k, r]) => k !== id && r.status === 'open' && isLive(r as { start: string }, localDay())))
       throw new ProfileError('One request at a time. Pause your live request first.');
     if (!validRequestShape({ ...d, status })) throw new ProfileError('This request can’t be changed here. Delete it and post a new one.');
     await updateDoc(doc(db, 'requests', id), { status, updatedAt: serverTimestamp() });

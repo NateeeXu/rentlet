@@ -126,7 +126,7 @@
         ? link('post.html', 'Post a listing', 'rl-b') + link('request.html', 'Post a request', 'rl-b') + '<hr>'
           + '<a href="messages.html" data-rl-msgs' + (here === 'messages' ? ' aria-current="page"' : '') + '><span>Messages</span><span class="rl-msgs-n"' + (n ? '' : ' hidden') + '>' + (n > 9 ? '9+' : n) + '</span></a>'
           + link('saved.html', 'Saved') + '<hr>' + pages + '<hr>'
-          + link('verification.html', 'Verification') + (R.admin ? link('review.html', 'Review') : '') + link('profile.html', 'Profile') + '<button type="button" data-rl-signout>Sign out</button>'
+          + link('verification.html', 'Verification') + link('profile.html', 'Profile') + '<button type="button" data-rl-signout>Sign out</button>'
         : '<button type="button" class="rl-b" data-rl-signin>Sign in</button><hr>'
           + link('post.html', 'Post a listing') + link('request.html', 'Post a request') + '<hr>' + pages;
       var av = R.authed ? '<span class="rl-mav">' + R.me() + '</span>' : '<span class="rl-mav out">' + PERSON + '</span>';

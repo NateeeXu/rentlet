@@ -81,7 +81,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=893234e0"></script>
+<script src="/rentlet-boot.js?v=e6ad393a"></script>
 </head>
 <body>
 <div class="site" id="site"></div>
@@ -133,7 +133,7 @@ function detail(x){if(!x)return `<div class="det"><p class="empty">Nothing to re
   return `<div class="det">${back}<div><span class="ty fb">${esc(f.type==='bug'?'Bug':f.type==='idea'?'Idea':'Feedback')}</span><h2 style="font-size:18px">From ${f.signedIn?'a signed-in user':'a visitor'} · ${when(f.atMs)}</h2><span class="mut">On ${esc(f.page||'/')}${f.email?' · '+esc(f.email):''}</span></div><p class="q">${esc(f.text)}</p>
     ${x.done?'<div class="out">Done.</div>':`${err}<div class="acts"><button type="button" class="pri" data-do="fbdone" ${busy}>Mark done</button></div>`}</div>`}
 function body(){if(S.phase==='signin')return `<div class="gate"><h1>Review</h1><p>Sign in with your team account.</p><button type="button" class="pri" data-rl-signin>Sign in with Google</button></div>`;
-  if(S.phase==='no')return `<div class="gate"><h1>Review</h1><p>This page is for the Rentlet team.</p>${S.email?`<p class="who">You’re signed in as <b>${esc(S.email)}</b>. If you’re on the team, this email isn’t on the team list yet.</p>`:''}<a class="sec" href="index.html">Back to Rentlet</a></div>`;
+  if(S.phase==='no')return `<div class="gate"><h1>Review</h1><p>This page is for Rentlet managers.</p>${S.email?`<p class="who">You’re signed in as <b>${esc(S.email)}</b>, which isn’t on the manager list.</p>`:''}<a class="sec" href="index.html">Back to Rentlet</a></div>`;
   if(S.phase==='denied')return `<div class="gate"><h1>Review</h1><p>Couldn’t check your access. Check your connection and try again.</p><button type="button" class="pri" data-retry>Try again</button></div>`;
   if(S.phase==='error')return `<div class="gate"><h1>Review</h1><p>Couldn’t load the queues. Check your connection and try again.</p><button type="button" class="pri" data-reload>Try again</button></div>`;
   if(S.phase==='loading')return `<h1>Review</h1><div class="box" aria-busy="true"><div class="nav">${[0,1,2,3].map(()=>'<span class="sk" style="height:40px"></span>').join('')}</div><div class="list">${[0,1,2].map(()=>'<div class="it"><span class="sk" style="width:44px;height:44px"></span><div><span class="sk" style="height:14px;width:70%"></span></div></div>').join('')}</div><div class="det"><span class="sk" style="height:28px;width:50%"></span></div></div>`;

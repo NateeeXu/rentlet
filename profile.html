@@ -270,7 +270,7 @@ html,body{background:#f7f7f7}
 :root{--brand:#4E2A84;--brand-dark:#3b1f64;--brand-soft:#efeaf6}
 a:has(>img[src$="rentlet-logo.png"]){display:inline-flex;align-items:center;min-height:44px}
 </style>
-<script src="/rentlet-boot.js?v=893234e0"></script>
+<script src="/rentlet-boot.js?v=e6ad393a"></script>
 </head>
 <body>
 <div class="stage" id="stage"></div>
@@ -375,15 +375,19 @@ function secNotify(){const N=S.notify;
   if(N==='error')return failed('Couldn’t load this setting.');
   return `<div class="tog" data-act="toggleEmail"><div><b id="ntfL">Email me about new messages</b><span>One email per chat until you open it. Muted chats never email.</span></div><button type="button" class="sw ${N.email?'':'off'}" id="ntfSw" role="switch" aria-checked="${N.email}" aria-labelledby="ntfL" data-act="toggleEmail"></button></div>`}
 
+function secManager(){
+  return `<div class="rows"><div class="row"><div class="rl"><b>Review</b><span>New listings, lease proof, reports and feedback.</span></div><span></span><div class="ra"><a class="btn" href="review.html">Open Review</a></div></div></div>`}
 function secAccount(){
   return `<div class="rows"><div class="row"><div class="rl"><b>Sign out</b><span>${nuEmail()?`Signed in as ${esc(nuEmail())}`:'On this device'}</span></div><span></span><div class="ra"><button type="button" class="btn sec" data-act="signout">Sign out</button></div></div>
     <div class="row"><div class="rl"><b>Delete account</b><span>Removes your profile, listings, request, saved rooms and requests, and contact details.</span></div><span></span><div class="ra"><button type="button" class="btn red-t" data-act="del1">Delete</button></div></div></div>`}
 
-const SECS=[['you','You'],['listings','Your listings'],['request','Your request'],['contact','Contact details'],['notify','Notifications'],['account','Account']];
-const SUBS={you:'',listings:'',request:'',contact:'WhatsApp and email only.',notify:'',account:''};
-const BODY={you:secYou,listings:secListings,request:secRequest,contact:secContact,notify:secNotify,account:secAccount};
+/* Manager shows only to people on the manager list (RL.admin) */
+const ALL_SECS=[['you','You'],['manager','Manager'],['listings','Your listings'],['request','Your request'],['contact','Contact details'],['notify','Notifications'],['account','Account']];
+const secs=()=>ALL_SECS.filter(([k])=>k!=='manager'||(S.authed&&RL.admin));
+const SUBS={you:'',manager:'',listings:'',request:'',contact:'WhatsApp and email only.',notify:'',account:''};
+const BODY={you:secYou,manager:secManager,listings:secListings,request:secRequest,contact:secContact,notify:secNotify,account:secAccount};
 const csaveEl=()=>`<span class="csave ${S.csaveErr?'err':''}" data-csave role="status">${esc(S.csave)}</span>`;
-const sec=k=>panel(k,SECS.find(s=>s[0]===k)[1],SUBS[k],S.authed?BODY[k]():'<p class="note" style="margin-top:0">Sign in to see this.</p>',k==='contact'&&S.authed?csaveEl():'');
+const sec=k=>panel(k,ALL_SECS.find(s=>s[0]===k)[1],SUBS[k],S.authed?BODY[k]():'<p class="note" style="margin-top:0">Sign in to see this.</p>',k==='contact'&&S.authed?csaveEl():'');
 
 /* ---------- page chrome ---------- */
 /* the header: the logo, then Saved and Messages (signed in) and the menu, which holds posting, the pages and
@@ -402,8 +406,8 @@ const footer=()=>`<footer class="cx-foot"><div class="wrap"><div class="cx-fcols
   <div class="cx-fbot"><span>© 2026 Rentlet</span><span>A student class project. Not affiliated with or endorsed by Northwestern University.</span></div></div></footer>`;
 
 /* ---------- the page: section links on the left, one column of sections ---------- */
-const page=()=>`<div class="pa main"><nav class="side" aria-label="Sections">${SECS.map(([k,t])=>`<a href="#sec-${k}" data-jump="${k}" class="${S.active===k?'on':''}">${t}</a>`).join('')}</nav>
-   <div><nav class="chiprow" aria-label="Sections">${SECS.map(([k,t])=>`<a href="#sec-${k}" class="chip ${S.active===k?'on':''}" data-jump="${k}">${t}</a>`).join('')}</nav>${SECS.map(([k])=>sec(k)).join('')}</div></div>`;
+const page=()=>`<div class="pa main"><nav class="side" aria-label="Sections">${secs().map(([k,t])=>`<a href="#sec-${k}" data-jump="${k}" class="${S.active===k?'on':''}">${t}</a>`).join('')}</nav>
+   <div><nav class="chiprow" aria-label="Sections">${secs().map(([k,t])=>`<a href="#sec-${k}" class="chip ${S.active===k?'on':''}" data-jump="${k}">${t}</a>`).join('')}</nav>${secs().map(([k])=>sec(k)).join('')}</div></div>`;
 
 /* ---------- sheets ---------- */
 const listing=id=>(ready(S.listings)&&S.listings.find(l=>l.code===id))||{code:id,title:'this listing'};
@@ -445,7 +449,7 @@ function render(keepScroll=true){
 
 /* profile.html#contact (or #sec-contact) lands on that section. While the sections above it are still
    loading, it is kept in place as they grow; any scrolling, tap or key by the person ends that. */
-const secOf=h=>{const k=String(h||'').replace(/^#/,'').replace(/^sec-/,'');return SECS.some(s=>s[0]===k)?k:''};
+const secOf=h=>{const k=String(h||'').replace(/^#/,'').replace(/^sec-/,'');return secs().some(s=>s[0]===k)?k:''};
 const settled=()=>[S.profile,S.listings,S.requests,S.contact].every(v=>v!==null);
 let want=null,wantT=null,wantRO=null,wantEl=null;
 function follow(k,ms=10000){want=k;S.active=k;clearTimeout(wantT);wantT=setTimeout(unfollow,ms)}
@@ -482,6 +486,7 @@ window.RLP={update(p){
   Object.assign(S,p);render()}};
 /* src/rentlet.ts calls this instead of reloading when sign-in changes; src/profile.ts does the rest */
 addEventListener('rentlet:verified',()=>render());
+addEventListener('rentlet:admin',()=>render());
 window.RL_onAuth=u=>{if(window.RentletProfile)return;S.authed=!!u;S.me=u;render()};
 const msg=e=>e&&e.name==='ProfileError'?e.message:'That didn’t go through. Check your connection and try again.';
 function api(){const P=window.RentletProfile;if(!P)toast('Still loading. Try again in a moment.');return P}

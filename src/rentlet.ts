@@ -8,7 +8,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, query, serverTimestamp, setDoc, where, type Unsubscribe } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { app, auth, db } from './firebase';
 import { canSignIn, firstName } from './lib/nu';
 import { badgeUnread } from './lib/chatModel';
 import * as listings from './listings';
@@ -257,7 +257,7 @@ function paintSaves() {
   dispatchEvent(new CustomEvent('rentlet:saves', { detail: { room: [...savedIds.room], request: [...savedIds.request] } }));
 }
 
-// On the Rentlet team (the admin claim functions/src/review.ts gives): the menu shows Review.
+// A manager (on the ADMIN_EMAILS list; the admin claim functions/src/review.ts gives): Profile shows Review.
 function setAdmin(on: boolean) {
   if (window.RL.admin === on) return;
   window.RL.admin = on;
@@ -265,6 +265,29 @@ function setAdmin(on: boolean) {
     sessionStorage.setItem('rl-admin', on ? '1' : '0');
   } catch {
     /* private mode */
+  }
+  dispatchEvent(new Event('rentlet:admin'));
+}
+
+// Profile asks claimAdmin once per session, so someone just added to the list sees Review without opening
+// /review first, and someone taken off it stops seeing it.
+async function checkManager(u: User) {
+  const key = 'rl-mgr-' + u.uid;
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+  } catch {
+    /* private mode: ask anyway */
+  }
+  try {
+    const { getFunctions, httpsCallable } = await import('firebase/functions');
+    const r = await httpsCallable<unknown, { admin?: boolean }>(getFunctions(app, 'us-central1'), 'claimAdmin', { timeout: 30000 })({});
+    const on = r.data?.admin === true;
+    if (auth.currentUser?.uid !== u.uid) return;
+    if (((await u.getIdTokenResult()).claims.admin === true) !== on) await u.getIdToken(true);
+    setAdmin(on);
+  } catch {
+    /* the token's claim still stands */
   }
 }
 
@@ -424,8 +447,11 @@ onAuthStateChanged(auth, async (u) => {
   watchUnread(u ? u.uid : null);
   watchSaves(u ? u.uid : null);
   watchVerified(u ? u.uid : null);
-  setAdmin(false);
-  if (u) u.getIdTokenResult().then((t) => setAdmin(t.claims.admin === true), () => undefined);
+  if (!u) setAdmin(false);
+  else {
+    u.getIdTokenResult().then((t) => setAdmin(t.claims.admin === true), () => setAdmin(false));
+    if (/\/profile(\.html)?$/.test(location.pathname)) checkManager(u);
+  }
 });
 
 window.RentletListings = listings;

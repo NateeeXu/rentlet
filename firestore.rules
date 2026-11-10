@@ -63,8 +63,10 @@ service cloud.firestore {
         allow read, delete: if signedIn() && me() == uid;
         // the verified school email is written only by functions/src/verify.ts
       allow create, update: if signedIn() && me() == uid && doc != 'verification' && (doc != 'contact' ||
-          (request.resource.data.keys().hasOnly(['instagram', 'email'])
-            && request.resource.data.instagram is string && request.resource.data.instagram.size() <= 30
+          (request.resource.data.keys().hasOnly(['whatsapp', 'email', 'instagram'])
+            && request.resource.data.get('whatsapp', '') is string
+            && request.resource.data.get('whatsapp', '').matches('^$|^[+][0-9]{8,15}$')
+            && request.resource.data.get('instagram', '') is string && request.resource.data.get('instagram', '').size() <= 30
             && request.resource.data.email is string && request.resource.data.email.size() <= 254));
       }
       match /saves/{listingId} {

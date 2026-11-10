@@ -106,11 +106,12 @@ function toast(message: string) {
 async function saveProfile(u: User) {
   const ref = doc(db, 'users', u.uid);
   const existing = await getDoc(ref);
+  const uploaded = String(existing.data()?.photoURL ?? '').includes('/o/avatars%2F');
   // the first name comes from Google once; after that the person may change it on their page
   await setDoc(
     ref,
     {
-      photoURL: u.photoURL ?? '',
+      ...(uploaded ? {} : { photoURL: u.photoURL ?? '' }),
       updatedAt: serverTimestamp(),
       ...(existing.exists() && existing.data().name ? {} : { name: firstName(u.displayName), joinedAt: serverTimestamp() }),
     },
@@ -122,6 +123,22 @@ async function saveProfile(u: User) {
 // While a sign-in is still saving the profile, the refresh waits so a reload can't cut it off.
 let busy = false;
 let pending = false;
+
+// A photo uploaded on Profile (users/{uid}.photoURL) shows in the header instead of the Google one.
+async function syncPhoto(u: User) {
+  try {
+    const p = (await getDoc(doc(db, 'users', u.uid))).data()?.photoURL;
+    const cur = window.RL.user;
+    if (typeof p !== 'string' || !p || !cur || cur.uid !== u.uid || cur.photo === p || auth.currentUser?.uid !== u.uid) return;
+    const next = { ...cur, photo: p };
+    cache(next);
+    window.Rentlet.user = next;
+    window.RL.user = next;
+    window.RL_onAuth?.(next);
+  } catch {
+    /* keeps the Google photo */
+  }
+}
 
 function notify(next: RentletUser | null) {
   if (typeof window.RL_onAuth === 'function') window.RL_onAuth(next);
@@ -391,6 +408,7 @@ onAuthStateChanged(auth, async (u) => {
     return; // the sign-out fires this listener again with null
   }
   apply(u ? toUser(u) : null);
+  if (u) syncPhoto(u);
   watchUnread(u ? u.uid : null);
   watchSaves(u ? u.uid : null);
   watchVerified(u ? u.uid : null);

@@ -515,7 +515,7 @@ async function myContact(): Promise<Record<ShareKind, string>> {
     /* fall back to the account email below */
   }
   const s = (x: unknown) => (typeof x === 'string' ? x.trim().slice(0, 200) : '');
-  return { instagram: s(c.instagram), email: s(c.email) || m.email };
+  return { whatsapp: s(c.whatsapp), email: s(c.email) || m.email, instagram: '' };
 }
 
 // Step one of the swap: store only which kind I'll share. The value itself is written by reveal()

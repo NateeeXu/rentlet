@@ -7,6 +7,7 @@ import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { onDocumentCreated } from 'firebase-functions/firestore';
 import * as logger from 'firebase-functions/logger';
 import { defineSecret } from 'firebase-functions/params';
+import { logoAttachment } from './logo.js';
 import nodemailer, { type Transporter } from 'nodemailer';
 
 export const WAIT_MS = 30_000;
@@ -147,7 +148,7 @@ export function composeEmail(o: { cid: string; to: string; senderId: string; con
       ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px"><tr><td style="padding:0 12px 0 0;vertical-align:middle"><img src="${escapeHtml(room.photo)}" alt="" width="64" height="64" style="display:block;width:64px;height:64px;object-fit:cover;border-radius:12px"></td><td style="vertical-align:middle">${roomText}</td></tr></table>`
       : `<div style="margin:0 0 14px">${roomText}</div>`;
 
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f7f7f7"><div style="box-sizing:border-box;max-width:480px;margin:0 auto;padding:24px;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#222222"><img src="${SITE}/img/rentlet-logo.png" alt="Rentlet" height="26" style="display:block;height:26px;margin:0 0 20px"><h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;font-weight:650">${escapeHtml(heading)}</h1>${roomBlock}<div style="margin:0 0 20px;padding:12px 14px;background:#f5f4f7;border-radius:12px;font-size:15px;line-height:1.45">${escapeHtml(preview)}</div><a href="${escapeHtml(chat)}" style="display:inline-block;padding:12px 24px;border-radius:999px;background:#222222;color:#ffffff;font-size:15px;font-weight:650;text-decoration:none">Open the chat</a><p style="margin:20px 0 0;font-size:12.5px;line-height:1.5;color:#717171">${fine} <a href="${settings}" style="color:#717171">${off}</a></p></div></body></html>`;
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f7f7f7"><div style="box-sizing:border-box;max-width:480px;margin:0 auto;padding:24px;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#222222"><img src="cid:rentlet-logo" alt="Rentlet" width="99" height="26" style="display:block;width:99px;height:26px;border:0;margin:0 0 20px"><h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;font-weight:650">${escapeHtml(heading)}</h1>${roomBlock}<div style="margin:0 0 20px;padding:12px 14px;background:#f5f4f7;border-radius:12px;font-size:15px;line-height:1.45">${escapeHtml(preview)}</div><a href="${escapeHtml(chat)}" style="display:inline-block;padding:12px 24px;border-radius:999px;background:#222222;color:#ffffff;font-size:15px;font-weight:650;text-decoration:none">Open the chat</a><p style="margin:20px 0 0;font-size:12.5px;line-height:1.5;color:#717171">${fine} <a href="${settings}" style="color:#717171">${off}</a></p></div></body></html>`;
 
   const text = [heading, room.name, room.line, '', preview, '', `Open the chat: ${chat}`, '', `${fine} ${off} ${settings}`]
     .filter((l, i) => l !== '' || i === 3 || i === 5 || i === 7)
@@ -231,7 +232,7 @@ const live: Deps = {
     else await ref.delete();
   },
   send: async (mail) => {
-    await transport().sendMail({ from: { name: 'Rentlet', address: MAIL_USER.value() }, ...mail });
+    await transport().sendMail({ from: { name: 'Rentlet', address: MAIL_USER.value() }, ...mail, attachments: [logoAttachment()] });
   },
 };
 

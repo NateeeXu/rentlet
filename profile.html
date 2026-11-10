@@ -83,6 +83,14 @@ small a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;mar
 .h1{font-family:var(--serif);font-size:38px;font-weight:500;letter-spacing:-.6px;line-height:1.1;margin:0;overflow-wrap:anywhere}
 .av{border-radius:50%;background:var(--soft);display:grid;place-items:center;font-weight:700;font-style:normal;flex:none;color:var(--ink)}
 .av.ink{background:var(--ink);color:#fff}
+.avw{position:relative;flex:none}
+.avw.busy .av{opacity:.45}
+.avc{position:absolute;right:-4px;bottom:-4px;width:32px!important;height:32px;min-width:0;margin:0;padding:0;border-radius:50%;border:2px solid #fff;background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.2);display:grid;place-items:center;cursor:pointer}
+.avc::after{content:'';position:absolute;inset:-7px}
+.avc .ic{width:16px;height:16px}
+.avc:hover{background:var(--soft)}
+.phst{font-size:13px;color:var(--muted)}
+.since{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px}
 .who{display:flex;align-items:center;gap:18px}
 .who .av{width:72px;height:72px;font-size:28px}
 .who .nm{min-width:0;flex:1}
@@ -277,7 +285,7 @@ const ls={get(k){try{return localStorage.getItem(k)}catch(_){return null}},set(k
 ls.del('cs-profile');ls.del('cs-notify'); /* the old sample profile kept on this device */
 if(/^#(sec-)?saved$/.test(location.hash))location.replace('saved.html'); /* Saved moved to its own page */
 
-const ICONS={check:'<path d="M5 12.5l4.2 4.2L19 7"/>',shield:'<path d="M12 3.5l7 2.6v5.4c0 4.4-3 7.7-7 9-4-1.3-7-4.6-7-9V6.1z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.4"/>',
+const ICONS={camera:'<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.5-2h6l1.5 2h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.5"/>',check:'<path d="M5 12.5l4.2 4.2L19 7"/>',shield:'<path d="M12 3.5l7 2.6v5.4c0 4.4-3 7.7-7 9-4-1.3-7-4.6-7-9V6.1z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.4"/>',
   user:'<circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6"/>',
   x:'<path d="M6 6l12 12M18 6L6 18"/>'};
 const ic=(k,c='')=>`<svg class="ic ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>`;
@@ -289,11 +297,15 @@ const GOOGLE=`<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d
 const me0=RL.authed&&RL.user?RL.user:null;
 const S={sheet:null,editName:false,active:'you',tmp:{},busy:{},
   authed:!!me0,me:me0,profile:null,listings:null,requests:null,contact:null,notify:null,
-  f:{instagram:'',cemail:''},csave:'',csaveErr:false};
+  f:{whatsapp:'',cemail:''},csave:'',csaveErr:false};
 const ready=v=>v&&v!=='error';
 const nm=()=>(ready(S.profile)&&S.profile.name)||(S.me&&S.me.name)||'You';
 const photo=()=>(ready(S.profile)&&S.profile.photo)||(S.me&&S.me.photo)||'';
 const initial=()=>nm().trim().charAt(0).toUpperCase()||'?';
+const customPhoto=()=>/\/o\/avatars%2F/.test(photo());
+/* a new photo (or back to the Google one): the avatar dims while it saves */
+function setPhoto(run,done){if(S.busy.photo||!window.RentletProfile)return;S.busy.photo=true;render();
+  run().then(()=>toast(done),e=>toast(msg(e))).finally(()=>{S.busy.photo=false;render()})}
 const avatar=()=>photo()?`<img src="${esc(photo())}" alt="" referrerpolicy="no-referrer">`:esc(initial());
 const nuEmail=()=>(S.me&&S.me.email)||'';
 const role=()=>(S.me&&S.me.role)||'';
@@ -310,9 +322,9 @@ function secYou(){
   const nameBlock=S.editName
     ?`<div class="nmedit"><label class="in"><input data-f="name" value="${esc(S.tmp.name!=null?S.tmp.name:nm())}" maxlength="24" aria-label="First name" autocomplete="given-name"></label><button type="button" class="btn" data-act="saveName" ${S.busy.name?'disabled':''}>Save</button><button type="button" class="btn sec" data-act="cancelName">Cancel</button></div>`
     :`<div class="nmrow"><h1 class="h1">${esc(nm())}</h1><button type="button" class="lk" data-act="editName">Edit name</button></div>`;
-  return `<div class="who"><span class="av ink" aria-hidden="true">${avatar()}</span><div class="nm">${nameBlock}<p class="since">${RL.verified?`<span class="vb">${ic('shield')}Verified school email</span>`:'<a class="getv" href="verification.html">Get the student tag</a>'}</p></div></div>
+  return `<div class="who"><div class="avw${S.busy.photo?' busy':''}"><span class="av ink" aria-hidden="true">${avatar()}</span><button type="button" class="avc" data-act="pickPhoto" aria-label="Change photo" ${S.busy.photo?'disabled':''}>${ic('camera')}</button><input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" data-photo hidden></div><div class="nm">${nameBlock}<p class="since">${RL.verified?`<span class="vb">${ic('shield')}Verified school email</span>`:'<a class="getv" href="verification.html">Get the student tag</a>'}${S.busy.photo?'<span class="phst" role="status">Uploading photo…</span>':customPhoto()?'<button type="button" class="lk" data-act="googlePhoto">Use Google photo</button>':''}</p></div></div>
   <div class="seen"><span class="lbl">What others see</span><div class="sc"><span class="av">${avatar()}</span><div><b>${esc(nm())}${role()?` · ${esc(role())}`:''}</b>${RL.verified?`<span><span class="vb">${ic('shield')}Verified</span></span>`:''}</div></div>
-  <p class="note">First name only, with your Google photo. Your email and Instagram stay private.</p></div>`}
+  <p class="note">First name only, with your photo. Your email and WhatsApp stay private.</p></div>`}
 
 function listingCard(l){const [c,t]=STATUS[l.status]||['',esc(l.status)],live=l.status==='active',link=live?`room.html?room=${l.code}`:'',dis=S.busy[l.code]?'disabled':'',id=`data-id="${l.code}" ${dis}`;
   const img=l.img?`<img src="${esc(l.img)}" alt="" loading="lazy">`:'';
@@ -354,9 +366,8 @@ function cemailState(){const e=(S.f.cemail||'').trim().toLowerCase();
 function secContact(){const C=S.contact;
   if(C===null)return loading('Loading contact details…');
   if(C==='error')return failed('Couldn’t load your contact details.');
-  return `<div class="grp" style="margin-top:0"><span class="lbl">Instagram</span><label class="in"><input data-f="instagram" value="${esc(S.f.instagram)}" placeholder="Your Instagram handle" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="60" aria-label="Instagram handle"></label></div>
-  <div class="grp"><span class="lbl">Email</span><label class="in"><input data-f="cemail" type="email" value="${esc(S.f.cemail)}" placeholder="you@example.com" autocomplete="email" maxlength="254" aria-label="Contact email"><span data-cestate>${cemailState()}</span></label><button type="button" class="lk" data-act="useNu" ${showUseNu()?'':'hidden'}>Use my school email</button></div>
-  <p class="note">Never public. Shared only when you choose to share it in a conversation.</p>`}
+  return `<div class="grp" style="margin-top:0"><span class="lbl">WhatsApp</span><label class="in"><input data-f="whatsapp" type="tel" inputmode="tel" value="${esc(S.f.whatsapp)}" placeholder="+1 312 555 0100" autocomplete="tel" maxlength="24" aria-label="WhatsApp number"></label></div>
+  <div class="grp"><span class="lbl">Email</span><label class="in"><input data-f="cemail" type="email" value="${esc(S.f.cemail)}" placeholder="you@example.com" autocomplete="email" maxlength="254" aria-label="Contact email"><span data-cestate>${cemailState()}</span></label><button type="button" class="lk" data-act="useNu" ${showUseNu()?'':'hidden'}>Use my sign-in email</button></div>`}
 
 function secNotify(){const N=S.notify;
   if(N===null)return loading('Loading your settings…');
@@ -368,7 +379,7 @@ function secAccount(){
     <div class="row"><div class="rl"><b>Delete account</b><span>Removes your profile, listings, request, saved rooms and requests, and contact details.</span></div><span></span><div class="ra"><button type="button" class="btn red-t" data-act="del1">Delete</button></div></div></div>`}
 
 const SECS=[['you','You'],['listings','Your listings'],['request','Your request'],['contact','Contact details'],['notify','Notifications'],['account','Account']];
-const SUBS={you:'',listings:'',request:'Live requests show on the Requests page.',contact:'Instagram and email only.',notify:'',account:''};
+const SUBS={you:'',listings:'',request:'',contact:'WhatsApp and email only.',notify:'',account:''};
 const BODY={you:secYou,listings:secListings,request:secRequest,contact:secContact,notify:secNotify,account:secAccount};
 const csaveEl=()=>`<span class="csave ${S.csaveErr?'err':''}" data-csave role="status">${esc(S.csave)}</span>`;
 const sec=k=>panel(k,SECS.find(s=>s[0]===k)[1],SUBS[k],S.authed?BODY[k]():'<p class="note" style="margin-top:0">Sign in to see this.</p>',k==='contact'&&S.authed?csaveEl():'');
@@ -465,8 +476,8 @@ function jump(k){const site=$('#site'),el=$(`#sec-${k}`,site);if(!el)return;cons
 window.RLP={update(p){
   if('authed' in p&&!p.authed){S.sheet=null;S.editName=false;S.busy={}}
   if(p.authed&&!S.authed){const k=secOf(location.hash);if(k){anchor.done=false;follow(k)}} /* signed in here: land where the address asked */
-  if('contact' in p){if(p.contact===null){S.f={instagram:'',cemail:''};S.csave='';S.csaveErr=false}
-    else if(ready(p.contact)&&!ready(S.contact))S.f={instagram:p.contact.instagram,cemail:p.contact.email}}
+  if('contact' in p){if(p.contact===null){S.f={whatsapp:'',cemail:''};S.csave='';S.csaveErr=false}
+    else if(ready(p.contact)&&!ready(S.contact))S.f={whatsapp:p.contact.whatsapp,cemail:p.contact.email}}
   Object.assign(S,p);render()}};
 /* src/rentlet.ts calls this instead of reloading when sign-in changes; src/profile.ts does the rest */
 addEventListener('rentlet:verified',()=>render());
@@ -481,11 +492,11 @@ let cT=null;
 function setCsave(t,err){S.csave=t;S.csaveErr=!!err;const el=$('[data-csave]');if(el){el.textContent=t;el.classList.toggle('err',!!err)}}
 function queueContact(now){clearTimeout(cT);cT=setTimeout(()=>saveContact(now),now?0:1000)}
 async function saveContact(final){const P=window.RentletProfile;if(!P||!ready(S.contact))return;
-  const bad=P.checkContact(S.f.instagram,S.f.cemail);
+  const bad=P.checkContact(S.f.whatsapp,S.f.cemail);
   if(bad){setCsave(final?bad:'',final);return}
   const before=S.csaveErr?'':S.csave;setCsave('Saving…');
-  try{const r=await P.saveContact(S.f.instagram,S.f.cemail);S.contact={instagram:r.instagram,email:r.email};setCsave(r.changed?'Saved':before);
-    const i=$('[data-f=instagram]');if(S.f.instagram!==r.instagram&&i&&document.activeElement!==i){S.f.instagram=r.instagram;i.value=r.instagram}}
+  try{const r=await P.saveContact(S.f.whatsapp,S.f.cemail);S.contact={whatsapp:r.whatsapp,email:r.email};setCsave(r.changed?'Saved':before);
+    const i=$('[data-f=whatsapp]');if(S.f.whatsapp!==r.whatsapp&&i&&document.activeElement!==i){S.f.whatsapp=r.whatsapp;i.value=r.whatsapp}}
   catch(e){setCsave(msg(e),true)}}
 
 /* ---------- events ---------- */
@@ -522,6 +533,8 @@ document.addEventListener('click',e=>{const t=e.target;
     case 'reqDelete':S.sheet={kind:'delreq',id};render();return;
     case 'confirmDelReq':S.sheet=null;run('r:'+id,()=>window.RentletProfile.deleteRequest(id),'Request deleted.');return;
     case 'useNu':S.f.cemail=nuEmail();render();queueContact(true);return;
+    case 'pickPhoto':{const i=$('[data-photo]');if(i&&!S.busy.photo)i.click();return}
+    case 'googlePhoto':setPhoto(()=>window.RentletProfile.useGooglePhoto(),'Using your Google photo.');return;
     case 'undo':{const f=undoFn;undoFn=null;$('#toast').classList.remove('on');if(f)f();return}
     case 'signout':S.sheet={kind:'signout'};render();return;
     case 'confirmSignout':S.sheet=null;render();RL.signOut();return;
@@ -537,15 +550,16 @@ document.addEventListener('click',e=>{const t=e.target;
 /* typed text survives every redraw */
 document.addEventListener('input',e=>{const k=e.target.dataset.f;if(!k)return;const v=e.target.value;
   if(k==='name'||k==='delconf'){S.tmp[k]=v;if(k==='delconf'){const c=$('[data-act=confirmDel]');if(c)c.disabled=v.trim().toUpperCase()!=='DELETE'}return}
-  if(k==='instagram'||k==='cemail'){S.f[k]=v;
+  if(k==='whatsapp'||k==='cemail'){S.f[k]=v;
     if(k==='cemail'){const s=$('[data-cestate]');if(s)s.innerHTML=cemailState();const u=$('[data-act=useNu]');if(u)u.hidden=!showUseNu()}
     queueContact(false)}});
-document.addEventListener('change',e=>{const k=e.target.dataset.f;if(k==='instagram'||k==='cemail')queueContact(true)});
+document.addEventListener('change',e=>{if(e.target.matches&&e.target.matches('[data-photo]')){const f=e.target.files&&e.target.files[0];e.target.value='';if(f)setPhoto(()=>window.RentletProfile.uploadPhoto(f),'Photo updated.');return}
+  const k=e.target.dataset.f;if(k==='whatsapp'||k==='cemail')queueContact(true)});
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&S.sheet){if(LOCKED.includes(S.sheet.kind))return;S.sheet=null;render();return}
   if(e.key==='Enter'){const k=e.target.dataset&&e.target.dataset.f;
     if(k==='name'){e.preventDefault();$('[data-act=saveName]').click()}
-    else if(k==='instagram'||k==='cemail'){e.preventDefault();queueContact(true)}
+    else if(k==='whatsapp'||k==='cemail'){e.preventDefault();queueContact(true)}
     else if(k==='delconf'){e.preventDefault();const c=$('[data-act=confirmDel]');if(c&&!c.disabled)c.click()}}});
 {const k=secOf(location.hash);if(k)follow(k)}
 render(false);

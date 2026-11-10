@@ -32,18 +32,21 @@ export function affiliation(email: string | null | undefined): string {
   return 'School email (.edu)';
 }
 
-// "@sam.k", "instagram.com/sam.k/" and " sam.k " all become "sam.k".
-export function normalizeInstagram(raw: string | null | undefined): string {
-  let s = (raw ?? '').trim();
-  const url = /^(?:https?:\/\/)?(?:www\.)?instagram\.com\/([^/?#\s]+)/i.exec(s);
-  if (url) s = url[1];
-  return s.replace(/^@+/, '').trim();
+// A WhatsApp number as +<country code><number>: "+1 (312) 555-0100" and "312-555-0100" (a US number without a
+// country code) both become "+13125550100". Anything else stays as typed, for whatsappError to name.
+export function normalizeWhatsApp(raw: string | null | undefined): string {
+  const s = (raw ?? '').trim();
+  if (!s) return '';
+  const digits = s.replace(/\D/g, '');
+  if (/^\+/.test(s)) return '+' + digits;
+  if (digits.length === 10) return '+1' + digits;
+  if (digits.length === 11 && digits.startsWith('1')) return '+' + digits;
+  return s;
 }
 
-export function instagramError(handle: string): string {
-  if (!handle) return '';
-  if (handle.length > 30) return 'Instagram handles are at most 30 characters.';
-  return /^[A-Za-z0-9._]+$/.test(handle) ? '' : 'Instagram handles use only letters, numbers, periods and underscores.';
+export function whatsappError(number: string): string {
+  if (!number) return '';
+  return /^\+[0-9]{8,15}$/.test(number) ? '' : 'Enter the number with its country code, like +1 312 555 0100.';
 }
 
 export function contactEmailError(email: string): string {

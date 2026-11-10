@@ -17,7 +17,7 @@ import {
   type Timestamp,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { deleteObject, listAll, ref } from 'firebase/storage';
+import { deleteObject, getDownloadURL, listAll, ref, uploadBytes } from 'firebase/storage';
 import { auth, db, storage } from './firebase';
 import { hasEnded, localDay, type ListingDoc } from './lib/listingView';
 import { isLive } from './lib/requestsView';
@@ -26,11 +26,11 @@ import {
   affiliation,
   cleanFirstName,
   contactEmailError,
-  instagramError,
+  whatsappError,
   listingFilePaths,
   liveCount,
   MAX_LIVE,
-  normalizeInstagram,
+  normalizeWhatsApp,
   ownStatus,
   proofFilePaths,
   requestView,
@@ -69,7 +69,7 @@ let gen = 0; // each load gets a number, so a slow answer for an earlier account
 let subs: Unsubscribe[] = [];
 let mine: ListingDoc[] = [];
 const requests = new Map<string, DocumentData>();
-let contact = { instagram: '', email: '' };
+let contact = { whatsapp: '', email: '' };
 let leaving = false;
 
 const errCode = (e: unknown) => (e as { code?: string })?.code ?? '';
@@ -160,7 +160,7 @@ async function loadContact(my: number, id: string) {
   try {
     const d = (await getDoc(doc(db, 'users', id, 'private', 'contact'))).data() ?? {};
     if (my !== gen) return;
-    contact = { instagram: str(d.instagram), email: str(d.email) };
+    contact = { whatsapp: str(d.whatsapp), email: str(d.email) };
     page({ contact: { ...contact } });
   } catch {
     if (my === gen) page({ contact: 'error' });
@@ -184,6 +184,44 @@ function need(): User {
 }
 
 // files in one of the person's folders (only those whose name starts with namePrefix, if given)
+export const isUploadedPhoto = (url: string): boolean => url.includes('/o/avatars%2F');
+
+// The middle square of the photo, at most 512 pixels, as a JPEG (the browser applies the photo's rotation).
+async function squarePhoto(file: File, size = 512): Promise<Blob> {
+  let bmp: ImageBitmap;
+  try {
+    bmp = await createImageBitmap(file);
+  } catch {
+    throw new ProfileError('Use a JPEG, PNG or WebP photo.');
+  }
+  const side = Math.min(bmp.width, bmp.height);
+  const c = document.createElement('canvas');
+  c.width = c.height = Math.min(size, side);
+  c.getContext('2d')!.drawImage(bmp, (bmp.width - side) / 2, (bmp.height - side) / 2, side, side, 0, 0, c.width, c.height);
+  bmp.close();
+  return new Promise((ok, no) => c.toBlob((b) => (b ? ok(b) : no(new ProfileError('Use a JPEG, PNG or WebP photo.'))), 'image/jpeg', 0.88));
+}
+
+// Sets the photo on the profile (and on an open request, which keeps its own copy), removes the old uploaded file,
+// and updates the header everywhere through the cached user.
+async function usePhoto(u: User, url: string): Promise<string> {
+  const had = (await getDoc(doc(db, 'users', u.uid))).data() ?? {};
+  const before = had.photoURL;
+  await setDoc(doc(db, 'users', u.uid), { photoURL: url, updatedAt: serverTimestamp() }, { merge: true });
+  updateDoc(doc(db, 'requests', u.uid), { photo: url }).catch(() => undefined);
+  if (typeof before === 'string' && before !== url && isUploadedPhoto(before)) deleteObject(ref(storage, before)).catch(() => undefined);
+  if (window.RL?.user) {
+    window.RL.user = { ...window.RL.user, photo: url };
+    try {
+      localStorage.setItem('rl-user', JSON.stringify(window.RL.user));
+    } catch {
+      /* private mode */
+    }
+  }
+  page({ profile: { name: str(had.name), photo: url } });
+  return url;
+}
+
 async function sweep(folder: string, namePrefix = '') {
   const res = await listAll(ref(storage, folder));
   await Promise.allSettled(res.items.filter((i) => i.name.startsWith(namePrefix)).map((i) => deleteObject(i)));
@@ -216,7 +254,7 @@ async function wipe(owner: string) {
   await Promise.all(priv.docs.map((d) => deleteDoc(d.ref)));
   await deleteDoc(doc(db, 'verifications', owner)).catch(() => undefined);
   // and anything left from uploads that never became a listing, lease proofs included
-  await Promise.allSettled([sweep(`listings/${owner}`), sweep(`videos/${owner}`), sweep(`proofs/${owner}`)]);
+  await Promise.allSettled([sweep(`listings/${owner}`), sweep(`videos/${owner}`), sweep(`proofs/${owner}`), sweep(`avatars/${owner}`)]);
   await deleteDoc(doc(db, 'users', owner));
 }
 
@@ -302,19 +340,36 @@ const api = {
   },
 
   // '' when both fields can be saved
-  checkContact(instagram: string, email: string): string {
-    return instagramError(normalizeInstagram(instagram)) || contactEmailError(email.trim());
+  checkContact(whatsapp: string, email: string): string {
+    return whatsappError(normalizeWhatsApp(whatsapp)) || contactEmailError(email.trim());
   },
 
-  async saveContact(instagramRaw: string, emailRaw: string): Promise<{ instagram: string; email: string; changed: boolean }> {
+  async saveContact(whatsappRaw: string, emailRaw: string): Promise<{ whatsapp: string; email: string; changed: boolean }> {
     const u = need();
-    const next = { instagram: normalizeInstagram(instagramRaw), email: emailRaw.trim() };
-    const bad = instagramError(next.instagram) || contactEmailError(next.email);
+    const next = { whatsapp: normalizeWhatsApp(whatsappRaw), email: emailRaw.trim() };
+    const bad = whatsappError(next.whatsapp) || contactEmailError(next.email);
     if (bad) throw new ProfileError(bad);
-    if (next.instagram === contact.instagram && next.email === contact.email) return { ...next, changed: false };
+    if (next.whatsapp === contact.whatsapp && next.email === contact.email) return { ...next, changed: false };
     await setDoc(doc(db, 'users', u.uid, 'private', 'contact'), next);
     contact = next;
     return { ...next, changed: true };
+  },
+
+  // A photo of your own in place of the Google one: cropped square and shrunk in the browser, then stored under
+  // avatars/{uid}/ (storage.rules) and set as users/{uid}.photoURL, which every page shows.
+  async uploadPhoto(file: File): Promise<string> {
+    const u = need();
+    if (file.size > 20 * 1024 * 1024) throw new ProfileError('Use a photo under 20 MB.');
+    const blob = await squarePhoto(file);
+    const r = ref(storage, `avatars/${u.uid}/${Date.now()}.jpg`);
+    await uploadBytes(r, blob, { contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000' });
+    return usePhoto(u, await getDownloadURL(r));
+  },
+
+  // Back to the photo from the Google account.
+  async useGooglePhoto(): Promise<string> {
+    const u = need();
+    return usePhoto(u, u.photoURL ?? '');
   },
 
   async saveEmailPref(on: boolean): Promise<void> {

@@ -5,8 +5,8 @@ import type { ListingDoc } from './listingView';
 
 export type SettleKey = 'dates' | 'stays' | 'money' | 'tour' | 'landlord';
 export const SETTLE_KEYS: SettleKey[] = ['dates', 'stays', 'money', 'tour', 'landlord'];
-export type ShareKind = 'instagram' | 'email';
-export const SHARE_KINDS: ShareKind[] = ['instagram', 'email'];
+export type ShareKind = 'whatsapp' | 'email' | 'instagram'; // instagram: only handles shared before Nov 9
+export const SHARE_KINDS: ShareKind[] = ['whatsapp', 'email'];
 export type Tab = 'looking' | 'subletting';
 
 // One checklist item someone has touched. Untouched items are open and are not stored.
@@ -224,7 +224,7 @@ export function convFromData(id: string, data: Record<string, unknown>): Conv {
   const share: Record<string, ShareEntry> = {};
   for (const [uid, v] of Object.entries(rec(data.share))) {
     const e = rec(v);
-    if (e.kind === 'instagram' || e.kind === 'email') {
+    if (e.kind === 'whatsapp' || e.kind === 'email' || e.kind === 'instagram') {
       share[uid] = { kind: e.kind, val: typeof e.val === 'string' ? e.val.trim().slice(0, 200) : '', atMs: ms(e.at) };
     }
   }

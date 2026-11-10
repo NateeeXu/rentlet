@@ -6,6 +6,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { HttpsError, onCall, type CallableOptions, type CallableRequest } from 'firebase-functions/https';
 import * as logger from 'firebase-functions/logger';
+import { logoAttachment } from './logo.js';
 import { MAIL_PASSWORD, MAIL_USER, transport } from './notify.js';
 
 export const CODE_TTL_MS = 10 * 60_000;
@@ -70,7 +71,7 @@ export function checkCode(state: CodeState | undefined, uid: string, code: strin
 export function codeEmail(code: string): { subject: string; text: string; html: string } {
   const subject = 'Your Rentlet verification code';
   const text = `${code}\n\nEnter this code on Rentlet to verify your school email. It expires in 10 minutes.\n\nIf you didn't ask for it, you can ignore this email.`;
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f7f7f7"><div style="box-sizing:border-box;max-width:480px;margin:0 auto;padding:28px 24px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#222"><img src="https://rentlet-nu.web.app/img/rentlet-logo.png" alt="Rentlet" height="26" style="display:block;height:26px;margin:0 0 18px"><h1 style="font-size:20px;font-weight:650;margin:0 0 14px">Your verification code</h1><p style="margin:0 0 14px;font-size:34px;font-weight:700;letter-spacing:6px">${code}</p><p style="margin:0;font-size:15px;line-height:1.5">Enter this code on Rentlet to verify your school email. It expires in 10 minutes.</p><p style="margin:18px 0 0;font-size:12.5px;color:#717171">If you didn't ask for it, you can ignore this email.</p></div></body></html>`;
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:0;background:#f7f7f7"><div style="box-sizing:border-box;max-width:480px;margin:0 auto;padding:28px 24px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#222"><img src="cid:rentlet-logo" alt="Rentlet" width="99" height="26" style="display:block;width:99px;height:26px;border:0;margin:0 0 18px"><h1 style="font-size:20px;font-weight:650;margin:0 0 14px">Your verification code</h1><p style="margin:0 0 14px;font-size:34px;font-weight:700;letter-spacing:6px">${code}</p><p style="margin:0;font-size:15px;line-height:1.5">Enter this code on Rentlet to verify your school email. It expires in 10 minutes.</p><p style="margin:18px 0 0;font-size:12.5px;color:#717171">If you didn't ask for it, you can ignore this email.</p></div></body></html>`;
   return { subject, text, html };
 }
 
@@ -122,7 +123,7 @@ export const sendSchoolCode = onCall({ ...OPTIONS, secrets: [MAIL_USER, MAIL_PAS
     return state;
   });
   try {
-    await transport().sendMail({ from: { name: 'Rentlet', address: MAIL_USER.value() }, to: email, ...codeEmail(code) });
+    await transport().sendMail({ from: { name: 'Rentlet', address: MAIL_USER.value() }, to: email, ...codeEmail(code), attachments: [logoAttachment()] });
   } catch (e) {
     // the code never arrived, so it doesn't count against waiting
     await codeRef.set({ ...(before ?? {}), digest: FieldValue.delete(), sentAt: before?.sentAt ?? 0 }, { merge: true }).catch(() => undefined);

@@ -3,12 +3,12 @@ import {
   affiliation,
   cleanFirstName,
   contactEmailError,
-  instagramError,
+  whatsappError,
   isListingCode,
   isRequestId,
   listingFilePaths,
   liveCount,
-  normalizeInstagram,
+  normalizeWhatsApp,
   ownStatus,
   proofFilePaths,
   requestView,
@@ -42,14 +42,16 @@ describe('names and contact fields', () => {
     expect(affiliation('sam@uchicago.edu')).toBe('School email (.edu)');
     expect(affiliation(undefined)).toBe('School email (.edu)');
   });
-  it('cleans Instagram handles', () => {
-    expect(normalizeInstagram('@sam.k')).toBe('sam.k');
-    expect(normalizeInstagram(' https://www.instagram.com/sam_k/?hl=en ')).toBe('sam_k');
-    expect(normalizeInstagram('instagram.com/sam.k')).toBe('sam.k');
-    expect(instagramError('sam.k')).toBe('');
-    expect(instagramError('')).toBe('');
-    expect(instagramError('sam k')).not.toBe('');
-    expect(instagramError('a'.repeat(31))).not.toBe('');
+  it('cleans WhatsApp numbers', () => {
+    expect(normalizeWhatsApp('+1 (312) 555-0100')).toBe('+13125550100');
+    expect(normalizeWhatsApp('312-555-0100')).toBe('+13125550100');
+    expect(normalizeWhatsApp('1 312 555 0100')).toBe('+13125550100');
+    expect(normalizeWhatsApp('+86 138 0013 8000')).toBe('+8613800138000');
+    expect(normalizeWhatsApp('  ')).toBe('');
+    expect(whatsappError('+13125550100')).toBe('');
+    expect(whatsappError('')).toBe('');
+    expect(whatsappError('5550100')).not.toBe('');
+    expect(whatsappError('+1234')).not.toBe('');
   });
   it('checks contact emails', () => {
     expect(contactEmailError('')).toBe('');

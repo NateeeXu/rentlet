@@ -452,7 +452,7 @@ const doneN=t=>KEYS.filter(k=>t.settle[k][0]==='done').length;
 const listed=t=>!t.blocked&&!t.hidden;
 const inTab=tab=>Object.values(TH).filter(t=>t.tab===tab&&listed(t)).sort((a,b)=>(b.pinned-a.pinned)||(b.ord-a.ord));
 const host=t=>t.tab==='subletting';
-const kindLabel=k=>k==='instagram'?'Instagram':'Email',kindWord=k=>k==='instagram'?'Instagram':'email';
+const kindLabel=k=>k==='whatsapp'?'WhatsApp':k==='instagram'?'Instagram':'Email',kindWord=k=>k==='whatsapp'?'WhatsApp':k==='instagram'?'Instagram':'email';
 let site,stage;const isPhone=()=>site&&site.clientWidth<=900;
 const chat=()=>window.RentletChat;
 
@@ -583,15 +583,15 @@ function settleRow(t,k,flash){const [s,d]=t.settle[k];
 function settleCard(t,flash){return `<div class="card"><p class="tl">Settled<span>${doneN(t)} of 5</span></p><div class="settle">${KEYS.map(k=>settleRow(t,k,flash)).join('')}</div></div>`}
 function lockLine(t){const a=Math.min(3,count(t,'me')),b=Math.min(3,count(t,'them')),n=t.p.name,why='Unlocks after 3 replies each';
   return `<p class="lock">${ic('lock','sm')}<span>${esc(why)} · you ${a}/3 · ${esc(n)} ${b}/3</span></p>`}
-function contactRow(c){return `<div class="cx"><span><small>${kindLabel(c.kind)}</small>${c.kind==='email'?`<a href="mailto:${esc(c.val)}">${esc(c.val)}</a>`:`<b>${esc(c.val)}</b>`}</span><button class="btn btn-secondary" data-act="copy" data-v="${esc(c.val)}" aria-label="Copy ${kindLabel(c.kind)}">${ic('copy','sm')}Copy</button></div>`}
+function contactRow(c){return `<div class="cx"><span><small>${kindLabel(c.kind)}</small>${c.kind==='email'?`<a href="mailto:${esc(c.val)}">${esc(c.val)}</a>`:c.kind==='whatsapp'?`<a href="https://wa.me/${esc(String(c.val).replace(/\D/g,''))}" target="_blank" rel="noopener">${esc(c.val)}</a>`:`<b>${esc(c.val)}</b>`}</span><button class="btn btn-secondary" data-act="copy" data-v="${esc(c.val)}" aria-label="Copy ${kindLabel(c.kind)}">${ic('copy','sm')}Copy</button></div>`}
 function shareState(t){const n=esc(t.p.name);
   if(!unlocked(t))return lockLine(t);
   if(swapped(t))return contactRow(t.share.theirs)+`<p class="mut">You shared your ${kindWord(t.share.mine)}.</p>`;
   if(t.share.mine)return `<p class="mut">You shared your ${kindWord(t.share.mine)}. Waiting for ${n}.</p>${t.share.theirsShared?'':'<button class="btn btn-secondary wide" data-act="withdraw">Withdraw</button>'}`;
   return null}
 function choices(){if(!MYC)return '<p class="mut">Loading your contact details…</p>';
-  const opts=['instagram','email'].map(k=>MYC[k]?`<button class="opt" role="radio" data-act="pick" data-kind="${k}" aria-checked="${PICK===k}"><span class="rd"></span><span><small>${kindLabel(k)}</small><b>${esc(MYC[k])}</b></span></button>`:`<button class="opt" role="radio" aria-checked="false" aria-disabled="true" disabled><span class="rd"></span><span><small>${kindLabel(k)}</small><b>Not added yet</b></span></button>`).join('');
-  return opts+(MYC.instagram&&MYC.email?'':'<div class="acts"><a class="btn btn-secondary wide" href="profile.html">Add contact details on your profile</a></div>')}
+  const opts=['whatsapp','email'].map(k=>MYC[k]?`<button class="opt" role="radio" data-act="pick" data-kind="${k}" aria-checked="${PICK===k}"><span class="rd"></span><span><small>${kindLabel(k)}</small><b>${esc(MYC[k])}</b></span></button>`:`<button class="opt" role="radio" aria-checked="false" aria-disabled="true" disabled><span class="rd"></span><span><small>${kindLabel(k)}</small><b>Not added yet</b></span></button>`).join('');
+  return opts+(MYC.whatsapp&&MYC.email?'':'<div class="acts"><a class="btn btn-secondary wide" href="profile.html">Add contact details on your profile</a></div>')}
 function contactCard(t){const n=esc(t.p.name),st=shareState(t),hint=t.share.theirsShared?`${n} already shared. Share yours to see it.`:`${n} sees yours only when they share too.`;
   return `<div class="card swapc"><p class="tl">Contact details</p>${st||`<p class="mut">${hint}</p><button class="btn btn-primary wide" data-act="share">Share my contact</button>`}</div>`}
 function railInner(t,flash){return roomCard(t)+settleCard(t,flash)+contactCard(t)}

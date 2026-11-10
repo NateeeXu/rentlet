@@ -57,6 +57,16 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
+    // profile photos: avatars/{uid}/{fileName}, a square JPEG the Profile page makes; anyone can see them
+    match /avatars/{uid}/{fileName} {
+      allow read: if true;
+      allow create: if isNU() && mine(uid)
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow delete: if mine(uid);
+      allow update: if false;
+    }
+
     match /{everything=**} {
       allow read, write: if false;
     }

@@ -77,6 +77,28 @@ function cache(u: RentletUser | null) {
   }
 }
 
+function clearStoredDrafts(keys: string[]) {
+  for (const k of keys) {
+    try {
+      localStorage.removeItem(k);
+      sessionStorage.removeItem(k);
+    } catch {
+      /* private mode */
+    }
+  }
+}
+
+function clearListingDrafts() {
+  clearStoredDrafts(['rl-post-draft-v3', 'rl-post-draft-v2']);
+}
+
+function clearFormDrafts() {
+  clearListingDrafts();
+  clearStoredDrafts(['cs-request-draft']);
+}
+
+let observedUid = cachedUid();
+
 const toUser = (u: User): RentletUser => ({
   uid: u.uid,
   name: firstName(u.displayName),
@@ -147,12 +169,15 @@ function notify(next: RentletUser | null) {
 }
 
 function apply(next: RentletUser | null) {
-  const before = cachedUid();
+  const before = observedUid;
+  const after = next?.uid ?? null;
+  if (before && before !== after) clearListingDrafts();
   cache(next);
   window.Rentlet.user = next;
   window.RL.authed = !!next;
   window.RL.user = next;
-  if ((before ?? null) === (next?.uid ?? null)) return;
+  observedUid = after;
+  if (before === after) return;
   if (busy) pending = true;
   else notify(next);
 }
@@ -382,14 +407,7 @@ window.Rentlet = {
   signIn,
   // signing out also clears this browser's form drafts (they can hold a street address), for shared computers
   signOut: () => {
-    for (const k of ['rl-post-draft-v3', 'rl-post-draft-v2', 'cs-request-draft']) {
-      try {
-        localStorage.removeItem(k);
-        sessionStorage.removeItem(k);
-      } catch {
-        /* private mode */
-      }
-    }
+    clearFormDrafts();
     return firebaseSignOut(auth);
   },
   toast,

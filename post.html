@@ -261,7 +261,12 @@ const CHEV=`<svg class="ch" viewBox="0 0 16 16" fill="none" stroke="currentColor
 /* ---------- publish to Rentlet (src/listings.ts) ---------- */
 let VIDEO=null,BUSY=false,PROOF=[]; /* PROOF: lease-proof files (photos or PDFs), uploaded privately when the listing is published */
 /* signing in on the last step must not reload the page and lose the form */
-window.RL_onAuth=()=>{if(EDIT&&EDIT.state==='signin')loadEdit();else render()};
+let formAuthUid=window.RL.user&&window.RL.user.uid||null;
+window.RL_onAuth=user=>{
+  const nextUid=user&&user.uid||null;
+  if(formAuthUid&&formAuthUid!==nextUid){formAuthUid=nextUid;clearDraft();location.reload();return}
+  formAuthUid=nextUid;
+  if(EDIT&&EDIT.state==='signin')loadEdit();else render()};
 /* edit mode: the listing and its host-only details become the form's answers, and the form opens on its review step */
 async function loadEdit(){
   EDIT.state='loading';render();
@@ -696,7 +701,7 @@ let SAVE_T=0,SAVED=null;
 function saveDraft(){clearTimeout(SAVE_T);SAVE_T=0;if(S.done)return;
   try{const j=JSON.stringify(draftState());if(j!==SAVED){localStorage.setItem(DRAFT_KEY,j);SAVED=j;sessionStorage.removeItem(OLD_DRAFT)}}catch(_){}}
 const autosave=()=>{if(S.done||SAVED==null)return;clearTimeout(SAVE_T);SAVE_T=setTimeout(saveDraft,400)};
-function clearDraft(){clearTimeout(SAVE_T);SAVE_T=0;try{localStorage.removeItem(DRAFT_KEY);sessionStorage.removeItem(OLD_DRAFT)}catch(_){}}
+function clearDraft(){clearTimeout(SAVE_T);SAVE_T=0;SAVED=null;try{localStorage.removeItem(DRAFT_KEY);sessionStorage.removeItem(OLD_DRAFT)}catch(_){}}
 /* a tab closed or a phone switching apps saves what's pending at once */
 addEventListener('pagehide',()=>{if(SAVE_T)saveDraft()});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&SAVE_T)saveDraft()});

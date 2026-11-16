@@ -301,8 +301,11 @@ const STEPS=[
   {q:'About you',h:'Hosts see your first name, Google photo, role, school and your line. Never your email.',body:B.about,name:1},
   {q:'Check and post',h:'',body:B.review}];
 const doneScreen=()=>`${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">${S.replaced?'Your request is updated':'Your request is live'}</h2><p class="hint">People with a place near ${esc(S.campus)} can see it now and message you on Rentlet.</p><div class="grp">${qcard(record(),'Live')}</div><div class="acts"><a class="btn sec" href="requests.html?campus=${S.campusId}">See requests near ${esc(S.campus)}</a><a class="btn" href="index.html">Back to home</a></div></div></div>`;
+/* posting needs an account: signed out, the page asks for sign-in before the first step (Founder, Nov 16) */
+const signInView=()=>`${header()}<div class="a-top"><i style="width:0"></i></div><div class="a-scroll"><div class="a-q done"><h2 class="q">Sign in to post a request</h2><p class="hint">Posting needs a Google account. People with a place message you on Rentlet.</p><div class="acts"><a class="btn sec" href="index.html">Back to home</a><button type="button" class="btn" data-post-signin>Sign in with Google</button></div></div></div>`;
 const page=()=>{
   if(S.done)return doneScreen();
+  if(!RL.authed)return signInView();
   const save='<button type="button" class="save" data-save>Save and exit</button>';
   const n=STEPS.length,i=Math.min(S.step,n-1),s=STEPS[i];
   return `${header(save)}<div class="a-top"><i style="width:${(i+1)/n*100}%"></i></div><div class="a-scroll" id="ascroll"><div class="a-q"><p class="a-step">Step ${i+1} of ${n}</p><h2 class="q">${s.q}</h2>${s.h?`<p class="hint">${s.h}</p>`:''}${s.body()}</div></div>
@@ -368,6 +371,7 @@ document.addEventListener('click',e=>{const t=e.target;
     if(STEPS[S.step].name&&nameMissing()){S.err='name';render();return}
     S.err='';S.step++;render();const sc=document.getElementById('ascroll');if(sc)sc.scrollTop=0;return}
   if(t.closest('[data-back]')){S.err='';S.step=Math.max(0,S.step-1);render();return}
+  if(t.closest('[data-post-signin]')){RL.signIn();return}
   if(t.closest('[data-save]')){draft();location.href='index.html';return}
   if(t.closest('[data-edit-mine]')){if(MINE&&MINE.request){useMine(STEPS.length-1);render()}return}
   const g=t.closest('[data-go]');if(g){S.err='';S.step=+g.dataset.go;render();return}

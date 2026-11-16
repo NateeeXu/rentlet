@@ -646,7 +646,10 @@ const editStateView=()=>{if(EDIT.state==='loading')return editLoadingView();
     error:['Couldn’t load your listing','Check your connection and try again.',`${back}<button type="button" class="btn" data-edit-retry>Try again</button>`]}[EDIT.state];
   return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><h2 class="q">${h}</h2><p class="hint">${p}</p><div class="acts">${acts}</div></div></div>`};
 const editedView=()=>`${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Your changes are saved</h2><p class="hint">Listing #${S.code}. ${EDIT.status==='active'?'The listing shows them now.':'It’s still off search.'}</p><div class="grp" style="text-align:left">${card()}</div><div class="acts">${EDIT.status==='active'?`<a class="btn sec" href="room.html?room=${S.code}">See your listing</a>`:''}<a class="btn" href="profile.html#listings">Back to Profile</a></div></div></div>`;
+/* posting needs an account: signed out, the page asks for sign-in before the first step (Founder, Nov 16) */
+const signInView=()=>`${header()}<div class="a-top"><i style="width:0"></i></div><div class="a-scroll"><div class="a-q done"><h2 class="q">Sign in to post a listing</h2><p class="hint">Posting needs a Google account. Students who are interested message you on Rentlet.</p><div class="acts"><a class="btn sec" href="index.html">Back to home</a><button type="button" class="btn" data-post-signin>Sign in with Google</button></div></div></div>`;
 const page=()=>{if(EDIT&&EDIT.state!=='ok')return editStateView();
+  if(!EDIT&&!S.done&&!RL.authed)return signInView();
   const n=STEPS.length,i=Math.min(S.step,n-1),s=STEPS[i],last=i===n-1;
   if(S.done&&EDIT)return editedView();
   if(S.done)return `${header()}<div class="a-top"><i style="width:100%"></i></div><div class="a-scroll"><div class="a-q done"><div class="ok">✓</div><h2 class="q">Your listing is live</h2><p class="hint">Listing #${S.code}. It’s in search now. You can edit it, mark it as taken or take it down from Profile.</p><div class="grp" style="text-align:left">${card()}</div><div class="acts"><a class="btn sec" href="room.html?room=${S.code}">See your listing</a><a class="btn" href="index.html">Back to home</a></div></div></div>`;
@@ -701,7 +704,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 document.addEventListener('click',e=>{const t=e.target;
   if(t.closest('[data-cancel]')){location.href='profile.html#listings';return}
   if(t.closest('[data-edit-retry]')){loadEdit();return}
-  if(t.closest('[data-edit-signin]')){RL.signIn();return}
+  if(t.closest('[data-edit-signin]')||t.closest('[data-post-signin]')){RL.signIn();return}
   const nx=t.closest('[data-next]');if(nx){if(S.step>=STEPS.length-1){(EDIT?saveEdit:publish)(nx);return}
     const m=missing(S.step)[0];if(m){showNeed(S.step,m);return}
     S.step=EDIT?STEPS.length-1:S.step+1;render();window.scrollTo(0,0);return}

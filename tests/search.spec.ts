@@ -30,7 +30,7 @@ async function chooseDate(dialog: Locator, date: string): Promise<void> {
   for (let attempt = 0; attempt < 15; attempt += 1) {
     if (await target.count()) {
       await expect(target).toBeEnabled();
-      await target.click();
+      await target.press('Enter');
       return;
     }
 
@@ -39,16 +39,19 @@ async function chooseDate(dialog: Locator, date: string): Promise<void> {
     const currentYear = Number(yearText);
     const delta = (targetYear - currentYear) * 12 + targetMonth - currentMonth;
     const direction = delta > 0 ? 'Next month' : 'Previous month';
-    await dialog.getByRole('button', { name: direction }).click();
+    await dialog.getByRole('button', { name: direction }).press('Enter');
   }
 
   throw new Error(`Could not navigate the date picker to ${date}`);
 }
 
 async function chooseCampus(page: Page, name: string, id: string): Promise<void> {
-  await page.locator('#bar4 .s-camp[role="button"]').click();
-  await page.getByRole('option', { name: new RegExp(name) }).click();
+  const campus = page.locator('#bar4 .s-camp[role="button"]');
+  await campus.click();
+  await campus.press('ArrowDown');
+  await campus.press('Enter');
   await expect(page.locator('#aCamp')).toHaveValue(id);
+  await expect(page.locator('#bar4 [data-v="camp"]')).toHaveText(name);
 }
 
 async function chooseStay(page: Page, start: string, end: string): Promise<void> {
@@ -62,8 +65,8 @@ async function chooseStay(page: Page, start: string, end: string): Promise<void>
 async function chooseBudget(page: Page, price: string): Promise<void> {
   await page.locator('#aBud').click();
   const dialog = page.getByRole('dialog', { name: "Most you'd pay a month" });
-  await dialog.getByRole('button', { name: price, exact: true }).click();
-  await dialog.getByRole('button', { name: 'Done' }).click();
+  await dialog.getByRole('button', { name: price, exact: true }).press('Enter');
+  await dialog.getByRole('button', { name: 'Done' }).press('Enter');
   await expect(page.locator('#aBud')).toContainText(`Up to ${price}`);
 }
 

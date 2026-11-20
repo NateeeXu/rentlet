@@ -33,32 +33,44 @@ npm run dev:emu       # in another: the app at http://localhost:5173 on the emul
    when a visitor opens the homepage's All rooms section,
    then the taken-down and ended listings show no card.
 
+### Searching rooms — [search.spec.ts](./search.spec.ts)
+
+3. Given the seeded Evanston listings,
+   when a visitor searches Evanston with dates they cover and a $1,200 monthly budget,
+   then only the matching E2 Apartments room appears.
+4. Given the same listings,
+   when a visitor searches Evanston for dates no listing covers,
+   then no room cards appear and Create a housing request opens the request page.
+
 ### Opening a room — [room.spec.ts](./room.spec.ts)
 
-3. Given a live listing at E2 Apartments ($950/mo, Downtown Evanston),
+5. Given a live listing at E2 Apartments ($950/mo, Downtown Evanston),
    when a visitor opens its room page directly,
    then the page shows the building, title, area, rent and listing number.
-4. Given a listing number that was never posted,
+6. Given a listing number that was never posted,
    when a visitor opens its room page,
    then the page says the listing could not be found.
-5. Given a listing the host took down,
+7. Given a listing the host took down,
    when a visitor opens its room page,
    then the page says the listing is no longer available.
-6. Given a listing whose last day has passed,
+8. Given a listing whose last day has passed,
    when a visitor opens its old link,
    then the room still opens, marked Ended, with search offered instead of Message.
 
 ### Posting — [post-gate.spec.ts](./post-gate.spec.ts)
 
-7. Given a signed-out visitor,
+9. Given a signed-out visitor,
    when they open the post-a-listing page,
    then the page asks them to sign in with Google before the first step.
 
 ### Room to room — [home.spec.ts](./home.spec.ts)
 
-8. Given the All rooms section,
+10. Given the All rooms section,
    when a visitor clicks a room card,
    then the room page for that listing opens.
+
+The homepage search specs use the suite's default signed-out browser context. Signed-in
+coverage needs the test sign-in path described under Follow-ups.
 
 ## Follow-ups (need a signed-in test user)
 

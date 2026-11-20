@@ -24,6 +24,7 @@ The date picker overlays Northwestern's 2026–27 calendar from the Office of th
 npm install
 npm run dev        # http://localhost:5173 (use localhost, not 127.0.0.1, for Google sign-in)
 npm test           # unit tests (Vitest)
+npm run test:e2e   # acceptance tests (Playwright) against the Firebase emulators
 npm run build      # typecheck + production build into dist/
 ```
 

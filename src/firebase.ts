@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { connectAuthEmulator, getAuth } from 'firebase/auth';
+import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore';
+import { connectStorageEmulator, getStorage } from 'firebase/storage';
 
 // Web app config for the rentlet-nu Firebase project. These values only identify the project
 // and are meant to ship in client code; access is enforced by firestore.rules and storage.rules.
@@ -19,3 +19,12 @@ export const auth = getAuth(app);
 auth.languageCode = 'en'; // Rentlet is English-only, including Google's sign-in window
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Local E2E testing: `VITE_USE_EMULATORS=true npm run dev` (or the Playwright webServer, which sets
+// it) points the app at `firebase emulators:start` instead of the real project, so tests never read
+// or corrupt real listings, users or auth data. Never set in production builds.
+if (import.meta.env.VITE_USE_EMULATORS === 'true') {
+  connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectStorageEmulator(storage, 'localhost', 9199);
+}

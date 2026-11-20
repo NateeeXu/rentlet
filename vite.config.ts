@@ -10,4 +10,9 @@ export default defineConfig({
       input: Object.fromEntries(pages.map((p) => [p, resolve(__dirname, `${p}.html`)])),
     },
   },
+  // Unit tests only: the Playwright specs in tests/ run under `npm run test:e2e`, and Vitest's
+  // default include would otherwise pick up their *.spec.ts files and fail them.
+  test: {
+    include: ['src/**/*.test.ts', 'functions/src/**/*.test.ts'],
+  },
 });

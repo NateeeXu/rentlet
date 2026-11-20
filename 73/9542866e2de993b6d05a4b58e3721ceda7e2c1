@@ -1,0 +1,51 @@
+.github/workflows/main.yml
+  s_4d5bebfb7151a7::t_d4c27643df9a5b 25-43
+.gitignore
+  s_f5e0f18e73faad::t_f38c2b0c4399c2 7-11
+README.md
+  s_4d5bebfb7151a7::t_28b3ac1ae70bdd 27
+firebase.json
+  s_f5e0f18e73faad::t_45cfb6a80a4cfb 101-117
+package-lock.json
+  s_f5e0f18e73faad::t_1af4fbd9709c32 16,19,25-31,728-824,884-909,1571-1586,1956-1966,1977-1983,2371-2394,2419-2432,2443-2491,2540-2549,2577-2600,2607-2617,2643-2653,2664-2720,2751-2774,2812-2847,2863-2916,2926-3045,3052-3080,3101-3108,3118-3215,3495-3500,3507-3562,3569-3589,3600-3613,3645-3695,3710-3754,3775-3803,3833-3846,3885-3900,3923-3947,4002-4014,4032-4061,4088-4129,4214-4221,4390-4399,4459-4483,4519-4532
+package.json
+  s_f5e0f18e73faad::t_a883a6c5d88807 11-14,22,25
+playwright.config.ts
+  s_4d5bebfb7151a7::t_70cc7fc577aef5 1-43
+src/firebase.ts
+  s_f5e0f18e73faad::t_745daf8c671ca0 2-4,22-30
+tests/global-setup.ts
+  s_f5e0f18e73faad::t_926fcbdcd3f63e 1-8
+tests/post-gate.spec.ts
+  s_f5e0f18e73faad::t_785ae4f25f2216 1-10
+tests/room.spec.ts
+  s_f5e0f18e73faad::t_06109fe8c78a7b 1-35
+tests/seed.ts
+  s_f5e0f18e73faad::t_868d2c3387ec64 1-135
+vite.config.ts
+  s_4d5bebfb7151a7::t_e23cc488de85e0 13-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "739542866e2de993b6d05a4b58e3721ceda7e2c1",
+  "prompts": {},
+  "sessions": {
+    "s_4d5bebfb7151a7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fad5-7b25-7013-9857-470a2bf40e44",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "realtonypark <realtonypark@gmail.com>"
+    },
+    "s_f5e0f18e73faad": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1fa93-175f-7a93-a90e-bda402472074",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "realtonypark <realtonypark@gmail.com>"
+    }
+  }
+}

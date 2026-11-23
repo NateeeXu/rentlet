@@ -7,11 +7,6 @@ import { expect, test, type Page } from '@playwright/test';
 
 const ROOM = '71000001'; // E2 Apartments, live (seed.ts)
 
-// Each spec signs in and then opens pages the suite hasn't loaded yet (the Saved page is first
-// opened here), which Vite compiles on first request. On a cold CI runner that took one spec past
-// the default 30 s and it only passed on retry, so these specs get triple the time (test.slow()).
-test.beforeEach(() => test.slow());
-
 function newStudent() {
   const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
   return { email: `saver-${id}@u.northwestern.edu`, name: 'Riley Saver' };
@@ -22,7 +17,16 @@ async function signInThrough(page: Page, open: () => Promise<void>, who = newStu
   const popupOpened = page.waitForEvent('popup');
   await test.step('press the button that opens Google sign-in', open);
   const popup = await test.step('wait for the sign-in window', () => popupOpened);
-  await popup.getByRole('button', { name: 'Add new account' }).click();
+  // The emulator's sign-in page wires up its buttons once its script has loaded. On a slow CI runner
+  // a click that lands earlier does nothing and the account form never opens, so wait for the page,
+  // and press again until the form is there.
+  await test.step('open the new-account form', async () => {
+    await popup.waitForLoadState('load');
+    await expect(async () => {
+      await popup.getByRole('button', { name: 'Add new account' }).click({ timeout: 5000 });
+      await expect(popup.getByLabel('Email')).toBeVisible({ timeout: 3000 });
+    }).toPass({ timeout: 30_000 });
+  });
   await popup.getByLabel('Email').fill(who.email);
   await popup.getByLabel('Display name').fill(who.name);
   // Listen before clicking: the window closes as soon as sign-in finishes, which on a busy machine
@@ -34,8 +38,7 @@ async function signInThrough(page: Page, open: () => Promise<void>, who = newStu
 }
 
 // Opens the room page and waits until it has finished loading and shows Save, as a person sees it
-// before pressing anything. (On a slow CI runner, pressing Save the instant the page opens made the
-// sign-in specs flaky.)
+// before pressing anything.
 async function openRoom(page: Page) {
   await test.step('open the room page', async () => {
     await page.goto(`/room.html?room=${ROOM}`);

@@ -69,14 +69,30 @@ npm run dev:emu       # in another: the app at http://localhost:5173 on the emul
    when a visitor clicks a room card,
    then the room page for that listing opens.
 
-The homepage search specs use the suite's default signed-out browser context. Signed-in
-coverage needs the test sign-in path described under Follow-ups.
+### Saving rooms — [saves.spec.ts](./saves.spec.ts)
+
+11. Given a signed-out visitor on a live room's page,
+    when they press Save and sign in with Google,
+    then the room shows as Saved.
+12. Given a signed-in visitor who saved a live room,
+    when they open the Saved page,
+    then that room is listed with its rent, area and a link to its page, and still is after a reload.
+13. Given a signed-in visitor with one saved room,
+    when they press Saved on the room page again,
+    then the Saved page has no rooms.
+
+The homepage search specs use the suite's default signed-out browser context. The saves specs
+sign in through the Auth emulator's stand-in Google window: the app opens the same sign-in popup
+as in production, the emulator serves it, and the spec adds a new test account there, so no real
+Google account is involved. Each spec signs in as its own new user, so parallel specs never share
+a Saved list.
 
 ## Follow-ups (need a signed-in test user)
 
+The sign-in helper in [saves.spec.ts](./saves.spec.ts) can be reused for these.
+
 - Publish flow: a signed-in host completes the post form and the new listing appears live.
 - Messaging: a signed-in renter messages a host and the chat shows both sides.
-- Saves: a signed-in visitor hearts a room and Profile lists it under Saved.
 
 These need sign-in inside the test. The app only signs in through the Google popup, which
 the Auth emulator cannot complete, so they wait on a test sign-in path (for example an

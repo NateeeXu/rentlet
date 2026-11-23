@@ -20,8 +20,11 @@ async function signInThrough(page: Page, open: () => Promise<void>, who = newStu
   await popup.getByRole('button', { name: 'Add new account' }).click();
   await popup.getByLabel('Email').fill(who.email);
   await popup.getByLabel('Display name').fill(who.name);
+  // Listen before clicking: the window closes as soon as sign-in finishes, which on a busy machine
+  // can be before the click call returns, and a 'close' that has already happened is never seen.
+  const closed = popup.waitForEvent('close');
   await popup.getByRole('button', { name: 'Sign in with Google.com' }).click();
-  await popup.waitForEvent('close');
+  await closed;
   return who;
 }
 

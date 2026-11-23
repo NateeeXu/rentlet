@@ -15,8 +15,8 @@ function newStudent() {
 // Runs `open`, which makes the app open Google sign-in, and completes the emulator's sign-in window.
 async function signInThrough(page: Page, open: () => Promise<void>, who = newStudent()) {
   const popupOpened = page.waitForEvent('popup');
-  await open();
-  const popup = await popupOpened;
+  await test.step('press the button that opens Google sign-in', open);
+  const popup = await test.step('wait for the sign-in window', () => popupOpened);
   await popup.getByRole('button', { name: 'Add new account' }).click();
   await popup.getByLabel('Email').fill(who.email);
   await popup.getByLabel('Display name').fill(who.name);
@@ -24,8 +24,20 @@ async function signInThrough(page: Page, open: () => Promise<void>, who = newStu
   // can be before the click call returns, and a 'close' that has already happened is never seen.
   const closed = popup.waitForEvent('close');
   await popup.getByRole('button', { name: 'Sign in with Google.com' }).click();
-  await closed;
+  await test.step('wait for the sign-in window to close', () => closed);
   return who;
+}
+
+// Opens the room page and waits until it has finished loading and shows Save, as a person sees it
+// before pressing anything. (On a slow CI runner, pressing Save the instant the page opens made the
+// sign-in specs flaky.)
+async function openRoom(page: Page) {
+  await test.step('open the room page', async () => {
+    await page.goto(`/room.html?room=${ROOM}`);
+    await expect(page.locator('.titlebar h1')).toContainText('E2 Apartments');
+    await expect(saveButton(page)).toHaveAttribute('aria-pressed', /true|false/);
+    await page.waitForFunction(() => 'Rentlet' in window);
+  });
 }
 
 const saveButton = (page: Page) => page.locator(`.titlebar [data-rl-save="room:${ROOM}"]`);
@@ -33,8 +45,7 @@ const savedCards = (page: Page) => page.locator('main .cx-card');
 
 test('saving a room while signed out asks for sign-in, then saves it', async ({ page }) => {
   // Given a signed-out visitor on a live room's page
-  await page.goto(`/room.html?room=${ROOM}`);
-  await expect(page.locator('.titlebar h1')).toContainText('E2 Apartments');
+  await openRoom(page);
   await expect(saveButton(page)).toHaveAttribute('aria-pressed', 'false');
 
   // When they press Save and sign in with Google
@@ -47,7 +58,7 @@ test('saving a room while signed out asks for sign-in, then saves it', async ({ 
 
 test('a saved room is listed on the Saved page and stays there', async ({ page }) => {
   // Given a signed-in visitor who saved a live room
-  await page.goto(`/room.html?room=${ROOM}`);
+  await openRoom(page);
   await signInThrough(page, () => saveButton(page).click());
   await expect(saveButton(page)).toHaveAttribute('aria-pressed', 'true');
 
@@ -67,7 +78,7 @@ test('a saved room is listed on the Saved page and stays there', async ({ page }
 
 test('removing a save takes the room off the Saved page', async ({ page }) => {
   // Given a signed-in visitor with one saved room
-  await page.goto(`/room.html?room=${ROOM}`);
+  await openRoom(page);
   await signInThrough(page, () => saveButton(page).click());
   await expect(saveButton(page)).toHaveAttribute('aria-pressed', 'true');
 

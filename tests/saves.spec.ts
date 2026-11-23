@@ -7,6 +7,11 @@ import { expect, test, type Page } from '@playwright/test';
 
 const ROOM = '71000001'; // E2 Apartments, live (seed.ts)
 
+// Each spec signs in and then opens pages the suite hasn't loaded yet (the Saved page is first
+// opened here), which Vite compiles on first request. On a cold CI runner that took one spec past
+// the default 30 s and it only passed on retry, so these specs get triple the time (test.slow()).
+test.beforeEach(() => test.slow());
+
 function newStudent() {
   const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
   return { email: `saver-${id}@u.northwestern.edu`, name: 'Riley Saver' };

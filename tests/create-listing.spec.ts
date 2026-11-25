@@ -1,4 +1,6 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 // Acceptance test: creating a listing
 //
@@ -26,6 +28,25 @@ async function newVisitor(browser: Browser): Promise<BrowserContext> {
   // The app copes without them, as the README says.
   await ctx.route(/cloudfunctions\.net|\/api\/(route|shuttle)|\/tiles\//, (route) => route.abort());
   return ctx;
+}
+
+// The Storage emulator hands out http://localhost:9199/... download links, but the room page only shows photos
+// whose link is https (src/lib/listingView.ts httpsUrl), so a listing with only emulator photos reads as "not found"
+// to a visitor. Production links are always https. After publishing, swap the emulator's origin for the real
+// Firebase Storage one (same path and token) so the stored listing looks like it would in production. The photo was
+// still really uploaded and published through the form; only the link's origin changes.
+async function useProductionPhotoLinks(code: string) {
+  expect(process.env.FIRESTORE_EMULATOR_HOST, 'run this through `npm run test:e2e` so the Firestore emulator is set').toBeTruthy();
+  const app = getApps().find((a) => a.name === 'create-listing-e2e') ?? initializeApp({ projectId: 'rentlet-nu' }, 'create-listing-e2e');
+  const ref = getFirestore(app).collection('listings').doc(code);
+
+  const photos: string[] = (await ref.get()).get('photos');
+  expect(photos?.length, 'the published listing has the uploaded photo').toBeGreaterThan(0);
+  expect(photos[0], 'the photo was uploaded to the Storage emulator').toMatch(/^http:\/\/(localhost|127\.0\.0\.1):\d+\/v0\/b\/.+\/o\/listings%2F/);
+
+  await ref.update({
+    photos: photos.map((p) => p.replace(/^http:\/\/(localhost|127\.0\.0\.1):\d+/, 'https://firebasestorage.googleapis.com')),
+  });
 }
 
 // Rentlet only has "Sign in with Google". With the Auth emulator that opens the emulator's fake Google window.
@@ -116,6 +137,8 @@ test('a listing published by a signed-in user is visible to other users', async 
   const live = await host.locator('.a-q.done .hint').innerText();
   const code = live.match(/#(\d{8})/)?.[1];
   expect(code, 'the confirmation shows the 8-digit listing number').toBeTruthy();
+
+  await useProductionPhotoLinks(code!);
 
   // ---------- Then: other users can see the listing ----------
   // A brand-new browser session, signed out, so it shares nothing with the host (anyone may browse active listings).
